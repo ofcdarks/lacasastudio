@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
-import { useAuth } from "../../context/AuthContext";
 import { channelApi } from "../../lib/api";
+import { useToast } from "./Toast";
 import { Badge, C } from "./UI";
 
-function SItem({ icon, label, path, badge, bc }) {
+function SItem({ icon, label, path, badge, bc, onClick: extraClick }) {
   const [h, setH] = useState(false);
   const nav = useNavigate();
   const loc = useLocation();
   const active = loc.pathname === path;
   return (
-    <div onClick={() => nav(path)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+    <div onClick={() => { nav(path); extraClick?.(); }} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13.5, fontWeight: active ? 600 : 450, color: active ? C.red : h ? C.text : C.muted, background: active ? `${C.red}15` : h ? C.bgHover : "transparent", transition: "all 0.2s", userSelect: "none" }}>
       <span style={{ fontSize: 14, width: 18, textAlign: "center", opacity: active ? 1 : 0.6 }}>{icon}</span>
       <span style={{ flex: 1 }}>{label}</span>
@@ -36,12 +36,15 @@ function ChDot({ ch, active, onClick }) {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { channels, videos, selChannel, setSelChannel, refreshChannels } = useApp();
+  const toast = useToast();
   const nav = useNavigate();
   const loc = useLocation();
 
   const pending = videos.filter(v => v.status !== "published").length;
+
+  const closeMobile = () => { if (onClose) onClose(); };
 
   const addChannel = async () => {
     const name = prompt("Nome do novo canal:");
@@ -50,64 +53,67 @@ export default function Sidebar() {
     try {
       await channelApi.create({ name, color: colors[Math.floor(Math.random() * colors.length)] });
       refreshChannels();
-    } catch (err) { alert(err.message); }
+      toast?.success(`Canal "${name}" criado!`);
+    } catch (err) { toast?.error(err.message); }
   };
 
   return (
-    <aside style={{ width: 220, minWidth: 220, background: C.bgSidebar, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", position: "fixed", top: 0, left: 0, bottom: 0, overflowY: "auto", zIndex: 100 }}>
-      {/* Logo */}
-      <div style={{ padding: "20px 16px 8px", display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${C.red}, ${C.orange})`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13, color: "#fff" }}>LC</div>
-        <div>
-          <div style={{ fontWeight: 800, fontSize: 14, letterSpacing: "-0.02em" }}>LaCasaStudio</div>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: C.dim }}>V2.0 · YOUTUBE OS</div>
+    <>
+      <div className={`sidebar-overlay ${isOpen ? "show" : ""}`} onClick={onClose} />
+      <aside className={`sidebar ${isOpen ? "open" : ""}`}
+        style={{ width: 220, minWidth: 220, background: C.bgSidebar, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", position: "fixed", top: 0, left: 0, bottom: 0, overflowY: "auto", zIndex: 100, transition: "transform 0.2s ease" }}>
+        {/* Logo */}
+        <div style={{ padding: "20px 16px 8px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${C.red}, ${C.orange})`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13, color: "#fff", flexShrink: 0 }}>LC</div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 14, letterSpacing: "-0.02em" }}>LaCasaStudio</div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: C.dim }}>V2.1 · YOUTUBE OS</div>
+          </div>
         </div>
-      </div>
 
-      {/* Navigation */}
-      <div style={{ flex: 1, padding: "4px 8px" }}>
-        <Sec title="Produção" />
-        <SItem icon="▣" label="Dashboard" path="/" />
-        <SItem icon="▦" label="Planner Kanban" path="/planner" badge={pending} />
-        <SItem icon="▤" label="Storyboard" path="/storyboard" />
-        <SItem icon="¶" label="Editor de Roteiro" path="/editor" />
-        <SItem icon="✓" label="Checklist Pub." path="/checklist" badge={null} bc={C.green} />
+        <div style={{ flex: 1, padding: "4px 8px" }}>
+          <Sec title="Produção" />
+          <SItem icon="▣" label="Dashboard" path="/" onClick={closeMobile} />
+          <SItem icon="▦" label="Planner Kanban" path="/planner" badge={pending} onClick={closeMobile} />
+          <SItem icon="▤" label="Storyboard" path="/storyboard" onClick={closeMobile} />
+          <SItem icon="¶" label="Editor de Roteiro" path="/editor" onClick={closeMobile} />
+          <SItem icon="✓" label="Checklist Pub." path="/checklist" onClick={closeMobile} />
 
-        <Sec title="Estratégia" />
-        <SItem icon="💡" label="Banco de Ideias" path="/ideas" />
-        <SItem icon="✦" label="Gerador SEO + IA" path="/seo" />
-        <SItem icon="◎" label="Metas & OKRs" path="/metas" />
-        <SItem icon="◆" label="Templates de Série" path="/templates" />
+          <Sec title="Estratégia" />
+          <SItem icon="💡" label="Banco de Ideias" path="/ideas" onClick={closeMobile} />
+          <SItem icon="✦" label="Gerador SEO + IA" path="/seo" onClick={closeMobile} />
+          <SItem icon="◎" label="Metas & OKRs" path="/metas" onClick={closeMobile} />
+          <SItem icon="◆" label="Templates de Série" path="/templates" onClick={closeMobile} />
 
-        <Sec title="Gestão" />
-        <SItem icon="▥" label="Calendário" path="/calendario" />
-        <SItem icon="▲" label="Analytics" path="/analytics" badge="Beta" bc={C.purple} />
-        <SItem icon="$" label="Orçamento" path="/orcamento" />
-        <SItem icon="◉" label="Banco de Ativos" path="/ativos" />
-        <SItem icon="◑" label="Equipe" path="/equipe" />
-        <SItem icon="⚙" label="Configurações" path="/settings" />
+          <Sec title="Gestão" />
+          <SItem icon="▥" label="Calendário" path="/calendario" onClick={closeMobile} />
+          <SItem icon="▲" label="Analytics" path="/analytics" onClick={closeMobile} />
+          <SItem icon="$" label="Orçamento" path="/orcamento" onClick={closeMobile} />
+          <SItem icon="◉" label="Banco de Ativos" path="/ativos" onClick={closeMobile} />
+          <SItem icon="◑" label="Equipe" path="/equipe" onClick={closeMobile} />
+          <SItem icon="⚙" label="Configurações" path="/settings" onClick={closeMobile} />
 
-        <Sec title="Canais" />
-        {channels.map(ch => (
-          <ChDot key={ch.id} ch={ch}
-            active={selChannel === ch.id && loc.pathname === "/planner"}
-            onClick={() => { setSelChannel(selChannel === ch.id ? null : ch.id); nav("/planner"); }} />
-        ))}
-        <ChDot ch={{ name: "Todos os canais", color: C.dim }}
-          active={!selChannel && loc.pathname === "/planner"}
-          onClick={() => { setSelChannel(null); nav("/planner"); }} />
-      </div>
-
-      {/* Footer */}
-      <div style={{ padding: "12px 16px", borderTop: `1px solid ${C.border}` }}>
-        <div onClick={addChannel}
-          style={{ fontSize: 12, color: C.muted, cursor: "pointer", padding: "6px 0", transition: "color 0.2s" }}
-          onMouseEnter={e => e.target.style.color = C.text}
-          onMouseLeave={e => e.target.style.color = C.muted}>
-          + Novo canal
+          <Sec title="Canais" />
+          {channels.map(ch => (
+            <ChDot key={ch.id} ch={ch}
+              active={selChannel === ch.id && loc.pathname === "/planner"}
+              onClick={() => { setSelChannel(selChannel === ch.id ? null : ch.id); nav("/planner"); closeMobile(); }} />
+          ))}
+          <ChDot ch={{ name: "Todos os canais", color: C.dim }}
+            active={!selChannel && loc.pathname === "/planner"}
+            onClick={() => { setSelChannel(null); nav("/planner"); closeMobile(); }} />
         </div>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: C.dim, marginTop: 6 }}>© API LaCasa</div>
-      </div>
-    </aside>
+
+        <div style={{ padding: "12px 16px", borderTop: `1px solid ${C.border}` }}>
+          <div onClick={addChannel}
+            style={{ fontSize: 12, color: C.muted, cursor: "pointer", padding: "6px 0", transition: "color 0.2s" }}
+            onMouseEnter={e => e.target.style.color = C.text}
+            onMouseLeave={e => e.target.style.color = C.muted}>
+            + Novo canal
+          </div>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: C.dim, marginTop: 6 }}>© LaCasaStudio V2.1</div>
+        </div>
+      </aside>
+    </>
   );
 }

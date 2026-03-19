@@ -6,31 +6,21 @@ router.use(authenticate);
 
 router.get("/video/:videoId", async (req, res, next) => {
   try {
-    const results = await prisma.seoResult.findMany({
-      where: { videoId: Number(req.params.videoId) },
-      orderBy: { createdAt: "desc" },
-    });
-    res.json(results.map(r => ({
-      ...r,
-      titles: r.titles ? JSON.parse(r.titles) : [],
-      tags: r.tags ? JSON.parse(r.tags) : [],
-      score: r.score ? JSON.parse(r.score) : {},
-    })));
+    const video = await prisma.video.findFirst({ where: { id: Number(req.params.videoId), userId: req.userId } });
+    if (!video) return res.status(404).json({ error: "Vídeo não encontrado" });
+    const results = await prisma.seoResult.findMany({ where: { videoId: video.id }, orderBy: { createdAt: "desc" } });
+    res.json(results);
   } catch (err) { next(err); }
 });
 
 router.post("/", async (req, res, next) => {
   try {
     const { videoId, titles, description, tags, score, tips } = req.body;
+    if (!videoId) return res.status(400).json({ error: "videoId obrigatório" });
+    const video = await prisma.video.findFirst({ where: { id: Number(videoId), userId: req.userId } });
+    if (!video) return res.status(403).json({ error: "Acesso negado" });
     const result = await prisma.seoResult.create({
-      data: {
-        videoId: Number(videoId),
-        titles: JSON.stringify(titles || []),
-        description: description || "",
-        tags: JSON.stringify(tags || []),
-        score: JSON.stringify(score || {}),
-        tips: tips || "",
-      },
+      data: { videoId: video.id, titles: titles || "", description: description || "", tags: tags || "", score: score || "", tips: tips || "" },
     });
     res.status(201).json(result);
   } catch (err) { next(err); }
@@ -38,7 +28,9 @@ router.post("/", async (req, res, next) => {
 
 router.delete("/:id", async (req, res, next) => {
   try {
-    await prisma.seoResult.delete({ where: { id: Number(req.params.id) } });
+    const sr = await prisma.seoResult.findUnique({ where: { id: Number(req.params.id) }, include: { video: true } });
+    if (!sr || sr.video.userId !== req.userId) return res.status(404).json({ error: "Resultado não encontrado" });
+    await prisma.seoResult.delete({ where: { id: sr.id } });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

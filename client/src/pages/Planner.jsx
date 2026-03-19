@@ -16,7 +16,7 @@ function EditModal({ video, channels, onClose, onSave }) {
   };
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: 520, background: C.bgCard, borderRadius: 18, border: `1px solid ${C.border}`, padding: 28 }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: 520, maxWidth: "95vw", background: C.bgCard, borderRadius: 18, border: `1px solid ${C.border}`, padding: 28 }}>
         <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 20 }}>Editar Vídeo</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div><Label t="Título" /><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} /></div>
@@ -122,7 +122,7 @@ export default function Planner() {
         action={<Btn onClick={() => setShowF(!showF)}>{showF ? "✕ Fechar" : "+ Novo Vídeo"}</Btn>} />
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
+      <div className="filters-row" style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
         <Btn vr={!selChannel ? "primary" : "ghost"} onClick={() => setSelChannel(null)} style={{ padding: "7px 14px", fontSize: 12 }}>Todos</Btn>
         {channels.map(ch => (
           <Btn key={ch.id} vr={selChannel === ch.id ? "primary" : "ghost"} onClick={() => setSelChannel(ch.id)}
@@ -153,7 +153,7 @@ export default function Planner() {
       )}
 
       {/* Kanban Board */}
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${STATUS_KEYS.length}, minmax(155px, 1fr))`, gap: 10, overflowX: "auto" }}>
+      <div className="grid-kanban" style={{ display: "grid", gridTemplateColumns: `repeat(${STATUS_KEYS.length}, minmax(155px, 1fr))`, gap: 10, overflowX: "auto" }}>
         {Object.entries(ST).map(([sk, sv]) => {
           const col = filtered.filter(v => v.status === sk);
           const isOver = dragOver === sk;

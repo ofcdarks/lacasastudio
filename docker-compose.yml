@@ -10,11 +10,16 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - JWT_SECRET=${JWT_SECRET:-lacasa-studio-secret-change-me-in-production}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
       - DATABASE_URL=file:/app/data/lacasastudio.db
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
+      - LOG_LEVEL=info
     volumes:
       - lacasa_data:/app/data
+      - lacasa_uploads:/app/server/uploads
 
 volumes:
   lacasa_data:
+    driver: local
+  lacasa_uploads:
     driver: local

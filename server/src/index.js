@@ -5,6 +5,7 @@ const compression = require("compression");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
+const logger = require("./services/logger");
 
 const authRoutes = require("./routes/auth");
 const channelRoutes = require("./routes/channels");
@@ -23,24 +24,40 @@ const youtubeRoutes = require("./routes/youtube");
 const scriptRoutes = require("./routes/scripts");
 const seoResultRoutes = require("./routes/seo-results");
 const ideaRoutes = require("./routes/ideas");
+const searchRoutes = require("./routes/search");
+const exportRoutes = require("./routes/export");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Security & Performance ──────────────────────────────────
+// ── Allowed origins ─────────────────────────────────────────
+const ALLOWED_ORIGINS = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+  : [];
+
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression());
-app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
+app.use(cors({
+  origin: ALLOWED_ORIGINS.length > 0 && ALLOWED_ORIGINS[0] !== "*"
+    ? ALLOWED_ORIGINS
+    : true,
+  credentials: true,
+}));
 app.use(express.json({ limit: "10mb" }));
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 500,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use("/api/", limiter);
+// ── Rate limiters ───────────────────────────────────────────
+const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHeaders: true, legacyHeaders: false });
+const aiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: { error: "Muitas requisições de IA. Tente em 15 minutos." } });
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: "Muitas tentativas. Tente em 15 minutos." } });
+
+app.use("/api/", globalLimiter);
+app.use("/api/ai/", aiLimiter);
+app.use("/api/auth/login", authLimiter);
+app.use("/api/auth/register", authLimiter);
+
+// ── Serve uploaded files ────────────────────────────────────
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // ── API Routes ──────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
@@ -60,10 +77,12 @@ app.use("/api/youtube", youtubeRoutes);
 app.use("/api/scripts", scriptRoutes);
 app.use("/api/seo-results", seoResultRoutes);
 app.use("/api/ideas", ideaRoutes);
+app.use("/api/search", searchRoutes);
+app.use("/api/export", exportRoutes);
 
 // ── Health Check ────────────────────────────────────────────
 app.get("/api/health", (_, res) => {
-  res.json({ status: "ok", version: "2.0.0", uptime: process.uptime() });
+  res.json({ status: "ok", version: "2.1.0", uptime: process.uptime() });
 });
 
 // ── Serve React SPA in production ───────────────────────────
@@ -78,14 +97,15 @@ app.get("*", (req, res) => {
 
 // ── Global Error Handler ────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error(`[ERROR] ${err.message}`);
-  res.status(err.status || 500).json({
+  logger.error(err.message, { path: req.path, method: req.method, stack: err.stack?.split("\n")[1]?.trim() });
+  const status = err.status || 500;
+  res.status(status).json({
     error: process.env.NODE_ENV === "production" ? "Internal server error" : err.message,
   });
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n🏠 LaCasaStudio V2.0 running on http://0.0.0.0:${PORT}\n`);
+  logger.info(`LaCasaStudio V2.1 running on http://0.0.0.0:${PORT}`);
 });
 
 module.exports = app;

@@ -1,13 +1,13 @@
 const BASE = "/api";
 
-function getToken() {
-  return localStorage.getItem("lc_token");
-}
+function getToken() { return localStorage.getItem("lc_token"); }
 
 async function request(path, opts = {}) {
   const token = getToken();
   const headers = { "Content-Type": "application/json", ...opts.headers };
   if (token) headers["Authorization"] = `Bearer ${token}`;
+  // Remove Content-Type for FormData
+  if (opts.body instanceof FormData) delete headers["Content-Type"];
 
   const res = await fetch(`${BASE}${path}`, { ...opts, headers });
 
@@ -25,8 +25,9 @@ async function request(path, opts = {}) {
 const api = {
   get: (path) => request(path),
   post: (path, body) => request(path, { method: "POST", body: JSON.stringify(body) }),
-  put: (path, body) => request(path, { method: "PUT", body: JSON.stringify(body) }),
+  put: (path, body) => request(path, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
   del: (path) => request(path, { method: "DELETE" }),
+  upload: (path, formData) => request(path, { method: "POST", body: formData }),
 };
 
 export const authApi = {
@@ -74,6 +75,18 @@ export const assetApi = {
     return api.get(`/assets${q ? `?${q}` : ""}`);
   },
   create: (data) => api.post("/assets", data),
+  upload: (formData) => {
+    const token = getToken();
+    return fetch(`${BASE}/assets/upload`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(async res => {
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro no upload");
+      return data;
+    });
+  },
   update: (id, data) => api.put(`/assets/${id}`, data),
   del: (id) => api.del(`/assets/${id}`),
 };
@@ -102,6 +115,7 @@ export const notifApi = {
   list: () => api.get("/notifications"),
   markRead: (id) => api.put(`/notifications/${id}/read`),
   markAllRead: () => api.put("/notifications/read-all"),
+  clearRead: () => api.del("/notifications/clear"),
 };
 
 export const checklistApi = {
@@ -125,14 +139,12 @@ export const aiApi = {
   analyzeIdea: (data) => api.post("/ai/analyze-idea", data),
 };
 
-// YouTube
 export const youtubeApi = {
   channel: (channelId) => api.get(`/youtube/channel/${channelId}`),
   videos: (channelId, max = 10) => api.get(`/youtube/videos/${channelId}?max=${max}`),
   analyze: (data) => api.post("/youtube/analyze", data),
 };
 
-// Scripts (saved to DB)
 export const scriptApi = {
   listByVideo: (videoId) => api.get(`/scripts/video/${videoId}`),
   create: (data) => api.post("/scripts", data),
@@ -140,19 +152,30 @@ export const scriptApi = {
   del: (id) => api.del(`/scripts/${id}`),
 };
 
-// SEO Results (saved to DB)
 export const seoResultApi = {
   listByVideo: (videoId) => api.get(`/seo-results/video/${videoId}`),
   create: (data) => api.post("/seo-results", data),
   del: (id) => api.del(`/seo-results/${id}`),
 };
 
-// Ideas Board
 export const ideaApi = {
   list: () => api.get("/ideas"),
   create: (data) => api.post("/ideas", data),
   update: (id, data) => api.put(`/ideas/${id}`, data),
   del: (id) => api.del(`/ideas/${id}`),
+};
+
+// NEW: Search
+export const searchApi = {
+  search: (q) => api.get(`/search?q=${encodeURIComponent(q)}`),
+};
+
+// NEW: Export
+export const exportApi = {
+  videoJson: (id) => api.get(`/export/video/${id}`),
+  videoCsv: () => `${BASE}/export/videos-csv`,
+  budgetCsv: () => `${BASE}/export/budget-csv`,
+  scriptTxt: (id) => `${BASE}/export/script/${id}`,
 };
 
 export default api;

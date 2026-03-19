@@ -2,57 +2,61 @@ import { useApp } from "../../context/AppContext";
 import { notifApi } from "../../lib/api";
 import { C, Btn } from "./UI";
 
-const typeIcon = { deadline: "⏰", team: "👤", meta: "🎯", publish: "📊", info: "ℹ️" };
-const typeColor = { deadline: C.red, team: C.purple, meta: C.orange, publish: C.green, info: C.blue };
+const TYPE_ICONS = { success: "✅", error: "❌", warning: "⚠️", info: "ℹ️" };
 
-export default function NotifPanel({ open, onClose, markAllRead }) {
-  const { notifs, setNotifs } = useApp();
+export default function NotifPanel({ onClose }) {
+  const { notifs, refreshNotifs } = useApp();
 
-  if (!open) return null;
-
-  const markOne = async (id) => {
-    try {
-      await notifApi.markRead(id);
-      setNotifs(p => p.map(n => n.id === id ? { ...n, read: true } : n));
-    } catch {}
+  const markRead = async (id) => {
+    try { await notifApi.markRead(id); refreshNotifs(); } catch {}
   };
 
-  const timeSince = (dateStr) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
+  const markAllRead = async () => {
+    try { await notifApi.markAllRead(); refreshNotifs(); } catch {}
+  };
+
+  const clearRead = async () => {
+    try { await notifApi.clearRead(); refreshNotifs(); } catch {}
+  };
+
+  const timeAgo = (date) => {
+    const diff = Date.now() - new Date(date).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m atrás`;
+    if (mins < 1) return "agora";
+    if (mins < 60) return `${mins}m`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h atrás`;
-    return `${Math.floor(hrs / 24)}d atrás`;
+    if (hrs < 24) return `${hrs}h`;
+    return `${Math.floor(hrs / 24)}d`;
   };
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9998 }}>
-      <div onClick={e => e.stopPropagation()} style={{ position: "absolute", top: 56, right: 32, width: 380, background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, boxShadow: "0 16px 48px rgba(0,0,0,0.5)", overflow: "hidden" }}>
-        <div style={{ padding: "16px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontWeight: 700, fontSize: 14 }}>Notificações</span>
-          <Btn vr="subtle" onClick={markAllRead} style={{ fontSize: 11 }}>Marcar todas lidas</Btn>
+    <div style={{ position: "absolute", top: 44, right: 0, width: 360, maxHeight: 480, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", zIndex: 999, boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: `1px solid ${C.border}` }}>
+        <span style={{ fontWeight: 700, fontSize: 14 }}>Notificações</span>
+        <div style={{ display: "flex", gap: 4 }}>
+          <Btn vr="subtle" onClick={markAllRead} style={{ fontSize: 10 }}>Ler todas</Btn>
+          <Btn vr="subtle" onClick={clearRead} style={{ fontSize: 10 }}>Limpar</Btn>
         </div>
-        <div style={{ maxHeight: 380, overflow: "auto" }}>
-          {notifs.length === 0
-            ? <div style={{ padding: 30, textAlign: "center", fontSize: 13, color: C.dim }}>Sem notificações</div>
-            : notifs.map(n => {
-              const tc = typeColor[n.type] || C.blue;
-              return (
-                <div key={n.id} onClick={() => markOne(n.id)}
-                  style={{ display: "flex", gap: 12, padding: "13px 18px", borderBottom: `1px solid ${C.border}`, cursor: "pointer", background: n.read ? "transparent" : `${tc}05` }}
-                  onMouseEnter={e => e.currentTarget.style.background = C.bgHover}
-                  onMouseLeave={e => e.currentTarget.style.background = n.read ? "transparent" : `${tc}05`}>
-                  <span style={{ fontSize: 18 }}>{typeIcon[n.type] || "ℹ️"}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12.5, color: n.read ? C.muted : C.text, fontWeight: n.read ? 400 : 600, lineHeight: 1.4 }}>{n.message}</div>
-                    <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: C.dim, marginTop: 4 }}>{timeSince(n.createdAt)}</div>
-                  </div>
-                  {!n.read && <div style={{ width: 8, height: 8, borderRadius: "50%", background: tc, marginTop: 6 }} />}
-                </div>
-              );
-            })}
-        </div>
+      </div>
+      <div style={{ maxHeight: 380, overflowY: "auto" }}>
+        {notifs.length === 0 ? (
+          <div style={{ padding: 32, textAlign: "center", color: C.dim, fontSize: 13 }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>🔔</div>
+            Nenhuma notificação
+          </div>
+        ) : notifs.map(n => (
+          <div key={n.id} onClick={() => !n.read && markRead(n.id)}
+            style={{ display: "flex", gap: 10, padding: "12px 16px", borderBottom: `1px solid ${C.border}`, cursor: "pointer", background: n.read ? "transparent" : "rgba(239,68,68,0.03)" }}
+            onMouseEnter={e => e.currentTarget.style.background = C.bgHover}
+            onMouseLeave={e => e.currentTarget.style.background = n.read ? "transparent" : "rgba(239,68,68,0.03)"}>
+            <span style={{ fontSize: 14, flexShrink: 0 }}>{TYPE_ICONS[n.type] || "ℹ️"}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, lineHeight: 1.4, color: n.read ? C.muted : C.text }}>{n.message}</div>
+              <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>{timeAgo(n.createdAt)}</div>
+            </div>
+            {!n.read && <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.red, flexShrink: 0, marginTop: 4 }} />}
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -1,14 +1,17 @@
 const { Router } = require("express");
 const prisma = require("../db/prisma");
 const { authenticate } = require("../middleware/auth");
+
 const router = Router();
 router.use(authenticate);
 
 router.get("/video/:videoId", async (req, res, next) => {
   try {
+    const video = await prisma.video.findFirst({ where: { id: Number(req.params.videoId), userId: req.userId } });
+    if (!video) return res.status(404).json({ error: "Vídeo não encontrado" });
     const scripts = await prisma.script.findMany({
-      where: { videoId: Number(req.params.videoId) },
-      orderBy: { createdAt: "desc" },
+      where: { videoId: video.id },
+      orderBy: { version: "desc" },
     });
     res.json(scripts);
   } catch (err) { next(err); }
@@ -16,9 +19,19 @@ router.get("/video/:videoId", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { videoId, content } = req.body;
+    const { content, videoId, label } = req.body;
+    if (!videoId) return res.status(400).json({ error: "videoId obrigatório" });
+    const video = await prisma.video.findFirst({ where: { id: Number(videoId), userId: req.userId } });
+    if (!video) return res.status(403).json({ error: "Vídeo não pertence a este usuário" });
+
+    // Auto-increment version
+    const latest = await prisma.script.findFirst({
+      where: { videoId: video.id }, orderBy: { version: "desc" },
+    });
+    const nextVersion = (latest?.version || 0) + 1;
+
     const script = await prisma.script.create({
-      data: { videoId: Number(videoId), content: content || "" },
+      data: { content: content || "", videoId: video.id, version: nextVersion, label: label || `v${nextVersion}` },
     });
     res.status(201).json(script);
   } catch (err) { next(err); }
@@ -26,17 +39,22 @@ router.post("/", async (req, res, next) => {
 
 router.put("/:id", async (req, res, next) => {
   try {
-    const script = await prisma.script.update({
-      where: { id: Number(req.params.id) },
-      data: { content: req.body.content },
+    const script = await prisma.script.findUnique({ where: { id: Number(req.params.id) }, include: { video: true } });
+    if (!script || script.video.userId !== req.userId) return res.status(404).json({ error: "Script não encontrado" });
+    const { content, label } = req.body;
+    const updated = await prisma.script.update({
+      where: { id: script.id },
+      data: { ...(content !== undefined && { content }), ...(label !== undefined && { label }) },
     });
-    res.json(script);
+    res.json(updated);
   } catch (err) { next(err); }
 });
 
 router.delete("/:id", async (req, res, next) => {
   try {
-    await prisma.script.delete({ where: { id: Number(req.params.id) } });
+    const script = await prisma.script.findUnique({ where: { id: Number(req.params.id) }, include: { video: true } });
+    if (!script || script.video.userId !== req.userId) return res.status(404).json({ error: "Script não encontrado" });
+    await prisma.script.delete({ where: { id: script.id } });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

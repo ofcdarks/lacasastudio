@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { Spinner, C } from "./components/shared/UI";
+import ErrorBoundary from "./components/shared/ErrorBoundary";
 import Sidebar from "./components/shared/Sidebar";
 import TopBar from "./components/shared/TopBar";
 import LoginPage from "./pages/Login";
@@ -21,13 +23,17 @@ import Settings from "./pages/Settings";
 import Ideas from "./pages/Ideas";
 
 function Layout({ children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      <Sidebar />
-      <main style={{ marginLeft: 220, flex: 1, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-        <TopBar />
-        <div style={{ padding: "24px 32px", flex: 1, background: `radial-gradient(ellipse at 30% 0%, rgba(239,68,68,0.03) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(59,130,246,0.02) 0%, transparent 60%)` }}>
-          {children}
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <main className="main-content" style={{ marginLeft: 220, flex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", transition: "margin 0.2s" }}>
+        <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="page-padding" style={{ padding: "24px 32px", flex: 1, background: `radial-gradient(ellipse at 30% 0%, rgba(239,68,68,0.03) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(59,130,246,0.02) 0%, transparent 60%)` }}>
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </div>
       </main>
     </div>

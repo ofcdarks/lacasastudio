@@ -16,6 +16,15 @@ model User {
   role      String   @default("admin")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  channels      Channel[]
+  videos        Video[]
+  metas         Meta[]
+  assets        Asset[]
+  templates     Template[]
+  budgetItems   BudgetItem[]
+  ideas         Idea[]
+  notifications Notification[]
 }
 
 model Setting {
@@ -25,22 +34,24 @@ model Setting {
 }
 
 model Channel {
-  id        Int       @id @default(autoincrement())
-  name      String
-  color     String    @default("#EF4444")
-  icon      String    @default("📺")
-  subs      String    @default("0")
-  videoCount Int      @default(0)
-  views     String    @default("0")
-  growth    String    @default("0%")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  videos    Video[]
-  metas     Meta[]
-  assets    Asset[]
-  templates Template[]
-  members   TeamMember[]
-  ideas     Idea[]
+  id         Int          @id @default(autoincrement())
+  name       String
+  color      String       @default("#EF4444")
+  icon       String       @default("📺")
+  subs       String       @default("0")
+  videoCount Int          @default(0)
+  views      String       @default("0")
+  growth     String       @default("0%")
+  userId     Int
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  videos     Video[]
+  metas      Meta[]
+  assets     Asset[]
+  templates  Template[]
+  members    TeamMember[]
+  ideas      Idea[]
 }
 
 model Video {
@@ -52,6 +63,8 @@ model Video {
   duration   String       @default("")
   channelId  Int
   channel    Channel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId     Int
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   scenes     Scene[]
   checklists Checklist[]
   scripts    Script[]
@@ -85,6 +98,8 @@ model Checklist {
 model Meta {
   id        Int        @id @default(autoincrement())
   title     String
+  userId    Int
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   channelId Int?
   channel   Channel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
   items     MetaItem[]
@@ -102,13 +117,13 @@ model MetaItem {
 }
 
 model TeamMember {
-  id       Int     @id @default(autoincrement())
+  id       Int       @id @default(autoincrement())
   name     String
-  role     String  @default("editor")
-  email    String  @default("")
-  avatar   String  @default("")
-  status   String  @default("offline")
-  tasks    Int     @default(0)
+  role     String    @default("editor")
+  email    String    @default("")
+  avatar   String    @default("")
+  status   String    @default("offline")
+  tasks    Int       @default(0)
   channels Channel[]
 }
 
@@ -120,7 +135,10 @@ model Asset {
   size      String   @default("")
   tags      String   @default("")
   fileUrl   String   @default("")
+  filePath  String   @default("")
   notes     String   @default("")
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   channelId Int?
   channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
@@ -134,6 +152,8 @@ model Template {
   structure String   @default("")
   color     String   @default("#3B82F6")
   tags      String   @default("")
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   channelId Int?
   channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
@@ -144,6 +164,9 @@ model Notification {
   type      String   @default("info")
   message   String
   read      Boolean  @default(false)
+  link      String   @default("")
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
 
@@ -156,12 +179,16 @@ model BudgetItem {
   month     String   @default("")
   recurring Boolean  @default(false)
   notes     String   @default("")
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
 
 model Script {
   id        Int      @id @default(autoincrement())
   content   String   @default("")
+  version   Int      @default(1)
+  label     String   @default("")
   videoId   Int
   video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -188,6 +215,8 @@ model Idea {
   tags      String   @default("")
   color     String   @default("#3B82F6")
   pinned    Boolean  @default(false)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   channelId Int?
   channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())

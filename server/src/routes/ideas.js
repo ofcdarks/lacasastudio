@@ -1,58 +1,60 @@
 const { Router } = require("express");
+const { z } = require("zod");
 const prisma = require("../db/prisma");
 const { authenticate } = require("../middleware/auth");
+const { validate } = require("../middleware/validate");
+
 const router = Router();
 router.use(authenticate);
+
+const ideaSchema = z.object({
+  title: z.string().min(1).max(200),
+  content: z.string().optional(),
+  imageUrl: z.string().optional(),
+  tags: z.string().optional(),
+  color: z.string().optional(),
+  pinned: z.boolean().optional(),
+  channelId: z.number().int().positive().nullable().optional(),
+});
 
 router.get("/", async (req, res, next) => {
   try {
     const ideas = await prisma.idea.findMany({
+      where: { userId: req.userId },
       include: { channel: { select: { id: true, name: true, color: true } } },
       orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
     });
-    res.json(ideas.map(i => ({ ...i, tags: i.tags ? i.tags.split(",").filter(Boolean) : [] })));
+    res.json(ideas);
   } catch (err) { next(err); }
 });
 
-router.post("/", async (req, res, next) => {
+router.post("/", validate(ideaSchema), async (req, res, next) => {
   try {
-    const { title, content, imageUrl, tags, color, channelId, pinned } = req.body;
-    if (!title) return res.status(400).json({ error: "Título obrigatório" });
     const idea = await prisma.idea.create({
-      data: {
-        title, content: content || "", imageUrl: imageUrl || "",
-        tags: Array.isArray(tags) ? tags.join(",") : (tags || ""),
-        color: color || "#3B82F6", pinned: pinned || false,
-        channelId: channelId ? Number(channelId) : null,
-      },
+      data: { ...req.validated, userId: req.userId },
       include: { channel: { select: { id: true, name: true, color: true } } },
     });
-    res.status(201).json({ ...idea, tags: idea.tags ? idea.tags.split(",").filter(Boolean) : [] });
+    res.status(201).json(idea);
   } catch (err) { next(err); }
 });
 
-router.put("/:id", async (req, res, next) => {
+router.put("/:id", validate(ideaSchema.partial()), async (req, res, next) => {
   try {
-    const { title, content, imageUrl, tags, color, channelId, pinned } = req.body;
-    const data = {};
-    if (title !== undefined) data.title = title;
-    if (content !== undefined) data.content = content;
-    if (imageUrl !== undefined) data.imageUrl = imageUrl;
-    if (tags !== undefined) data.tags = Array.isArray(tags) ? tags.join(",") : tags;
-    if (color !== undefined) data.color = color;
-    if (pinned !== undefined) data.pinned = pinned;
-    if (channelId !== undefined) data.channelId = channelId ? Number(channelId) : null;
-    const idea = await prisma.idea.update({
-      where: { id: Number(req.params.id) }, data,
+    const idea = await prisma.idea.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
+    if (!idea) return res.status(404).json({ error: "Ideia não encontrada" });
+    const updated = await prisma.idea.update({
+      where: { id: idea.id }, data: req.validated,
       include: { channel: { select: { id: true, name: true, color: true } } },
     });
-    res.json({ ...idea, tags: idea.tags ? idea.tags.split(",").filter(Boolean) : [] });
+    res.json(updated);
   } catch (err) { next(err); }
 });
 
 router.delete("/:id", async (req, res, next) => {
   try {
-    await prisma.idea.delete({ where: { id: Number(req.params.id) } });
+    const idea = await prisma.idea.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
+    if (!idea) return res.status(404).json({ error: "Ideia não encontrada" });
+    await prisma.idea.delete({ where: { id: idea.id } });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
