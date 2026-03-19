@@ -117,6 +117,8 @@ model Asset {
   format    String   @default("")
   size      String   @default("")
   tags      String   @default("")
+  fileUrl   String   @default("")
+  notes     String   @default("")
   channelId Int?
   channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())

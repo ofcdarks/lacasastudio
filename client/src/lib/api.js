@@ -74,6 +74,7 @@ export const assetApi = {
     return api.get(`/assets${q ? `?${q}` : ""}`);
   },
   create: (data) => api.post("/assets", data),
+  update: (id, data) => api.put(`/assets/${id}`, data),
   del: (id) => api.del(`/assets/${id}`),
 };
 
@@ -112,7 +113,8 @@ export const checklistApi = {
 
 export const settingsApi = {
   get: () => api.get("/settings"),
-  update: (data) => api.put("/settings", data),
+  getRaw: (key) => api.get(`/settings/raw/${key}`),
+  save: (data) => api.put("/settings", data),
 };
 
 export const aiApi = {

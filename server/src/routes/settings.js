@@ -4,20 +4,27 @@ const { authenticate } = require("../middleware/auth");
 const router = Router();
 router.use(authenticate);
 
+const SENSITIVE_KEYS = ["laozhang_api_key", "youtube_api_key"];
+
 router.get("/", async (req, res, next) => {
   try {
     const settings = await prisma.setting.findMany();
-    const map = {};
+    const obj = {};
     settings.forEach(s => {
-      // Mask API key for security
-      if (s.key === "ai_api_key" && s.value) {
-        map[s.key] = s.value.slice(0, 8) + "..." + s.value.slice(-4);
-        map["ai_api_key_set"] = true;
+      if (SENSITIVE_KEYS.includes(s.key) && s.value) {
+        obj[s.key] = "••••••••" + s.value.slice(-4);
       } else {
-        map[s.key] = s.value;
+        obj[s.key] = s.value;
       }
     });
-    res.json(map);
+    res.json(obj);
+  } catch (err) { next(err); }
+});
+
+router.get("/raw/:key", async (req, res, next) => {
+  try {
+    const s = await prisma.setting.findUnique({ where: { key: req.params.key } });
+    res.json({ value: s?.value || "" });
   } catch (err) { next(err); }
 });
 
@@ -34,11 +41,5 @@ router.put("/", async (req, res, next) => {
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
-
-// Internal: get raw API key (not exposed to client)
-router._getApiKey = async () => {
-  const s = await prisma.setting.findUnique({ where: { key: "ai_api_key" } });
-  return s?.value || "";
-};
 
 module.exports = router;
