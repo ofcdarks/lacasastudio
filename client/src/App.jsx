@@ -17,6 +17,7 @@ import Analytics from "./pages/Analytics";
 import Orcamento from "./pages/Orcamento";
 import Ativos from "./pages/Ativos";
 import Equipe from "./pages/Equipe";
+import Settings from "./pages/Settings";
 
 function Layout({ children }) {
   return (
@@ -24,10 +25,7 @@ function Layout({ children }) {
       <Sidebar />
       <main style={{ marginLeft: 220, flex: 1, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
         <TopBar />
-        <div style={{
-          padding: "24px 32px", flex: 1,
-          background: `radial-gradient(ellipse at 30% 0%, rgba(239,68,68,0.03) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(59,130,246,0.02) 0%, transparent 60%)`,
-        }}>
+        <div style={{ padding: "24px 32px", flex: 1, background: `radial-gradient(ellipse at 30% 0%, rgba(239,68,68,0.03) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(59,130,246,0.02) 0%, transparent 60%)` }}>
           {children}
         </div>
       </main>
@@ -38,22 +36,16 @@ function Layout({ children }) {
 export default function App() {
   const { user, loading } = useAuth();
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}>
-        <Spinner />
-      </div>
-    );
-  }
+  if (loading) return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}><Spinner /></div>
+  );
 
-  if (!user) {
-    return (
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    );
-  }
+  if (!user) return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
 
   return (
     <Routes>
@@ -71,6 +63,7 @@ export default function App() {
       <Route path="/orcamento" element={<Layout><Orcamento /></Layout>} />
       <Route path="/ativos" element={<Layout><Ativos /></Layout>} />
       <Route path="/equipe" element={<Layout><Equipe /></Layout>} />
+      <Route path="/settings" element={<Layout><Settings /></Layout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -84,6 +84,7 @@ export default function Sidebar() {
         <SItem icon="$" label="Orçamento" path="/orcamento" />
         <SItem icon="◉" label="Banco de Ativos" path="/ativos" />
         <SItem icon="◑" label="Equipe" path="/equipe" />
+        <SItem icon="⚙" label="Configurações" path="/settings" />
 
         <Sec title="Canais" />
         {channels.map(ch => (

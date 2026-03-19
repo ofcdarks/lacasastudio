@@ -9,22 +9,20 @@ export default function LoginPage() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setErr("");
     setLoading(true);
     try {
-      if (isReg) {
-        await register(form.email, form.name, form.password);
-      } else {
-        await login(form.email, form.password);
-      }
+      if (isReg) await register(form.email, form.name, form.password);
+      else await login(form.email, form.password);
     } catch (error) {
       setErr(error.message);
     } finally {
       setLoading(false);
     }
   };
+
+  const onKeyDown = (e) => { if (e.key === "Enter") handleSubmit(); };
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}>
@@ -37,20 +35,20 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {isReg && (
             <div>
               <label style={{ fontSize: 11, color: C.dim, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 6 }}>Nome</label>
-              <Input placeholder="Seu nome" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
+              <Input placeholder="Seu nome" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} onKeyDown={onKeyDown} />
             </div>
           )}
           <div>
             <label style={{ fontSize: 11, color: C.dim, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 6 }}>Email</label>
-            <Input type="email" placeholder="email@exemplo.com" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
+            <Input type="email" placeholder="email@exemplo.com" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} onKeyDown={onKeyDown} />
           </div>
           <div>
             <label style={{ fontSize: 11, color: C.dim, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 6 }}>Senha</label>
-            <Input type="password" placeholder="••••••••" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />
+            <Input type="password" placeholder="••••••••" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} onKeyDown={onKeyDown} />
           </div>
 
           {err && <div style={{ fontSize: 12, color: C.red, padding: "8px 12px", background: `${C.red}10`, borderRadius: 8 }}>{err}</div>}
@@ -65,12 +63,6 @@ export default function LoginPage() {
               {isReg ? "Entrar" : "Criar conta"}
             </span>
           </div>
-
-          {!isReg && (
-            <div style={{ textAlign: "center", fontSize: 11, color: C.dim, marginTop: 8, padding: "10px", background: "rgba(255,255,255,0.02)", borderRadius: 8 }}>
-              Demo: admin@lacasa.com / admin123
-            </div>
-          )}
         </div>
       </div>
     </div>

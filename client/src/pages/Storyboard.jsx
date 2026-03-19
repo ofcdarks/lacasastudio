@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
-import { sceneApi } from "../lib/api";
+import { sceneApi, aiApi } from "../lib/api";
 import { Card, Btn, Hdr, Label, Input, Select, Badge, C, ST } from "../components/shared/UI";
+
+const TYPE_COLORS = { intro: C.purple, hook: C.red, content: C.blue, demo: C.cyan, cta: C.orange, outro: C.green, broll: C.teal, transition: C.pink };
 
 export default function Storyboard() {
   const { videos, channels } = useApp();
@@ -9,8 +11,9 @@ export default function Storyboard() {
   const [scenes, setScenes] = useState([]);
   const [selS, setSelS] = useState(null);
   const [showA, setShowA] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [ns, setNs] = useState({ type: "content", title: "", duration: "", notes: "", camera: "", audio: "" });
-  const tOpts = [{ v: "intro", c: C.purple }, { v: "hook", c: C.red }, { v: "content", c: C.blue }, { v: "demo", c: C.cyan }, { v: "cta", c: C.orange }, { v: "outro", c: C.green }];
+  const tOpts = [{ v: "intro" }, { v: "hook" }, { v: "content" }, { v: "demo" }, { v: "cta" }, { v: "outro" }, { v: "broll" }, { v: "transition" }];
 
   useEffect(() => {
     if (!selV) return;
@@ -19,9 +22,8 @@ export default function Storyboard() {
 
   const addScene = async () => {
     if (!ns.title.trim()) return;
-    const tc = tOpts.find(t => t.v === ns.type);
     try {
-      const scene = await sceneApi.create({ ...ns, videoId: selV, color: tc?.c || C.blue });
+      const scene = await sceneApi.create({ ...ns, videoId: selV, color: TYPE_COLORS[ns.type] || C.blue });
       setScenes(p => [...p, scene]);
       setNs({ type: "content", title: "", duration: "", notes: "", camera: "", audio: "" });
       setShowA(false);
@@ -32,16 +34,42 @@ export default function Storyboard() {
     try { await sceneApi.del(id); setScenes(p => p.filter(s => s.id !== id)); } catch {}
   };
 
+  const generateStoryboard = async () => {
+    if (!vid) return;
+    setAiLoading(true);
+    try {
+      const data = await aiApi.storyboard({ title: vid.title, duration: vid.duration, style: "profissional" });
+      const newScenes = (data.scenes || []);
+      // Save each scene to DB
+      const saved = [];
+      for (const s of newScenes) {
+        const created = await sceneApi.create({
+          videoId: selV,
+          type: s.type || "content",
+          title: s.title,
+          duration: s.duration || "",
+          notes: s.notes || "",
+          camera: s.camera || "",
+          audio: s.audio || "",
+          color: TYPE_COLORS[s.type] || C.blue,
+        });
+        saved.push(created);
+      }
+      setScenes(prev => [...prev, ...saved]);
+    } catch (err) { alert(err.message); } finally { setAiLoading(false); }
+  };
+
   const vid = videos.find(v => v.id === selV);
   const ch = vid?.channel || channels.find(c => c.id === vid?.channelId);
 
   return (
     <div className="page-enter">
-      <Hdr title="Storyboard" sub="Planeje visualmente cada cena" action={
+      <Hdr title="Storyboard" sub="Planeje visualmente cada cena do vídeo" action={
         <div style={{ display: "flex", gap: 8 }}>
           <Select style={{ width: 200 }} value={selV || ""} onChange={e => setSelV(Number(e.target.value))}>
             {videos.map(v => <option key={v.id} value={v.id}>{v.title}</option>)}
           </Select>
+          <Btn vr="ghost" onClick={generateStoryboard} disabled={aiLoading}>{aiLoading ? "🤖 Gerando..." : "🤖 Gerar com IA"}</Btn>
           <Btn onClick={() => setShowA(!showA)}>{showA ? "✕" : "+ Cena"}</Btn>
         </div>
       } />
@@ -51,6 +79,7 @@ export default function Storyboard() {
           <div style={{ width: 44, height: 44, borderRadius: 12, background: `${ch?.color}15`, display: "flex", alignItems: "center", justifyContent: "center" }}><Badge color={ch?.color} /></div>
           <div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 16 }}>{vid.title}</div><div style={{ fontSize: 12, color: ch?.color }}>{ch?.name}</div></div>
           <Badge text={ST[vid.status]?.l} color={ST[vid.status]?.c} v="tag" />
+          <div style={{ textAlign: "right" }}><div style={{ fontSize: 10, color: C.dim }}>DURAÇÃO</div><div style={{ fontFamily: "var(--mono)", fontSize: 16, fontWeight: 600 }}>{vid.duration}</div></div>
           <div style={{ textAlign: "right" }}><div style={{ fontSize: 10, color: C.dim }}>CENAS</div><div style={{ fontFamily: "var(--mono)", fontSize: 16, fontWeight: 600 }}>{scenes.length}</div></div>
         </Card>
       )}
@@ -70,35 +99,49 @@ export default function Storyboard() {
         </Card>
       )}
 
+      {/* Timeline */}
       <div style={{ display: "flex", alignItems: "center", gap: 3, marginBottom: 22, overflowX: "auto", padding: "4px 0" }}>
         {scenes.map((sc, i) => (
           <div key={sc.id} style={{ display: "flex", alignItems: "center" }}>
-            <div onClick={() => setSelS(selS === sc.id ? null : sc.id)} style={{ width: 38, height: 38, borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, background: selS === sc.id ? sc.color : `${sc.color}18`, color: selS === sc.id ? "#fff" : sc.color, border: `2px solid ${sc.color}${selS === sc.id ? "" : "35"}`, transition: "all 0.25s", transform: selS === sc.id ? "scale(1.12)" : "scale(1)" }}>{i + 1}</div>
+            <div onClick={() => setSelS(selS === sc.id ? null : sc.id)} style={{ width: 38, height: 38, borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, background: selS === sc.id ? (sc.color || C.blue) : `${sc.color || C.blue}18`, color: selS === sc.id ? "#fff" : (sc.color || C.blue), border: `2px solid ${sc.color || C.blue}${selS === sc.id ? "" : "35"}`, transition: "all 0.25s", transform: selS === sc.id ? "scale(1.12)" : "scale(1)" }}>{i + 1}</div>
             {i < scenes.length - 1 && <div style={{ width: 16, height: 2, background: C.border }} />}
           </div>
         ))}
       </div>
 
+      {/* Scene Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
-        {scenes.map((sc, i) => (
-          <Card key={sc.id} hov color={sc.color} onClick={() => setSelS(selS === sc.id ? null : sc.id)}
-            style={{ ...(selS === sc.id ? { borderColor: `${sc.color}50` } : {}) }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: sc.color, background: `${sc.color}12`, border: `1px solid ${sc.color}25` }}>{i + 1}</div>
-              <div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 14 }}>{sc.title}</div><div style={{ fontSize: 10, color: sc.color, textTransform: "uppercase", fontWeight: 600 }}>{sc.type}</div></div>
-              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: C.muted, background: "rgba(255,255,255,0.04)", padding: "4px 10px", borderRadius: 6 }}>{sc.duration}</span>
-            </div>
-            {sc.notes && <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, margin: "0 0 12px" }}>{sc.notes}</p>}
-            <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
-              {sc.camera && <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 5, background: "rgba(255,255,255,0.04)", color: C.muted }}>📷 {sc.camera}</span>}
-              {sc.audio && <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 5, background: "rgba(255,255,255,0.04)", color: C.muted }}>🎵 {sc.audio}</span>}
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
-              <Btn vr="subtle" onClick={() => delScene(sc.id)} style={{ fontSize: 9, color: C.red }}>Remover</Btn>
-            </div>
-          </Card>
-        ))}
+        {scenes.map((sc, i) => {
+          const scColor = sc.color || TYPE_COLORS[sc.type] || C.blue;
+          return (
+            <Card key={sc.id} hov color={scColor} onClick={() => setSelS(selS === sc.id ? null : sc.id)}
+              style={{ ...(selS === sc.id ? { borderColor: `${scColor}50` } : {}) }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: scColor, background: `${scColor}12`, border: `1px solid ${scColor}25` }}>{i + 1}</div>
+                <div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 14 }}>{sc.title}</div><div style={{ fontSize: 10, color: scColor, textTransform: "uppercase", fontWeight: 600 }}>{sc.type}</div></div>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: C.muted, background: "rgba(255,255,255,0.04)", padding: "4px 10px", borderRadius: 6 }}>{sc.duration}</span>
+              </div>
+              {sc.notes && <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, margin: "0 0 12px" }}>{sc.notes}</p>}
+              <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+                {sc.camera && <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 5, background: "rgba(255,255,255,0.04)", color: C.muted }}>📷 {sc.camera}</span>}
+                {sc.audio && <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 5, background: "rgba(255,255,255,0.04)", color: C.muted }}>🎵 {sc.audio}</span>}
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
+                <Btn vr="subtle" onClick={() => delScene(sc.id)} style={{ fontSize: 9, color: C.red }}>Remover</Btn>
+              </div>
+            </Card>
+          );
+        })}
       </div>
+
+      {scenes.length === 0 && !showA && (
+        <Card style={{ textAlign: "center", padding: 40 }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🎬</div>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Nenhuma cena ainda</div>
+          <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>Adicione cenas manualmente ou use a IA para gerar um storyboard completo</div>
+          <Btn vr="ghost" onClick={generateStoryboard} disabled={aiLoading}>{aiLoading ? "🤖 Gerando..." : "🤖 Gerar Storyboard com IA"}</Btn>
+        </Card>
+      )}
     </div>
   );
 }

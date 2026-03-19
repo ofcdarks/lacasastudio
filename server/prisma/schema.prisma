@@ -18,6 +18,12 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String @default("")
+}
+
 model Channel {
   id        Int       @id @default(autoincrement())
   name      String
@@ -43,6 +49,7 @@ model Video {
   date       String       @default("")
   priority   String       @default("média")
   duration   String       @default("")
+  script     String       @default("")
   channelId  Int
   channel    Channel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
   scenes     Scene[]
@@ -109,7 +116,7 @@ model Asset {
   type      String   @default("thumbnail")
   format    String   @default("")
   size      String   @default("")
-  tags      String   @default("") 
+  tags      String   @default("")
   channelId Int?
   channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
@@ -120,7 +127,7 @@ model Template {
   name      String
   desc      String   @default("")
   episodes  Int      @default(0)
-  structure String   @default("") 
+  structure String   @default("")
   color     String   @default("#3B82F6")
   tags      String   @default("")
   channelId Int?

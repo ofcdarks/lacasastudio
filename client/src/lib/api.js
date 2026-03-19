@@ -29,14 +29,12 @@ const api = {
   del: (path) => request(path, { method: "DELETE" }),
 };
 
-// Auth
 export const authApi = {
   login: (email, password) => api.post("/auth/login", { email, password }),
   register: (email, name, password) => api.post("/auth/register", { email, name, password }),
   me: () => api.get("/auth/me"),
 };
 
-// Channels
 export const channelApi = {
   list: () => api.get("/channels"),
   create: (data) => api.post("/channels", data),
@@ -44,7 +42,6 @@ export const channelApi = {
   del: (id) => api.del(`/channels/${id}`),
 };
 
-// Videos
 export const videoApi = {
   list: (params = {}) => {
     const q = new URLSearchParams(params).toString();
@@ -56,7 +53,6 @@ export const videoApi = {
   del: (id) => api.del(`/videos/${id}`),
 };
 
-// Scenes
 export const sceneApi = {
   listByVideo: (videoId) => api.get(`/scenes/video/${videoId}`),
   create: (data) => api.post("/scenes", data),
@@ -65,7 +61,6 @@ export const sceneApi = {
   del: (id) => api.del(`/scenes/${id}`),
 };
 
-// Team
 export const teamApi = {
   list: () => api.get("/team"),
   create: (data) => api.post("/team", data),
@@ -73,7 +68,6 @@ export const teamApi = {
   del: (id) => api.del(`/team/${id}`),
 };
 
-// Assets
 export const assetApi = {
   list: (params = {}) => {
     const q = new URLSearchParams(params).toString();
@@ -83,7 +77,6 @@ export const assetApi = {
   del: (id) => api.del(`/assets/${id}`),
 };
 
-// Metas
 export const metaApi = {
   list: () => api.get("/metas"),
   create: (data) => api.post("/metas", data),
@@ -91,33 +84,42 @@ export const metaApi = {
   del: (id) => api.del(`/metas/${id}`),
 };
 
-// Templates
 export const templateApi = {
   list: () => api.get("/templates"),
   create: (data) => api.post("/templates", data),
   del: (id) => api.del(`/templates/${id}`),
 };
 
-// Budget
 export const budgetApi = {
   list: () => api.get("/budget"),
   create: (data) => api.post("/budget", data),
   del: (id) => api.del(`/budget/${id}`),
 };
 
-// Notifications
 export const notifApi = {
   list: () => api.get("/notifications"),
   markRead: (id) => api.put(`/notifications/${id}/read`),
   markAllRead: () => api.put("/notifications/read-all"),
 };
 
-// Checklists
 export const checklistApi = {
   listByVideo: (videoId) => api.get(`/checklists/video/${videoId}`),
   create: (data) => api.post("/checklists", data),
   update: (id, data) => api.put(`/checklists/${id}`, data),
   del: (id) => api.del(`/checklists/${id}`),
+};
+
+export const settingsApi = {
+  get: () => api.get("/settings"),
+  update: (data) => api.put("/settings", data),
+};
+
+export const aiApi = {
+  seo: (data) => api.post("/ai/seo", data),
+  script: (data) => api.post("/ai/script", data),
+  storyboard: (data) => api.post("/ai/storyboard", data),
+  improve: (data) => api.post("/ai/improve", data),
+  ideas: (data) => api.post("/ai/ideas", data),
 };
 
 export default api;
