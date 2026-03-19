@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
-import { Card, Badge, Hdr, SecTitle, C, ST } from "../components/shared/UI";
+import { Card, Badge, Btn, Hdr, SecTitle, C, ST } from "../components/shared/UI";
 
 export default function Dashboard() {
   const { channels, videos } = useApp();
@@ -13,23 +13,24 @@ export default function Dashboard() {
     return c;
   }, [videos]);
 
-  const totalSubs = channels.reduce((a, ch) => {
-    const n = parseFloat(ch.subs) || 0;
-    return a + n;
-  }, 0);
+  const totalSubs = channels.reduce((a, ch) => a + (parseFloat(ch.subs) || 0), 0);
+  const urgentVideos = videos.filter(v => v.priority === "alta" && v.status !== "published").slice(0, 5);
+  const recentVideos = [...videos].sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)).slice(0, 8);
 
   return (
     <div className="page-enter">
-      <Hdr title="Dashboard" sub="Visão geral de todos os seus canais" />
+      <Hdr title="Dashboard" sub={`${channels.length} canais · ${videos.length} vídeos no sistema`}
+        action={<Btn onClick={() => nav("/planner")}>+ Novo Vídeo</Btn>} />
 
+      {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 24 }}>
         {[
-          { l: "Total Inscritos", v: `${totalSubs.toFixed(1)}K`, c: C.blue, i: "👥" },
-          { l: "Em Produção", v: videos.filter(v => v.status !== "published").length, c: C.orange, i: "🎬" },
-          { l: "Publicados", v: sc.published || 0, c: C.green, i: "✅" },
-          { l: "Canais Ativos", v: channels.length, c: C.purple, i: "📺" },
+          { l: "Total Inscritos", v: totalSubs > 0 ? `${totalSubs.toFixed(1)}K` : "0", c: C.blue, i: "👥", go: null },
+          { l: "Em Produção", v: videos.filter(v => v.status !== "published").length, c: C.orange, i: "🎬", go: "/planner" },
+          { l: "Publicados", v: sc.published || 0, c: C.green, i: "✅", go: "/planner" },
+          { l: "Canais Ativos", v: channels.length, c: C.purple, i: "📺", go: null },
         ].map((s, i) => (
-          <Card key={i} color={s.c}>
+          <Card key={i} color={s.c} hov={!!s.go} onClick={s.go ? () => nav(s.go) : undefined}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <div>
                 <div style={{ fontSize: 11, color: C.muted, marginBottom: 8, fontWeight: 500 }}>{s.l}</div>
@@ -41,49 +42,82 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Pipeline */}
       <SecTitle t="Pipeline de Produção" />
       <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
         {Object.entries(ST).map(([k, v]) => (
-          <Card key={k} style={{ flex: 1, padding: "14px 10px", textAlign: "center" }}>
+          <Card key={k} style={{ flex: 1, padding: "14px 10px", textAlign: "center", cursor: "pointer" }}
+            onClick={() => nav("/planner")}>
             <div style={{ fontFamily: "var(--mono)", fontSize: 22, fontWeight: 700, color: v.c, marginBottom: 4 }}>{sc[k] || 0}</div>
             <div style={{ fontSize: 10, color: C.muted }}>{v.l}</div>
           </Card>
         ))}
       </div>
 
-      <SecTitle t="Canais" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 24 }}>
-        {channels.map(ch => (
-          <Card key={ch.id} hov color={ch.color} onClick={() => nav("/planner")}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 11, background: `${ch.color}12`, border: `1px solid ${ch.color}30`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Badge color={ch.color} />
-              </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15 }}>{ch.name}</div>
-                <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: ch.color }}>{ch.subs} inscritos</div>
-              </div>
-              <span style={{ fontFamily: "var(--mono)", marginLeft: "auto", fontSize: 12, color: C.green, fontWeight: 600 }}>{ch.growth}</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-              {[{ l: "Vídeos", v: ch.videoCount || ch.videos?.length || 0 }, { l: "Views", v: ch.views }, { l: "Crescimento", v: ch.growth }].map(x => (
-                <div key={x.l} style={{ textAlign: "center", padding: "8px 0", background: "rgba(255,255,255,0.02)", borderRadius: 8 }}>
-                  <div style={{ fontFamily: "var(--mono)", fontSize: 14, fontWeight: 600 }}>{x.v}</div>
-                  <div style={{ fontSize: 9, color: C.dim, marginTop: 2, textTransform: "uppercase" }}>{x.l}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+        {/* Urgent Videos */}
+        <div>
+          <SecTitle t="Prioridade Alta" />
+          <Card style={{ padding: 0 }}>
+            {urgentVideos.length === 0 ? (
+              <div style={{ padding: 24, textAlign: "center", fontSize: 13, color: C.dim }}>Nenhum vídeo urgente</div>
+            ) : urgentVideos.map((v, i) => {
+              const ch = v.channel || channels.find(c => c.id === v.channelId);
+              const st = ST[v.status];
+              return (
+                <div key={v.id} onClick={() => nav("/planner")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < urgentVideos.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = C.bgHover}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <span style={{ fontSize: 12 }}>🔴</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{v.title}</div>
+                    <div style={{ fontSize: 11, color: ch?.color }}>{ch?.name}</div>
+                  </div>
+                  <Badge text={st?.l} color={st?.c} v="tag" />
+                  <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: C.dim }}>{v.date}</span>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </Card>
-        ))}
+        </div>
+
+        {/* Channels */}
+        <div>
+          <SecTitle t="Canais" />
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {channels.map(ch => {
+              const chVids = videos.filter(v => (v.channelId || v.channel?.id) === ch.id);
+              const inProd = chVids.filter(v => v.status !== "published").length;
+              return (
+                <Card key={ch.id} hov color={ch.color} onClick={() => nav("/planner")} style={{ padding: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: `${ch.color}12`, border: `1px solid ${ch.color}30`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Badge color={ch.color} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{ch.name}</div>
+                      <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: ch.color }}>{ch.subs} inscritos</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontFamily: "var(--mono)", fontSize: 14, fontWeight: 600 }}>{inProd}</div>
+                      <div style={{ fontSize: 9, color: C.dim }}>em produção</div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      <SecTitle t="Últimas atividades" />
+      {/* Recent Activity */}
+      <SecTitle t="Atividade Recente" />
       <Card style={{ padding: 0 }}>
-        {videos.slice(0, 6).map((v, i) => {
+        {recentVideos.map((v, i) => {
           const ch = v.channel || channels.find(c => c.id === v.channelId);
           const st = ST[v.status];
           return (
-            <div key={v.id} style={{ display: "grid", gridTemplateColumns: "2.5fr 1fr 1fr 100px", gap: 12, alignItems: "center", padding: "13px 20px", borderBottom: i < 5 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+            <div key={v.id} onClick={() => nav("/planner")} style={{ display: "grid", gridTemplateColumns: "2.5fr 1fr 1fr 100px", gap: 12, alignItems: "center", padding: "12px 20px", borderBottom: i < recentVideos.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.background = C.bgHover}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
