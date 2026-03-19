@@ -93,6 +93,7 @@ export const templateApi = {
 export const budgetApi = {
   list: () => api.get("/budget"),
   create: (data) => api.post("/budget", data),
+  update: (id, data) => api.put(`/budget/${id}`, data),
   del: (id) => api.del(`/budget/${id}`),
 };
 
@@ -118,8 +119,14 @@ export const aiApi = {
   seo: (data) => api.post("/ai/seo", data),
   script: (data) => api.post("/ai/script", data),
   storyboard: (data) => api.post("/ai/storyboard", data),
-  improve: (data) => api.post("/ai/improve", data),
-  ideas: (data) => api.post("/ai/ideas", data),
+  titles: (data) => api.post("/ai/titles", data),
+};
+
+// YouTube
+export const youtubeApi = {
+  channel: (channelId) => api.get(`/youtube/channel/${channelId}`),
+  videos: (channelId, max = 10) => api.get(`/youtube/videos/${channelId}?max=${max}`),
+  analyze: (data) => api.post("/youtube/analyze", data),
 };
 
 export default api;

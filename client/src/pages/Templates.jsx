@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
+import { useConfirm } from "../context/ConfirmContext";
 import { templateApi } from "../lib/api";
 import { Card, Btn, Hdr, Label, Input, Select, Badge, SecTitle, C } from "../components/shared/UI";
 
 export default function Templates() {
   const { channels } = useApp();
+  const confirm = useConfirm();
   const [tpls, setTpls] = useState([]);
   const [showF, setShowF] = useState(false);
   const [nt, setNt] = useState({ name: "", desc: "", channelId: "", structure: "" });
@@ -25,7 +27,8 @@ export default function Templates() {
   };
 
   const delT = async (id) => {
-    if (!confirm("Remover este template?")) return;
+    const ok = await confirm({ title: "Remover Template", message: "Este template será removido permanentemente. Deseja continuar?" });
+    if (!ok) return;
     try { await templateApi.del(id); setTpls(p => p.filter(t => t.id !== id)); } catch {}
   };
 

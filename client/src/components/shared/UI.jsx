@@ -100,7 +100,7 @@ export function Input(props) {
 }
 
 export function Select({ children, ...props }) {
-  return <select {...props} style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, outline: "none", width: "100%", appearance: "none", cursor: "pointer", ...props.style }}>{children}</select>;
+  return <select {...props} style={{ background: "#1a1b25", border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, outline: "none", width: "100%", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center", paddingRight: 30, ...props.style }}>{children}</select>;
 }
 
 export function Spinner() {

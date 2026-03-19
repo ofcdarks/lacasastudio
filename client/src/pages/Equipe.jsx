@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
+import { useConfirm } from "../context/ConfirmContext";
 import { teamApi } from "../lib/api";
 import { Card, Btn, Hdr, Label, Input, Select, Badge, C } from "../components/shared/UI";
 
@@ -8,6 +9,7 @@ const STC = { online: "#22C55E", away: "#F59E0B", offline: "rgba(255,255,255,0.2
 
 export default function Equipe() {
   const { channels } = useApp();
+  const confirm = useConfirm();
   const [team, setTeam] = useState([]);
   const [showF, setShowF] = useState(false);
   const [nm, setNm] = useState({ name: "", role: "editor", email: "" });
@@ -33,7 +35,8 @@ export default function Equipe() {
   };
 
   const delM = async (id) => {
-    if (!confirm("Remover este membro?")) return;
+    const ok = await confirm({ title: "Remover Membro", message: "Este membro será removido da equipe. Deseja continuar?" });
+    if (!ok) return;
     try { await teamApi.del(id); setTeam(p => p.filter(m => m.id !== id)); } catch {}
   };
 

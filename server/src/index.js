@@ -19,6 +19,7 @@ const notifRoutes = require("./routes/notifications");
 const checklistRoutes = require("./routes/checklists");
 const settingsRoutes = require("./routes/settings");
 const aiRoutes = require("./routes/ai");
+const youtubeRoutes = require("./routes/youtube");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,6 +53,7 @@ app.use("/api/notifications", notifRoutes);
 app.use("/api/checklists", checklistRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/youtube", youtubeRoutes);
 
 // ── Health Check ────────────────────────────────────────────
 app.get("/api/health", (_, res) => {

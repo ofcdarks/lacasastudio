@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
+import { useConfirm } from "../context/ConfirmContext";
 import { metaApi } from "../lib/api";
 import { Card, Btn, Hdr, Label, Input, Select, PBar, SecTitle, C } from "../components/shared/UI";
 
 export default function Metas() {
   const { channels } = useApp();
+  const confirm = useConfirm();
   const [metas, setMetas] = useState([]);
   const [showF, setShowF] = useState(false);
   const [form, setForm] = useState({ title: "", channelId: "", items: [{ label: "", current: 0, target: 0, unit: "" }] });
@@ -42,7 +44,8 @@ export default function Metas() {
   };
 
   const delMeta = async (id) => {
-    if (!confirm("Remover esta meta?")) return;
+    const ok = await confirm({ title: "Remover Meta", message: "Esta meta e todos os seus indicadores serão removidos. Deseja continuar?" });
+    if (!ok) return;
     try { await metaApi.del(id); setMetas(p => p.filter(m => m.id !== id)); } catch {}
   };
 

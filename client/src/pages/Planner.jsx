@@ -1,3 +1,4 @@
+import { useConfirm } from "../context/ConfirmContext";
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { videoApi, aiApi } from "../lib/api";
@@ -36,6 +37,7 @@ function EditModal({ video, channels, onClose, onSave }) {
 
 export default function Planner() {
   const { channels, videos, refreshVideos, selChannel, setSelChannel } = useApp();
+  const confirmDel = useConfirm();
   const [showF, setShowF] = useState(false);
   const [editingVideo, setEditingVideo] = useState(null);
   const [nv, setNv] = useState({ title: "", channelId: "", date: "", priority: "média", duration: "" });
@@ -67,7 +69,7 @@ export default function Planner() {
   };
 
   const delVideo = async (id) => {
-    if (!confirm("Deletar este vídeo?")) return;
+    const ok = await confirmDel({ title: "Remover Vídeo", message: "Tem certeza que deseja remover este vídeo? Esta ação não pode ser desfeita." }); if (!ok) return;
     try { await videoApi.del(id); refreshVideos(); } catch {}
   };
 
