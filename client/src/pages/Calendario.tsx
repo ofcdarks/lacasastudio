@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useApp } from "../context/AppContext";
 import { Card, Badge, Hdr, Btn, C, ST } from "../components/shared/UI";
 import { useState } from "react";

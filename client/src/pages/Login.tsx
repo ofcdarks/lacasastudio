@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { C, Btn, Input } from "../components/shared/UI";

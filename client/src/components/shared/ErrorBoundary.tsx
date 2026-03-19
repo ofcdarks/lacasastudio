@@ -1,17 +1,20 @@
-import { Component } from "react";
+import { Component, ReactNode } from "react";
 import { C, Btn } from "./UI";
 
-export default class ErrorBoundary extends Component {
-  constructor(props) {
+interface Props { children: ReactNode; }
+interface State { hasError: boolean; error: Error | null; }
+
+export default class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error, info) {
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[ErrorBoundary]", error, info);
   }
 
@@ -25,7 +28,7 @@ export default class ErrorBoundary extends Component {
             <p style={{ fontSize: 13, color: C.muted, marginBottom: 20, lineHeight: 1.6 }}>
               {this.state.error?.message || "Erro inesperado na aplicação"}
             </p>
-            <Btn onClick={() => { this.setState({ hasError: false }); window.location.href = "/"; }}>
+            <Btn onClick={() => { this.setState({ hasError: false, error: null }); window.location.href = "/"; }}>
               Voltar ao início
             </Btn>
           </div>

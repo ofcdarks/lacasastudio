@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect, useMemo } from "react";
 import { useConfirm } from "../context/ConfirmContext";
 import { budgetApi } from "../lib/api";

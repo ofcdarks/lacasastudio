@@ -1,10 +1,10 @@
 # ============================================================
-# LaCasaStudio V2.2 — TypeScript Multi-stage Dockerfile
+# LaCasaStudio V2.3 — TypeScript + PostgreSQL Production Build
 # ============================================================
 
 FROM node:20-slim AS client-build
 WORKDIR /app/client
-COPY client/package*.json client/tsconfig*.json ./
+COPY client/package*.json client/tsconfig*.json client/tailwind.config.js client/postcss.config.js ./
 RUN npm install
 COPY client/ ./
 RUN npx tsc --noEmit && npx vite build
@@ -35,15 +35,14 @@ COPY --from=server-build /app/server/dist ./server/dist
 COPY server/prisma ./server/prisma/
 COPY --from=client-build /app/client/dist ./server/public
 
-RUN mkdir -p /app/data /app/server/uploads && chown -R appuser:appgroup /app
+RUN mkdir -p /app/server/uploads && chown -R appuser:appgroup /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV DATABASE_URL=file:/app/data/lacasastudio.db
 EXPOSE 3000
 USER appuser
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD wget -qO- http://localhost:3000/api/health || exit 1
 
-CMD ["sh", "-c", "cd server && npx prisma db push --accept-data-loss 2>/dev/null; node dist/db/seed.js 2>/dev/null; node dist/index.js"]
+CMD ["sh", "-c", "cd server && npx prisma migrate deploy 2>/dev/null || npx prisma db push 2>/dev/null; node dist/db/seed.js 2>/dev/null; node dist/index.js"]

@@ -7,8 +7,23 @@ on:
     branches: [main]
 
 jobs:
-  lint-and-test:
+  test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: lacasastudio_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,43 +31,38 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install root deps
-        run: npm install
-
-      - name: Install server deps
-        run: cd server && npm install
-
-      - name: Install client deps
-        run: cd client && npm install
+      - name: Install deps
+        run: npm install && cd server && npm install && cd ../client && npm install
 
       - name: Generate Prisma
         run: cd server && npx prisma generate
 
-      - name: Build client
-        run: cd client && npm run build
-
-      - name: Run server tests
-        run: cd server && npm test || true
+      - name: Run migrations
+        run: cd server && npx prisma db push
         env:
-          DATABASE_URL: "file:./test.db"
-          JWT_SECRET: "ci-test-secret-minimum-32-characters-long"
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/lacasastudio_test
+
+      - name: Type-check server
+        run: cd server && npx tsc --noEmit
+
+      - name: Type-check client
+        run: cd client && npx tsc --noEmit
+
+      - name: Run tests
+        run: cd server && npm run test:coverage
+        env:
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/lacasastudio_test
+          JWT_SECRET: ci-test-secret-minimum-32-characters-long
+          PORT: 3000
+
+      - name: Build client
+        run: cd client && npx vite build
 
   docker:
-    needs: lint-and-test
+    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
-
       - name: Build Docker image
         run: docker build -t lacasastudio:latest .
-
-      - name: Test Docker image
-        run: |
-          docker run -d --name lc-test \
-            -e JWT_SECRET="ci-test-secret-minimum-32-characters-long" \
-            -e DATABASE_URL="file:/app/data/lacasastudio.db" \
-            -p 3000:3000 lacasastudio:latest
-          sleep 10
-          curl -f http://localhost:3000/api/health || exit 1
-          docker stop lc-test

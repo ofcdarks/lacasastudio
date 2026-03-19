@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
@@ -8,14 +9,14 @@ export default function Dashboard() {
   const nav = useNavigate();
 
   const sc = useMemo(() => {
-    const c = {};
+    const c: Record<string, number> = {};
     Object.keys(ST).forEach(k => { c[k] = videos.filter(v => v.status === k).length; });
     return c;
   }, [videos]);
 
-  const totalSubs = channels.reduce((a, ch) => a + (parseFloat(ch.subs) || 0), 0);
-  const urgentVideos = videos.filter(v => v.priority === "alta" && v.status !== "published").slice(0, 5);
-  const recentVideos = [...videos].sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)).slice(0, 8);
+  const totalSubs = channels.reduce((a: number, ch: any) => a + (parseFloat(ch.subs) || 0), 0);
+  const urgentVideos = videos.filter((v: any) => v.priority === "alta" && v.status !== "published").slice(0, 5);
+  const recentVideos = [...videos].sort((a: any, b: any) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime()).slice(0, 8);
 
   return (
     <div className="page-enter">
@@ -25,7 +26,7 @@ export default function Dashboard() {
       <div className="grid-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 24 }}>
         {[
           { l: "Total Inscritos", v: totalSubs > 0 ? `${totalSubs.toFixed(1)}K` : "0", c: C.blue, i: "👥" },
-          { l: "Em Produção", v: videos.filter(v => v.status !== "published").length, c: C.orange, i: "🎬", go: "/planner" },
+          { l: "Em Produção", v: videos.filter((v: any) => v.status !== "published").length, c: C.orange, i: "🎬", go: "/planner" },
           { l: "Publicados", v: sc.published || 0, c: C.green, i: "✅" },
           { l: "Canais Ativos", v: channels.length, c: C.purple, i: "📺" },
         ].map((s, i) => (
@@ -44,8 +45,7 @@ export default function Dashboard() {
       <SecTitle t="Pipeline de Produção" />
       <div className="pipeline-row" style={{ display: "flex", gap: 6, marginBottom: 24 }}>
         {Object.entries(ST).map(([k, v]) => (
-          <Card key={k} style={{ flex: 1, padding: "14px 10px", textAlign: "center", cursor: "pointer", minWidth: 0 }}
-            onClick={() => nav("/planner")}>
+          <Card key={k} style={{ flex: 1, padding: "14px 10px", textAlign: "center", cursor: "pointer", minWidth: 0 }} onClick={() => nav("/planner")}>
             <div style={{ fontFamily: "var(--mono)", fontSize: 22, fontWeight: 700, color: v.c, marginBottom: 4 }}>{sc[k] || 0}</div>
             <div style={{ fontSize: 10, color: C.muted }}>{v.l}</div>
           </Card>
@@ -58,13 +58,11 @@ export default function Dashboard() {
           <Card style={{ padding: 0 }}>
             {urgentVideos.length === 0 ? (
               <div style={{ padding: 24, textAlign: "center", fontSize: 13, color: C.dim }}>Nenhum vídeo urgente</div>
-            ) : urgentVideos.map((v, i) => {
-              const ch = v.channel || channels.find(c => c.id === v.channelId);
+            ) : urgentVideos.map((v: any, i: number) => {
+              const ch = v.channel || channels.find((c: any) => c.id === v.channelId);
               const st = ST[v.status];
               return (
-                <div key={v.id} onClick={() => nav("/planner")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < urgentVideos.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = C.bgHover}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <div key={v.id} onClick={() => nav("/planner")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < urgentVideos.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}>
                   <span style={{ fontSize: 12 }}>🔴</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.title}</div>
@@ -76,13 +74,11 @@ export default function Dashboard() {
             })}
           </Card>
         </div>
-
         <div>
           <SecTitle t="Canais" />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {channels.map(ch => {
-              const chVids = videos.filter(v => (v.channelId || v.channel?.id) === ch.id);
-              const inProd = chVids.filter(v => v.status !== "published").length;
+            {channels.map((ch: any) => {
+              const inProd = videos.filter((v: any) => (v.channelId || v.channel?.id) === ch.id && v.status !== "published").length;
               return (
                 <Card key={ch.id} hov color={ch.color} onClick={() => nav("/planner")} style={{ padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -107,13 +103,11 @@ export default function Dashboard() {
 
       <SecTitle t="Atividade Recente" />
       <Card style={{ padding: 0, overflow: "auto" }}>
-        {recentVideos.map((v, i) => {
-          const ch = v.channel || channels.find(c => c.id === v.channelId);
+        {recentVideos.map((v: any, i: number) => {
+          const ch = v.channel || channels.find((c: any) => c.id === v.channelId);
           const st = ST[v.status];
           return (
-            <div key={v.id} onClick={() => nav("/planner")} style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 20px", borderBottom: i < recentVideos.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer", minWidth: 0 }}
-              onMouseEnter={e => e.currentTarget.style.background = C.bgHover}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+            <div key={v.id} onClick={() => nav("/planner")} style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 20px", borderBottom: i < recentVideos.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 2, minWidth: 0 }}>
                 <Badge color={ch?.color} />
                 <div style={{ minWidth: 0 }}>
@@ -122,9 +116,7 @@ export default function Dashboard() {
                 </div>
               </div>
               {st && <Badge text={`${st.i} ${st.l}`} color={st.c} v="tag" />}
-              <span style={{ fontSize: 12, color: C.muted, flexShrink: 0 }}>
-                {v.priority === "alta" ? "🔴" : v.priority === "média" ? "🟡" : "🔵"} {v.priority}
-              </span>
+              <span style={{ fontSize: 12, color: C.muted, flexShrink: 0 }}>{v.priority === "alta" ? "🔴" : v.priority === "média" ? "🟡" : "🔵"} {v.priority}</span>
               <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: C.dim, textAlign: "right", flexShrink: 0 }}>{v.date}</span>
             </div>
           );

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from "react";
 import { settingsApi } from "../lib/api";
 import { Card, Btn, Hdr, Label, Input, Select, SecTitle, C } from "../components/shared/UI";

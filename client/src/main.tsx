@@ -8,18 +8,21 @@ import { ToastProvider } from "./components/shared/Toast";
 import App from "./App";
 import "./styles/global.css";
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <AppProvider>
-          <ConfirmProvider>
-            <ToastProvider>
-              <App />
-            </ToastProvider>
-          </ConfirmProvider>
-        </AppProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  </React.StrictMode>
-);
+const root = document.getElementById("root");
+if (root) {
+  ReactDOM.createRoot(root).render(
+    <React.StrictMode>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppProvider>
+            <ConfirmProvider>
+              <ToastProvider>
+                <App />
+              </ToastProvider>
+            </ConfirmProvider>
+          </AppProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </React.StrictMode>
+  );
+}
