@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  lacasastudio:
+    build: .
+    container_name: lacasastudio
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET:-lacasa-studio-secret-change-me-in-production}
+      - DATABASE_URL=file:/app/data/lacasastudio.db
+    volumes:
+      - lacasa_data:/app/data
+
+volumes:
+  lacasa_data:
+    driver: local
