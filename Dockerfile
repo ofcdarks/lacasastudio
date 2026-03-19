@@ -1,30 +1,35 @@
 # ============================================================
 # LaCasaStudio V2.0 — Multi-stage Production Dockerfile
+# Uses Debian slim instead of Alpine for Prisma compatibility
 # ============================================================
 
 # Stage 1: Build the React client
-FROM node:20-alpine AS client-build
+FROM node:20-slim AS client-build
 WORKDIR /app/client
 COPY client/package*.json ./
 RUN npm install
 COPY client/ ./
 RUN npm run build
 
-# Stage 2: Install server dependencies
-FROM node:20-alpine AS server-deps
+# Stage 2: Install server dependencies + generate Prisma
+FROM node:20-slim AS server-deps
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/server
 COPY server/package*.json ./
 COPY server/prisma ./prisma/
 RUN npm install --omit=dev && npx prisma generate
 
 # Stage 3: Production image
-FROM node:20-alpine AS production
+FROM node:20-slim AS production
 WORKDIR /app
 
-# Security: run as non-root
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Install OpenSSL — required by Prisma query engine
+RUN apt-get update -y && apt-get install -y openssl wget && rm -rf /var/lib/apt/lists/*
 
-# Copy server
+# Security: run as non-root
+RUN groupadd -r appgroup && useradd -r -g appgroup -m appuser
+
+# Copy server with node_modules (includes generated Prisma client)
 COPY --from=server-deps /app/server/node_modules ./server/node_modules
 COPY server/ ./server/
 
@@ -47,5 +52,5 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD wget -qO- http://localhost:3000/api/health || exit 1
 
-# Start: migrate DB + seed if empty + run server
+# Start: push schema + seed if empty + run server
 CMD ["sh", "-c", "cd server && npx prisma db push --accept-data-loss 2>/dev/null; node src/db/seed.js 2>/dev/null; node src/index.js"]
