@@ -74,6 +74,7 @@ export default function Sidebar() {
         <SItem icon="✓" label="Checklist Pub." path="/checklist" badge={null} bc={C.green} />
 
         <Sec title="Estratégia" />
+        <SItem icon="💡" label="Banco de Ideias" path="/ideas" />
         <SItem icon="✦" label="Gerador SEO + IA" path="/seo" />
         <SItem icon="◎" label="Metas & OKRs" path="/metas" />
         <SItem icon="◆" label="Templates de Série" path="/templates" />

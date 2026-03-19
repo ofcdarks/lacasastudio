@@ -18,6 +18,7 @@ import Orcamento from "./pages/Orcamento";
 import Ativos from "./pages/Ativos";
 import Equipe from "./pages/Equipe";
 import Settings from "./pages/Settings";
+import Ideas from "./pages/Ideas";
 
 function Layout({ children }) {
   return (
@@ -64,6 +65,7 @@ export default function App() {
       <Route path="/ativos" element={<Layout><Ativos /></Layout>} />
       <Route path="/equipe" element={<Layout><Equipe /></Layout>} />
       <Route path="/settings" element={<Layout><Settings /></Layout>} />
+      <Route path="/ideas" element={<Layout><Ideas /></Layout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

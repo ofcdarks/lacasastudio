@@ -122,6 +122,7 @@ export const aiApi = {
   script: (data) => api.post("/ai/script", data),
   storyboard: (data) => api.post("/ai/storyboard", data),
   titles: (data) => api.post("/ai/titles", data),
+  analyzeIdea: (data) => api.post("/ai/analyze-idea", data),
 };
 
 // YouTube
@@ -129,6 +130,29 @@ export const youtubeApi = {
   channel: (channelId) => api.get(`/youtube/channel/${channelId}`),
   videos: (channelId, max = 10) => api.get(`/youtube/videos/${channelId}?max=${max}`),
   analyze: (data) => api.post("/youtube/analyze", data),
+};
+
+// Scripts (saved to DB)
+export const scriptApi = {
+  listByVideo: (videoId) => api.get(`/scripts/video/${videoId}`),
+  create: (data) => api.post("/scripts", data),
+  update: (id, data) => api.put(`/scripts/${id}`, data),
+  del: (id) => api.del(`/scripts/${id}`),
+};
+
+// SEO Results (saved to DB)
+export const seoResultApi = {
+  listByVideo: (videoId) => api.get(`/seo-results/video/${videoId}`),
+  create: (data) => api.post("/seo-results", data),
+  del: (id) => api.del(`/seo-results/${id}`),
+};
+
+// Ideas Board
+export const ideaApi = {
+  list: () => api.get("/ideas"),
+  create: (data) => api.post("/ideas", data),
+  update: (id, data) => api.put(`/ideas/${id}`, data),
+  del: (id) => api.del(`/ideas/${id}`),
 };
 
 export default api;

@@ -40,6 +40,7 @@ model Channel {
   assets    Asset[]
   templates Template[]
   members   TeamMember[]
+  ideas     Idea[]
 }
 
 model Video {
@@ -49,11 +50,12 @@ model Video {
   date       String       @default("")
   priority   String       @default("média")
   duration   String       @default("")
-  script     String       @default("")
   channelId  Int
   channel    Channel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
   scenes     Scene[]
   checklists Checklist[]
+  scripts    Script[]
+  seoResults SeoResult[]
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 }
@@ -146,10 +148,48 @@ model Notification {
 }
 
 model BudgetItem {
-  id       Int    @id @default(autoincrement())
-  category String
-  desc     String
-  value    Float  @default(0)
-  type     String @default("expense")
-  month    String @default("")
+  id        Int      @id @default(autoincrement())
+  category  String
+  desc      String
+  value     Float    @default(0)
+  type      String   @default("expense")
+  month     String   @default("")
+  recurring Boolean  @default(false)
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+}
+
+model Script {
+  id        Int      @id @default(autoincrement())
+  content   String   @default("")
+  videoId   Int
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SeoResult {
+  id          Int      @id @default(autoincrement())
+  titles      String   @default("")
+  description String   @default("")
+  tags        String   @default("")
+  score       String   @default("")
+  tips        String   @default("")
+  videoId     Int
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model Idea {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String   @default("")
+  imageUrl  String   @default("")
+  tags      String   @default("")
+  color     String   @default("#3B82F6")
+  pinned    Boolean  @default(false)
+  channelId Int?
+  channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

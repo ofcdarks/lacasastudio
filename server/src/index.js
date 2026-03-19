@@ -20,6 +20,9 @@ const checklistRoutes = require("./routes/checklists");
 const settingsRoutes = require("./routes/settings");
 const aiRoutes = require("./routes/ai");
 const youtubeRoutes = require("./routes/youtube");
+const scriptRoutes = require("./routes/scripts");
+const seoResultRoutes = require("./routes/seo-results");
+const ideaRoutes = require("./routes/ideas");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -54,6 +57,9 @@ app.use("/api/checklists", checklistRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/youtube", youtubeRoutes);
+app.use("/api/scripts", scriptRoutes);
+app.use("/api/seo-results", seoResultRoutes);
+app.use("/api/ideas", ideaRoutes);
 
 // ── Health Check ────────────────────────────────────────────
 app.get("/api/health", (_, res) => {
