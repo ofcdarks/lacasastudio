@@ -20,6 +20,7 @@ import Orcamento from "./pages/Orcamento";
 import Ativos from "./pages/Ativos";
 import Equipe from "./pages/Equipe";
 import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
 import Ideas from "./pages/Ideas";
 
 function Layout({ children }: { children: ReactNode }) {
