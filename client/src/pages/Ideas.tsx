@@ -184,6 +184,16 @@ export default function Ideas() {
   const [markerIdx, setMarkerIdx] = useState(0);
   const [boldVal, setBoldVal] = useState(false);
   const [italicVal, setItalicVal] = useState(false);
+  const [showPrefs, setShowPrefs] = useState(false);
+  const [toolLock, setToolLock] = useState(false);
+  const [snapObjects, setSnapObjects] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
+  const [zenMode, setZenMode] = useState(false);
+  const [viewMode, setViewMode] = useState(false);
+  const [arrowBind, setArrowBind] = useState(true);
+  const [snapMid, setSnapMid] = useState(true);
+  const [canvasBg, setCanvasBg] = useState("#0B0C14");
+  const CANVAS_BGS = ["#0B0C14","#111219","#1a1b2e","#0f172a","#fafafa","#f0f0e8","#e8f0f0","#f5f0ff","#fff5e6","#f0e8e8"];
 
   const [hist, setHist] = useState([[]]); const [hIdx, setHIdx] = useState(0);
   const [drawing, setDrawing] = useState(false);
@@ -235,7 +245,7 @@ export default function Ideas() {
   useEffect(() => {
     const c=cvs.current,b=box.current; if(!c||!b)return;
     const ctx=c.getContext("2d"); const r=b.getBoundingClientRect(); c.width=r.width;c.height=r.height;
-    ctx.clearRect(0,0,c.width,c.height); grid(ctx,c.width,c.height,pan.x,pan.y,zoom);
+    ctx.fillStyle=canvasBg;ctx.fillRect(0,0,c.width,c.height); if(showGrid) grid(ctx,c.width,c.height,pan.x,pan.y,zoom);
     ctx.save();ctx.translate(pan.x,pan.y);ctx.scale(zoom,zoom);
     els.forEach(el=>renderEl(ctx,el,el.id===selId)); ctx.restore();
   },[els,selId,pan,zoom]);
@@ -251,6 +261,11 @@ export default function Ideas() {
       if((e.ctrlKey||e.metaKey)&&e.key==="c"&&selId){const el=els.find(e=>e.id===selId);if(el)localStorage.setItem("lc_clip",JSON.stringify(el));return;}
       if((e.ctrlKey||e.metaKey)&&e.key==="v"){const cl=localStorage.getItem("lc_clip");if(cl){try{const el=JSON.parse(cl);el.id=uid();el.x+=20;el.y+=20;const n=[...els,el];setEls(n);push(n);localStorage.setItem("lc_clip",JSON.stringify(el));}catch{}}return;}
       if((e.key==="Delete"||e.key==="Backspace")&&selId){e.preventDefault();const n=els.filter(e=>e.id!==selId);setEls(n);push(n);setSelId(null);return;}
+      if(e.altKey&&e.key==="z"){e.preventDefault();setZenMode(p=>!p);return;}
+      if(e.altKey&&e.key==="r"){e.preventDefault();setViewMode(p=>!p);return;}
+      if(e.altKey&&e.key==="s"){e.preventDefault();setSnapObjects(p=>!p);return;}
+      if((e.ctrlKey||e.metaKey)&&e.key==="\x27"){e.preventDefault();setShowGrid(p=>!p);return;}
+      if(e.key==="q"&&!e.ctrlKey&&!e.metaKey){setToolLock(p=>!p);return;}
       if(e.key===" "){e.preventDefault();setIsPan(true);return;}
       const map={v:"select",r:"rect",o:"ellipse",d:"diamond",l:"line",a:"arrow",p:"draw",t:"text",s:"sticky",m:"marker",i:"image",e:"eraser"};
       if(map[e.key.toLowerCase()]&&!e.ctrlKey&&!e.metaKey){setTool(map[e.key.toLowerCase()]);setSelId(null);}
@@ -358,7 +373,7 @@ export default function Ideas() {
       <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{display:"none"}}/>
 
       {/* Top toolbar */}
-      <div style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",background:C.bgCard,borderBottom:`1px solid ${C.border}`,zIndex:10,flexWrap:"wrap",minHeight:44}}>
+      <div style={{display:zenMode?"none":"flex",display:"flex",alignItems:"center",gap:4,padding:"5px 10px",background:C.bgCard,borderBottom:`1px solid ${C.border}`,zIndex:10,flexWrap:"wrap",minHeight:44}}>
         <Btn vr="ghost" onClick={()=>setShowList(true)} style={{padding:"4px 8px",fontSize:10}}>← Quadros</Btn>
         <div style={{width:1,height:20,background:C.border}}/>
         {Object.entries(TOOLS).map(([k,v])=>(
@@ -366,6 +381,48 @@ export default function Ideas() {
             style={{width:30,height:30,borderRadius:6,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:k==="sticky"||k==="marker"||k==="image"?13:14,background:tool===k?`${C.red}22`:"transparent",color:tool===k?C.red:C.muted,transition:"all 0.15s"}}>{v.icon}</button>
         ))}
         <div style={{flex:1}}/>
+
+        {/* Preferences menu */}
+        <div style={{position:"relative"}}>
+          <button onClick={()=>setShowPrefs(!showPrefs)} title="Preferências" style={{width:30,height:30,borderRadius:6,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,background:showPrefs?`${C.blue}22`:"transparent",color:showPrefs?C.blue:C.muted}}>☰</button>
+          {showPrefs&&(
+            <div style={{position:"absolute",top:38,right:0,width:280,background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:12,padding:0,zIndex:99,boxShadow:"0 12px 40px rgba(0,0,0,0.5)",overflow:"hidden"}}>
+              {/* Preferences header */}
+              <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <span style={{fontSize:12,fontWeight:600}}>⚙ Preferências</span>
+                <button onClick={()=>setShowPrefs(false)} style={{background:"none",border:"none",color:C.dim,cursor:"pointer",fontSize:14}}>✕</button>
+              </div>
+              {/* Canvas background */}
+              <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
+                <div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:6}}>Fundo do canvas</div>
+                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                  {CANVAS_BGS.map(bg=><div key={bg} onClick={()=>setCanvasBg(bg)} style={{width:26,height:26,borderRadius:6,cursor:"pointer",background:bg,border:canvasBg===bg?"2px solid #3B82F6":`1px solid ${C.border}`}}/>)}
+                </div>
+              </div>
+              {/* Toggle options */}
+              <div style={{padding:"4px 0"}}>
+                {[
+                  {label:"Travar ferramenta",key:"Q",val:toolLock,set:()=>setToolLock(!toolLock)},
+                  {label:"Alinhar a objetos",key:"Alt+S",val:snapObjects,set:()=>setSnapObjects(!snapObjects)},
+                  {label:"Alternar grade",key:"Ctrl+'",val:showGrid,set:()=>setShowGrid(!showGrid)},
+                  {label:"Modo zen",key:"Alt+Z",val:zenMode,set:()=>setZenMode(!zenMode)},
+                  {label:"Modo visualização",key:"Alt+R",val:viewMode,set:()=>setViewMode(!viewMode)},
+                  {label:"Vincular setas",key:"",val:arrowBind,set:()=>setArrowBind(!arrowBind)},
+                  {label:"Alinhar a pontos médios",key:"",val:snapMid,set:()=>setSnapMid(!snapMid)},
+                ].map((opt,i)=>(
+                  <div key={i} onClick={opt.set} style={{display:"flex",alignItems:"center",padding:"8px 14px",cursor:"pointer",transition:"background 0.1s"}}
+                    onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.04)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <span style={{width:20,fontSize:13,color:opt.val?C.blue:"transparent"}}>{opt.val?"✓":""}</span>
+                    <span style={{flex:1,fontSize:12,color:C.text}}>{opt.label}</span>
+                    {opt.key&&<span style={{fontSize:10,color:C.dim,fontFamily:"var(--mono)"}}>{opt.key}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div style={{width:1,height:20,background:C.border}}/>
         <Btn vr="ghost" onClick={undo} style={{padding:"3px 6px",fontSize:11}} disabled={hIdx<=0}>↩</Btn>
         <Btn vr="ghost" onClick={redo} style={{padding:"3px 6px",fontSize:11}} disabled={hIdx>=hist.length-1}>↪</Btn>
         <Btn vr="ghost" onClick={()=>{setEls([]);setSelId(null);push([]);}} style={{padding:"3px 6px",fontSize:10}}>Limpar</Btn>
@@ -378,7 +435,7 @@ export default function Ideas() {
       <div style={{display:"flex",flex:1,overflow:"hidden"}}>
         {/* Canvas */}
         <div ref={box} style={{flex:1,position:"relative",cursor:isPan?"grab":TOOLS[tool]?.cur||"default",overflow:"hidden"}}>
-          <canvas ref={cvs} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp} onWheel={onWheel} style={{display:"block",width:"100%",height:"100%",background:C.bg}}/>
+          <canvas ref={cvs} onMouseDown={viewMode?undefined:onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp} onWheel={onWheel} style={{display:"block",width:"100%",height:"100%",background:canvasBg}}/>
 
           {editText&&(
             <div style={{position:"absolute",left:editText.x*zoom+pan.x,top:editText.y*zoom+pan.y-(editText.fontSize||24),zIndex:20}}>
@@ -403,6 +460,8 @@ export default function Ideas() {
             </div>
           )}
 
+          {zenMode&&<button onClick={()=>setZenMode(false)} style={{position:"absolute",top:10,right:10,padding:"6px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:C.bgCard,color:C.muted,cursor:"pointer",fontSize:11,zIndex:5,opacity:0.6}}>Sair do Zen (Alt+Z)</button>}
+          {viewMode&&<div style={{position:"absolute",top:10,left:"50%",transform:"translateX(-50%)",padding:"6px 14px",borderRadius:8,background:`${C.blue}20`,color:C.blue,fontSize:11,fontWeight:600,zIndex:5}}>Modo Visualização · Alt+R para sair</div>}
           <div style={{position:"absolute",bottom:10,right:10,display:"flex",gap:3,alignItems:"center"}}>
             <button onClick={()=>setZoom(p=>Math.max(0.1,p*0.8))} style={{width:26,height:26,borderRadius:5,border:`1px solid ${C.border}`,background:C.bgCard,color:C.muted,cursor:"pointer",fontSize:13}}>−</button>
             <span style={{fontFamily:"var(--mono)",fontSize:10,color:C.dim,minWidth:36,textAlign:"center"}}>{Math.round(zoom*100)}%</span>
@@ -413,7 +472,7 @@ export default function Ideas() {
         </div>
 
         {/* ─── RIGHT PROPERTIES PANEL ──────── */}
-        <div style={{width:220,minWidth:220,background:C.bgCard,borderLeft:`1px solid ${C.border}`,overflowY:"auto",padding:"14px 14px"}}>
+        <div style={{width:zenMode?0:220,minWidth:zenMode?0:220,background:C.bgCard,overflow:zenMode?"hidden":"auto",borderLeft:`1px solid ${C.border}`,overflowY:"auto",padding:"14px 14px"}}>
 
           <PanelSec label="Stroke">
             <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
