@@ -191,5 +191,10 @@ export const researchApi = {
   monetization: (data: any) => api.post<any>("/research/monetization", data),
   generateTitles: (data: any) => api.post<any>("/research/generate-titles", data),
   trending: (data: any) => api.post<any>("/research/trending", data),
+  emerging: () => api.post<any>("/research/emerging", {}),
+  spy: (channelIds: string[]) => api.post<any>("/research/spy", { channelIds }),
+  abTest: (data: any) => api.post<any>("/research/ab-test", data),
+  calendar: (data: any) => api.post<any>("/research/calendar", data),
+  channelMockup: (data: any) => api.post<any>("/research/channel-mockup", data),
   updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
 };

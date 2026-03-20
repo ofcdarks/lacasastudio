@@ -239,7 +239,6 @@ router.put("/saved/:id", async (req: any, res: Response, next: NextFunction) => 
   } catch (err) { next(err); }
 });
 
-export default router;
 
 // 🧬 DNA do Vídeo Viral — analyze top videos pattern
 router.post("/dna", async (req: any, res: Response, next: NextFunction) => {
@@ -486,3 +485,192 @@ router.post("/trending", async (req: any, res: Response, next: NextFunction) => 
     res.json({ videos: filtered.length > 0 ? filtered : videos });
   } catch (err) { next(err); }
 });
+
+// 🔮 Detector de Tendências Emergentes — cross-country analysis
+router.post("/emerging", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const ytKey = await getYtKey();
+    const aiKey = await getAiKey();
+    if (!ytKey) { res.status(400).json({ error: "Configure YouTube API Key" }); return; }
+    
+    // Fetch trending from multiple countries
+    const regions = ["US","BR","IN","GB","DE","JP","KR","MX"];
+    const allTrending: any[] = [];
+    for (const r of regions) {
+      try {
+        const data = await ytFetch(`videos?part=snippet,statistics&chart=mostPopular&regionCode=${r}&maxResults=10`, ytKey);
+        (data.items || []).forEach((v: any) => {
+          allTrending.push({
+            title: v.snippet?.title, channelTitle: v.snippet?.channelTitle,
+            views: Number(v.statistics?.viewCount || 0), region: r,
+            category: v.snippet?.categoryId, tags: v.snippet?.tags?.slice(0, 5) || [],
+          });
+        });
+      } catch {}
+    }
+
+    if (!aiKey) { res.json({ trends: [], raw: allTrending }); return; }
+
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6", temperature: 0.4, max_tokens: 2000,
+        messages: [{ role: "system", content: "Analise tendências de YouTube cross-country. APENAS JSON." },
+          { role: "user", content: `Analise estes vídeos trending de ${regions.length} países e identifique tendências EMERGENTES (temas que estão viralizando em um país mas ainda não chegaram em outros = OPORTUNIDADE):
+${JSON.stringify(allTrending.slice(0, 60))}
+
+Retorne JSON: [{"trend":"Nome da tendência","description":"Explicação","originCountry":"País de origem","opportunityCountries":["País1","País2"],"urgency":"alta/média/baixa","nicheIdea":"Ideia de canal/nicho para modelar","estimatedViews":"Potencial de views","exampleTitles":["título1","título2"]}]` }]
+      })
+    });
+    const aiData = await aiRes.json() as any;
+    const raw = aiData.choices?.[0]?.message?.content || "[]";
+    const trends = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
+    res.json({ trends: Array.isArray(trends) ? trends : [] });
+  } catch (err) { next(err); }
+});
+
+// 🕵️ Spy — compare saved channels activity
+router.post("/spy", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const ytKey = await getYtKey();
+    if (!ytKey) { res.status(400).json({ error: "Configure YouTube API Key" }); return; }
+    const { channelIds } = req.body as { channelIds: string[] };
+    if (!channelIds?.length) { res.json({ channels: [] }); return; }
+
+    const results: any[] = [];
+    for (const chId of channelIds.slice(0, 10)) {
+      try {
+        const chData = await ytFetch(`channels?part=snippet,statistics,contentDetails&id=${chId}`, ytKey);
+        const ch = chData.items?.[0];
+        if (!ch) continue;
+        const uploads = ch.contentDetails?.relatedPlaylists?.uploads;
+        let recentVids: any[] = [];
+        if (uploads) {
+          const pl = await ytFetch(`playlistItems?part=snippet,contentDetails&playlistId=${uploads}&maxResults=5`, ytKey);
+          const vids = (pl.items || []).map((i: any) => i.contentDetails?.videoId).filter(Boolean);
+          if (vids.length) {
+            const vData = await ytFetch(`videos?part=snippet,statistics,contentDetails&id=${vids.join(",")}`, ytKey);
+            recentVids = (vData.items || []).map((v: any) => ({
+              id: v.id, title: v.snippet?.title, views: Number(v.statistics?.viewCount || 0),
+              likes: Number(v.statistics?.likeCount || 0), publishedAt: v.snippet?.publishedAt,
+              thumbnail: v.snippet?.thumbnails?.medium?.url || "",
+            }));
+          }
+        }
+        results.push({
+          ytChannelId: chId, name: ch.snippet?.title, thumbnail: ch.snippet?.thumbnails?.default?.url,
+          subscribers: Number(ch.statistics?.subscriberCount || 0),
+          totalViews: Number(ch.statistics?.viewCount || 0),
+          videoCount: Number(ch.statistics?.videoCount || 0),
+          recentVideos: recentVids,
+        });
+      } catch {}
+    }
+    res.json({ channels: results });
+  } catch (err) { next(err); }
+});
+
+// 🧪 A/B Test de Títulos
+router.post("/ab-test", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { titles, niche, targetAudience } = req.body;
+
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6", temperature: 0.3, max_tokens: 2000,
+        messages: [{ role: "system", content: "Expert em CTR e psicologia de títulos YouTube. APENAS JSON." },
+          { role: "user", content: `Analise estes títulos e dê score de CTR (0-100). Nicho: ${niche}. Público: ${targetAudience || "geral"}.
+Títulos: ${JSON.stringify(titles)}
+
+Para CADA título retorne JSON array:
+[{"title":"título original","ctrScore":85,"strengths":["ponto forte1","ponto forte2"],"weaknesses":["fraqueza1"],"improvedVersion":"Versão melhorada do título","emotionalTrigger":"Gatilho emocional usado","curiosityGap":"Se tem curiosity gap (sim/não + explicação)"}]
+Ordene por ctrScore descendente.` }]
+      })
+    });
+    const aiData = await aiRes.json() as any;
+    const raw = aiData.choices?.[0]?.message?.content || "[]";
+    res.json({ results: JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()) });
+  } catch (err) { next(err); }
+});
+
+// 🗓️ Calendário 30 dias
+router.post("/calendar", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { niche, subNiche, videosPerWeek, style, targetCountry, language } = req.body;
+
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6", temperature: 0.6, max_tokens: 4000,
+        messages: [{ role: "system", content: "Expert em estratégia de conteúdo YouTube. Crie calendários editoriais detalhados. APENAS JSON." },
+          { role: "user", content: `Crie calendário de 30 dias para canal YouTube modelado:
+Nicho: ${niche} > ${subNiche || "geral"}
+Vídeos/semana: ${videosPerWeek || 3}
+Estilo: ${style || "faceless"}
+País: ${targetCountry || "US"}, Idioma: ${language || "en"}
+
+Retorne JSON array com ${(videosPerWeek || 3) * 4} vídeos:
+[{"day":1,"weekday":"Segunda","title":"Título viral otimizado","hook":"Hook dos primeiros 5 segundos","description":"Descrição do vídeo em 2 frases","tags":["tag1","tag2","tag3"],"thumbnailPrompt":"Prompt detalhado para thumbnail","duration":"10:00","uploadTime":"14:00 UTC","priority":"alta/média","seriesName":"Nome da série se aplicável"}]` }]
+      })
+    });
+    const aiData = await aiRes.json() as any;
+    const raw = aiData.choices?.[0]?.message?.content || "[]";
+    res.json({ calendar: JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()) });
+  } catch (err) { next(err); }
+});
+
+// 📺 Channel Preview/Mockup — generate full channel identity
+router.post("/channel-mockup", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { channelName, niche, subNiche, style, targetCountry, language, originalChannel } = req.body;
+
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6", temperature: 0.6, max_tokens: 3000,
+        messages: [{ role: "system", content: "Expert em branding de canais YouTube. Crie identidades visuais completas. APENAS JSON." },
+          { role: "user", content: `Crie identidade visual completa para um canal YouTube modelado:
+Canal modelado de: "${originalChannel || "canal de referência"}"
+Nicho: ${niche} > ${subNiche || ""}
+Estilo: ${style || "faceless/2D"}
+País: ${targetCountry || "US"}, Idioma: ${language || "en"}
+Nome sugerido: ${channelName || "gerar"}
+
+Retorne JSON:
+{
+  "channelName": "Nome final do canal",
+  "tagline": "Slogan curto",
+  "description": "Descrição completa do canal (sobre)",
+  "logoPrompt": "Prompt DETALHADO para gerar logo no ImageFX: estilo, cores, elementos, formato circular, fundo transparente",
+  "bannerPrompt": "Prompt DETALHADO para gerar banner 2560x1440 no ImageFX: composição, cores, texto, elementos, estilo",
+  "videos": [
+    {"title": "Título do vídeo 1", "thumbnailPrompt": "Prompt DETALHADO para thumbnail: composição, cores, texto overlay, elementos visuais, estilo 16:9", "views": "Estimativa", "duration": "10:00"},
+    {"title": "Título do vídeo 2", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
+    {"title": "Título do vídeo 3", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
+    {"title": "Título do vídeo 4", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
+    {"title": "Título do vídeo 5", "thumbnailPrompt": "...", "views": "...", "duration": "..."}
+  ],
+  "colors": {"primary": "#hex", "secondary": "#hex", "accent": "#hex"},
+  "fonts": "Fontes recomendadas",
+  "keywords": ["keyword1","keyword2","keyword3","keyword4","keyword5"]
+}` }]
+      })
+    });
+    const aiData = await aiRes.json() as any;
+    const raw = aiData.choices?.[0]?.message?.content || "{}";
+    res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
+  } catch (err) { next(err); }
+});
+
+export default router;
