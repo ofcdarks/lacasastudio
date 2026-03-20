@@ -18,7 +18,7 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const { name, desc, episodes, structure, color, tags, channelId } = req.body;
+    const { name, desc, episodes, structure, color, tags, channelId } = req.body as any;
     if (!name) return res.status(400).json({ error: "Nome obrigatório" });
     const t = await prisma.template.create({
       data: { name, desc, episodes, structure, color, tags, userId: req.userId, channelId: channelId ? Number(channelId) : null },

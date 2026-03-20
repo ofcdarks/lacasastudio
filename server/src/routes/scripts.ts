@@ -19,7 +19,7 @@ router.get("/video/:videoId", async (req: any, res: Response, next: NextFunction
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const { content, videoId, label } = req.body;
+    const { content, videoId, label } = req.body as any;
     if (!videoId) return res.status(400).json({ error: "videoId obrigatório" });
     const video = await prisma.video.findFirst({ where: { id: Number(videoId), userId: req.userId } });
     if (!video) return res.status(403).json({ error: "Vídeo não pertence a este usuário" });
@@ -41,7 +41,7 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
   try {
     const script = await prisma.script.findUnique({ where: { id: Number(req.params.id) }, include: { video: true } });
     if (!script || script.video.userId !== req.userId) return res.status(404).json({ error: "Script não encontrado" });
-    const { content, label } = req.body;
+    const { content, label } = req.body as any;
     const updated = await prisma.script.update({
       where: { id: script.id },
       data: { ...(content !== undefined && { content }), ...(label !== undefined && { label }) },

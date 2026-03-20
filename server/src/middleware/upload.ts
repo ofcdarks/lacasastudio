@@ -1,14 +1,14 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { AuthRequest } from "../types";
+
 
 const UPLOAD_DIR = path.join(__dirname, "..", "..", "uploads");
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (req: any, _file, cb) => {
-    const userDir = path.join(UPLOAD_DIR, String((req as AuthRequest).userId));
+    const userDir = path.join(UPLOAD_DIR, String(req.userId));
     if (!fs.existsSync(userDir)) fs.mkdirSync(userDir, { recursive: true });
     cb(null, userDir);
   },

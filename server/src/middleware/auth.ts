@@ -1,6 +1,5 @@
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { AuthRequest } from "../types";
 
 const JWT_SECRET: string = process.env.JWT_SECRET || "";
 if (!JWT_SECRET || JWT_SECRET.includes("change") || JWT_SECRET.length < 32) {
@@ -8,7 +7,7 @@ if (!JWT_SECRET || JWT_SECRET.includes("change") || JWT_SECRET.length < 32) {
   process.exit(1);
 }
 
-export function authenticate(req: AuthRequest, res: Response, next: NextFunction): void {
+export function authenticate(req: any, res: Response, next: NextFunction): void {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Token não fornecido" });

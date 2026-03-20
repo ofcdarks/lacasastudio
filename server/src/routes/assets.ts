@@ -28,7 +28,7 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
 router.post("/upload", upload.single("file"), async (req: any, res: Response, next: NextFunction) => {
   try {
     if (!req.file) return res.status(400).json({ error: "Arquivo obrigatório" });
-    const { name, type, tags, notes, channelId } = req.body;
+    const { name, type, tags, notes, channelId } = req.body as any;
     const asset = await prisma.asset.create({
       data: {
         name: name || req.file.originalname,
@@ -50,7 +50,7 @@ router.post("/upload", upload.single("file"), async (req: any, res: Response, ne
 // Create metadata-only asset (backward compat)
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const { name, type, format, size, tags, fileUrl, notes, channelId } = req.body;
+    const { name, type, format, size, tags, fileUrl, notes, channelId } = req.body as any;
     if (!name) return res.status(400).json({ error: "Nome obrigatório" });
     const asset = await prisma.asset.create({
       data: { name, type, format, size, tags, fileUrl, notes, userId: req.userId, channelId: channelId ? Number(channelId) : null },
@@ -63,7 +63,7 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
   try {
     const asset = await prisma.asset.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
     if (!asset) return res.status(404).json({ error: "Ativo não encontrado" });
-    const { name, type, tags, notes, channelId } = req.body;
+    const { name, type, tags, notes, channelId } = req.body as any;
     const data = {};
     if (name !== undefined) data.name = name;
     if (type !== undefined) data.type = type;

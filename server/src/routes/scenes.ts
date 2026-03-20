@@ -19,7 +19,7 @@ router.get("/video/:videoId", async (req: any, res: Response, next: NextFunction
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const { title, videoId, type, duration, notes, camera, audio, color, order } = req.body;
+    const { title, videoId, type, duration, notes, camera, audio, color, order } = req.body as any;
     if (!title || !videoId) return res.status(400).json({ error: "Título e vídeo obrigatórios" });
     const video = await ownsVideo(req.userId, videoId);
     if (!video) return res.status(403).json({ error: "Acesso negado" });
@@ -32,7 +32,7 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
   try {
     const scene = await prisma.scene.findUnique({ where: { id: Number(req.params.id) }, include: { video: true } });
     if (!scene || scene.video.userId !== req.userId) return res.status(404).json({ error: "Cena não encontrada" });
-    const { title, type, duration, notes, camera, audio, color, order } = req.body;
+    const { title, type, duration, notes, camera, audio, color, order } = req.body as any;
     const data = {};
     if (title !== undefined) data.title = title;
     if (type !== undefined) data.type = type;
@@ -51,7 +51,7 @@ router.put("/reorder/:videoId", async (req: any, res: Response, next: NextFuncti
   try {
     const video = await ownsVideo(req.userId, req.params.videoId);
     if (!video) return res.status(403).json({ error: "Acesso negado" });
-    const { orderedIds } = req.body;
+    const { orderedIds } = req.body as any;
     if (!Array.isArray(orderedIds)) return res.status(400).json({ error: "orderedIds obrigatório" });
     await Promise.all(orderedIds.map((id, i) => prisma.scene.update({ where: { id }, data: { order: i } })));
     res.json({ ok: true });

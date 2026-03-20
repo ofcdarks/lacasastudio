@@ -15,7 +15,7 @@ router.get("/video/:videoId", async (req: any, res: Response, next: NextFunction
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const { label, videoId } = req.body;
+    const { label, videoId } = req.body as any;
     if (!label || !videoId) return res.status(400).json({ error: "Label e vídeo obrigatórios" });
     const video = await prisma.video.findFirst({ where: { id: Number(videoId), userId: req.userId } });
     if (!video) return res.status(403).json({ error: "Acesso negado" });
@@ -28,7 +28,7 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
   try {
     const cl = await prisma.checklist.findUnique({ where: { id: Number(req.params.id) }, include: { video: true } });
     if (!cl || cl.video.userId !== req.userId) return res.status(404).json({ error: "Item não encontrado" });
-    const { label, done } = req.body;
+    const { label, done } = req.body as any;
     const updated = await prisma.checklist.update({
       where: { id: cl.id },
       data: { ...(label !== undefined && { label }), ...(done !== undefined && { done }) },

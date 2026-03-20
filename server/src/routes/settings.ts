@@ -22,7 +22,7 @@ router.get("/raw/:key", async (req: any, res: Response, next: NextFunction) => {
 
 router.put("/", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const entries = Object.entries(req.body);
+    const entries = Object.entries(req.body as Record<string, string>);
     // Validate no script injection
     for (const [key, value] of entries) {
       if (typeof key !== "string" || typeof value !== "string") {

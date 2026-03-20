@@ -5,8 +5,6 @@ import prisma from "../db/prisma";
 import { authenticate, signToken } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import NotifService from "../services/notifications";
-import { AuthRequest } from "../types";
-
 const router = Router();
 
 const registerSchema = z.object({
@@ -20,7 +18,7 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-router.post("/register", validate(registerSchema), async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/register", validate(registerSchema), async (req: any, res: Response, next: NextFunction) => {
   try {
     const { email, name, password } = req.validated;
     const exists = await prisma.user.findUnique({ where: { email } });
@@ -36,7 +34,7 @@ router.post("/register", validate(registerSchema), async (req: AuthRequest, res:
   } catch (err) { next(err); }
 });
 
-router.post("/login", validate(loginSchema), async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/login", validate(loginSchema), async (req: any, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.validated;
     const user = await prisma.user.findUnique({ where: { email } });
@@ -51,7 +49,7 @@ router.post("/login", validate(loginSchema), async (req: AuthRequest, res: Respo
   } catch (err) { next(err); }
 });
 
-router.get("/me", authenticate as any, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get("/me", authenticate, async (req: any, res: Response, next: NextFunction) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },

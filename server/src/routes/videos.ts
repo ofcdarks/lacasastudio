@@ -4,10 +4,8 @@ import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import NotifService from "../services/notifications";
-import { AuthRequest } from "../types";
-
 const router = Router();
-router.use(authenticate as any);
+router.use(authenticate);
 
 const createVideoSchema = z.object({
   title: z.string().min(1).max(200),
@@ -27,7 +25,7 @@ const updateVideoSchema = z.object({
   channelId: z.number().int().positive().optional(),
 });
 
-router.get("/", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get("/", async (req: any, res: Response, next: NextFunction) => {
   try {
     const where: any = { userId: req.userId };
     if (req.query.channelId) where.channelId = Number(req.query.channelId);
@@ -41,7 +39,7 @@ router.get("/", async (req: AuthRequest, res: Response, next: NextFunction) => {
   } catch (err) { next(err); }
 });
 
-router.get("/:id", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get("/:id", async (req: any, res: Response, next: NextFunction) => {
   try {
     const video = await prisma.video.findFirst({
       where: { id: Number(req.params.id), userId: req.userId },
@@ -52,7 +50,7 @@ router.get("/:id", async (req: AuthRequest, res: Response, next: NextFunction) =
   } catch (err) { next(err); }
 });
 
-router.post("/", validate(createVideoSchema) as any, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/", validate(createVideoSchema), async (req: any, res: Response, next: NextFunction) => {
   try {
     const { title, channelId, status, date, priority, duration } = req.validated;
     const ch = await prisma.channel.findFirst({ where: { id: channelId, userId: req.userId } });
@@ -67,7 +65,7 @@ router.post("/", validate(createVideoSchema) as any, async (req: AuthRequest, re
   } catch (err) { next(err); }
 });
 
-router.put("/:id", validate(updateVideoSchema) as any, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.put("/:id", validate(updateVideoSchema), async (req: any, res: Response, next: NextFunction) => {
   try {
     const video = await prisma.video.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
     if (!video) { res.status(404).json({ error: "Vídeo não encontrado" }); return; }
@@ -88,7 +86,7 @@ router.put("/:id", validate(updateVideoSchema) as any, async (req: AuthRequest, 
   } catch (err) { next(err); }
 });
 
-router.delete("/:id", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
   try {
     const video = await prisma.video.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
     if (!video) { res.status(404).json({ error: "Vídeo não encontrado" }); return; }

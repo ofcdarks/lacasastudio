@@ -3,7 +3,7 @@ import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
 
 const router = Router();
-router.use(authenticate as any);
+router.use(authenticate);
 
 router.get("/video/:id", async (req: any, res: Response, next: NextFunction) => {
   try {

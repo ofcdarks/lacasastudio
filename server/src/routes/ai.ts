@@ -3,10 +3,8 @@ import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
 import NotifService from "../services/notifications";
 import cache from "../services/cache";
-import { AuthRequest } from "../types";
-
 const router = Router();
-router.use(authenticate as any);
+router.use(authenticate);
 
 const LAOZHANG_URL = "https://api.laozhang.ai/v1/chat/completions";
 
@@ -52,7 +50,7 @@ async function callAI(apiKey: string, model: string, systemPrompt: string, userP
     const err = await res.text();
     throw new Error(`AI API error (${res.status}): ${err}`);
   }
-  const data = await res.json();
+  const data = await res.json() as any;
   return data.choices?.[0]?.message?.content || "";
 }
 
@@ -60,7 +58,7 @@ function parseJSON<T>(raw: string): T {
   return JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
 }
 
-router.post("/seo", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/seo", async (req: any, res: Response, next: NextFunction) => {
   try {
     const apiKey = await getApiKey();
     if (!apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
@@ -80,7 +78,7 @@ Responda APENAS com JSON válido, sem markdown:
   }
 });
 
-router.post("/script", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/script", async (req: any, res: Response, next: NextFunction) => {
   try {
     const apiKey = await getApiKey();
     if (!apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
@@ -101,7 +99,7 @@ router.post("/script", async (req: AuthRequest, res: Response, next: NextFunctio
   } catch (err) { next(err); }
 });
 
-router.post("/storyboard", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/storyboard", async (req: any, res: Response, next: NextFunction) => {
   try {
     const apiKey = await getApiKey();
     if (!apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
@@ -120,7 +118,7 @@ router.post("/storyboard", async (req: AuthRequest, res: Response, next: NextFun
   }
 });
 
-router.post("/titles", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/titles", async (req: any, res: Response, next: NextFunction) => {
   try {
     const apiKey = await getApiKey();
     if (!apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
@@ -135,7 +133,7 @@ router.post("/titles", async (req: AuthRequest, res: Response, next: NextFunctio
   } catch (err) { next(err); }
 });
 
-router.post("/analyze-idea", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/analyze-idea", async (req: any, res: Response, next: NextFunction) => {
   try {
     const apiKey = await getApiKey();
     if (!apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }

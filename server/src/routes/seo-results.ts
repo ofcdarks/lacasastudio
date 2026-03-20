@@ -15,7 +15,7 @@ router.get("/video/:videoId", async (req: any, res: Response, next: NextFunction
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const { videoId, titles, description, tags, score, tips } = req.body;
+    const { videoId, titles, description, tags, score, tips } = req.body as any;
     if (!videoId) return res.status(400).json({ error: "videoId obrigatório" });
     const video = await prisma.video.findFirst({ where: { id: Number(videoId), userId: req.userId } });
     if (!video) return res.status(403).json({ error: "Acesso negado" });

@@ -1,5 +1,5 @@
 # ============================================================
-# LaCasaStudio V2.3 — TypeScript + PostgreSQL Production Build
+# LaCasaStudio V2.3 — TypeScript Production Build
 # ============================================================
 
 FROM node:20-slim AS client-build
@@ -45,4 +45,4 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD wget -qO- http://localhost:3000/api/health || exit 1
 
-CMD ["sh", "-c", "cd server && npx prisma migrate deploy 2>/dev/null || npx prisma db push 2>/dev/null; node dist/db/seed.js 2>/dev/null; node dist/index.js"]
+CMD ["sh", "-c", "cd server && npx prisma db push --accept-data-loss 2>/dev/null; node dist/db/seed.js 2>/dev/null; node dist/index.js"]

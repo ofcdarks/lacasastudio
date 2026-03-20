@@ -2,10 +2,8 @@ import { Router, Response, NextFunction } from "express";
 import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
 import cache from "../services/cache";
-import { AuthRequest } from "../types";
-
 const router = Router();
-router.use(authenticate as any);
+router.use(authenticate);
 
 const YT_API = "https://www.googleapis.com/youtube/v3";
 
@@ -28,7 +26,7 @@ async function getModel(): Promise<string> {
   return s?.value || "claude-sonnet-4-6";
 }
 
-router.get("/channel/:channelId", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get("/channel/:channelId", async (req: any, res: Response, next: NextFunction) => {
   try {
     const key = await getYtKey();
     if (!key) { res.status(400).json({ error: "Configure sua YouTube API Key nas Configurações" }); return; }
@@ -40,7 +38,7 @@ router.get("/channel/:channelId", async (req: AuthRequest, res: Response, next: 
 
     const resp = await fetch(url);
     if (!resp.ok) { const err = await resp.text(); res.status(resp.status).json({ error: `YouTube API: ${err}` }); return; }
-    const data = await resp.json();
+    const data = await resp.json() as any;
     if (!data.items?.length) { res.status(404).json({ error: "Canal não encontrado" }); return; }
 
     const ch = data.items[0];
@@ -54,7 +52,7 @@ router.get("/channel/:channelId", async (req: AuthRequest, res: Response, next: 
   } catch (err) { next(err); }
 });
 
-router.get("/videos/:channelId", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get("/videos/:channelId", async (req: any, res: Response, next: NextFunction) => {
   try {
     const key = await getYtKey();
     if (!key) { res.status(400).json({ error: "Configure sua YouTube API Key nas Configurações" }); return; }
@@ -63,17 +61,17 @@ router.get("/videos/:channelId", async (req: AuthRequest, res: Response, next: N
     const max = req.query.max || 10;
 
     const chResp = await fetch(`${YT_API}/channels?part=contentDetails&id=${channelId}&key=${key}`);
-    const chData = await chResp.json();
+    const chData = await chResp.json() as any;
     const uploadsId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
     if (!uploadsId) { res.status(404).json({ error: "Playlist de uploads não encontrada" }); return; }
 
     const plResp = await fetch(`${YT_API}/playlistItems?part=snippet,contentDetails&playlistId=${uploadsId}&maxResults=${max}&key=${key}`);
-    const plData = await plResp.json();
+    const plData = await plResp.json() as any;
     const videoIds = (plData.items || []).map((i: any) => i.contentDetails.videoId).join(",");
     if (!videoIds) { res.json([]); return; }
 
     const vResp = await fetch(`${YT_API}/videos?part=statistics,snippet,contentDetails&id=${videoIds}&key=${key}`);
-    const vData = await vResp.json();
+    const vData = await vResp.json() as any;
 
     const videos = (vData.items || []).map((v: any) => ({
       id: v.id, title: v.snippet.title, thumbnail: v.snippet.thumbnails?.medium?.url,
@@ -84,12 +82,12 @@ router.get("/videos/:channelId", async (req: AuthRequest, res: Response, next: N
   } catch (err) { next(err); }
 });
 
-router.post("/analyze", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/analyze", async (req: any, res: Response, next: NextFunction) => {
   try {
     const aiKey = await getAiKey();
     if (!aiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
     const model = await getModel();
-    const { channelName, stats, recentVideos } = req.body;
+    const { channelName, stats, recentVideos } = req.body as any;
 
     const system = `Você é um consultor de YouTube especialista em crescimento de canais. Responda em JSON válido sem markdown.`;
     const prompt = `Analise este canal: ${channelName}\nInscritos: ${stats?.subscribers || "N/A"}\nViews: ${stats?.views || "N/A"}\nVídeos: ${stats?.videos || "N/A"}\n\nÚltimos vídeos:\n${(recentVideos || []).map((v: any) => `- "${v.title}" — ${v.stats?.views} views`).join("\n")}\n\nJSON: {"summary":"","strengths":["","",""],"improvements":["","",""],"nextVideoIdeas":["","","","",""],"bestPostingTime":"","engagementTips":["","",""],"growthScore":75}`;
@@ -101,7 +99,7 @@ router.post("/analyze", async (req: AuthRequest, res: Response, next: NextFuncti
     });
 
     if (!resp.ok) throw new Error(`AI API error: ${resp.status}`);
-    const data = await resp.json();
+    const data = await resp.json() as any;
     const raw = data.choices?.[0]?.message?.content || "";
     try {
       res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));

@@ -49,7 +49,7 @@ router.put("/item/:id", async (req: any, res: Response, next: NextFunction) => {
     const item = await prisma.metaItem.findUnique({ where: { id: Number(req.params.id) }, include: { meta: true } });
     if (!item || item.meta.userId !== req.userId) return res.status(404).json({ error: "Item não encontrado" });
 
-    const { current, target } = req.body;
+    const { current, target } = req.body as any;
     const updated = await prisma.metaItem.update({
       where: { id: item.id },
       data: { ...(current !== undefined && { current }), ...(target !== undefined && { target }) },
