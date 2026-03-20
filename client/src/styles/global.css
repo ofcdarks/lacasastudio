@@ -154,3 +154,12 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
   .grid-stats { grid-template-columns: 1fr !important; }
   .form-grid-3 { grid-template-columns: 1fr !important; }
 }
+
+@keyframes pulse {
+  0%, 100% { width: 30%; opacity: .5; }
+  50% { width: 80%; opacity: 1; }
+}
+@keyframes slideProgress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}

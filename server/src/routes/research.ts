@@ -148,7 +148,7 @@ router.post("/analyze", async (req: any, res: Response, next: NextFunction) => {
     }
 
     const avgSecs = recentVideos.length ? Math.round(recentVideos.reduce((s,v)=>s+v.durationSecs,0)/recentVideos.length) : 0;
-    const avgDuration = avgSecs > 0 ? `${Math.floor(avgSecs/60)}:${String(avgSecs%60).padStart(2,"0")}` : "N/A";
+    const avgDuration = avgSecs > 0 ? (avgSecs >= 3600 ? `${Math.floor(avgSecs/3600)}h ${Math.floor((avgSecs%3600)/60)}m` : `${Math.floor(avgSecs/60)}m ${avgSecs%60}s`) : "N/A";
     const topVideos = [...recentVideos].sort((a,b)=>b.views-a.views).slice(0,5);
     const avgViews = recentVideos.length ? Math.round(recentVideos.reduce((s,v)=>s+v.views,0)/recentVideos.length) : (vids > 0 ? Math.round(views/vids) : 0);
     const avgLikes = recentVideos.length ? Math.round(recentVideos.reduce((s,v)=>s+v.likes,0)/recentVideos.length) : 0;
@@ -475,7 +475,6 @@ router.post("/trending", async (req: any, res: Response, next: NextFunction) => 
     const ytKey = await getYtKey();
     if (!ytKey) { res.status(400).json({ error: "Configure a YouTube API Key" }); return; }
     const { period, regionCode } = req.body as { period?: string; regionCode?: string };
-    
     // Get trending videos
     const data = await ytFetch(`videos?part=snippet,statistics,contentDetails&chart=mostPopular&regionCode=${regionCode || "US"}&maxResults=20`, ytKey);
     const videos = (data.items || []).map((v: any) => {
@@ -517,7 +516,6 @@ router.post("/emerging", async (req: any, res: Response, next: NextFunction) => 
     const ytKey = await getYtKey();
     const aiKey = await getAiKey();
     if (!ytKey) { res.status(400).json({ error: "Configure YouTube API Key" }); return; }
-    
     // Fetch trending from multiple countries
     const regions = ["US","BR","IN","GB","DE","JP","KR","MX"];
     const allTrending: any[] = [];
@@ -649,7 +647,7 @@ Retorne JSON array com ${(videosPerWeek || 3) * 4} vídeos:
     });
     const aiData = await aiRes.json() as any;
     const raw = aiData.choices?.[0]?.message?.content || "[]";
-    res.json({ calendar: JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()) });
+    try { res.json({ calendar: JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()) }); } catch { res.status(500).json({ error: "Formato inválido da IA. Tente novamente." }); }
   } catch (err) { next(err); }
 });
 
@@ -684,8 +682,7 @@ Retorne JSON:
     {"title": "Título do vídeo 1", "thumbnailPrompt": "Prompt DETALHADO para thumbnail: composição, cores, texto overlay, elementos visuais, estilo 16:9", "views": "Estimativa", "duration": "10:00"},
     {"title": "Título do vídeo 2", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
     {"title": "Título do vídeo 3", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
-    {"title": "Título do vídeo 4", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
-    {"title": "Título do vídeo 5", "thumbnailPrompt": "...", "views": "...", "duration": "..."}
+    {"title": "Título do vídeo 4", "thumbnailPrompt": "...", "views": "...", "duration": "..."}
   ],
   "colors": {"primary": "#hex", "secondary": "#hex", "accent": "#hex"},
   "fonts": "Fontes recomendadas",
