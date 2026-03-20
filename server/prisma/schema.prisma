@@ -272,3 +272,88 @@ model ScriptVersion {
   notes     String   @default("")
   createdAt DateTime @default(now())
 }
+model KeywordResult {
+  id          Int      @id @default(autoincrement())
+  keyword     String
+  score       Int      @default(0)
+  volume      String   @default("")
+  competition String   @default("")
+  avgViews    Int      @default(0)
+  topResults  String   @default("[]") // JSON array of top 10 videos
+  related     String   @default("[]") // JSON array of related keywords
+  niche       String   @default("")
+  userId      Int
+  createdAt   DateTime @default(now())
+}
+
+model DailyIdea {
+  id        Int      @id @default(autoincrement())
+  title     String
+  potential String   @default("medium") // low, medium, high, very_high
+  niche     String   @default("")
+  reasoning String   @default("")
+  tags      String   @default("")
+  used      Boolean  @default(false)
+  userId    Int
+  createdAt DateTime @default(now())
+}
+
+model ChannelSnapshot {
+  id             Int      @id @default(autoincrement())
+  savedChannelId Int
+  ytChannelId    String   @default("")
+  channelName    String   @default("")
+  subscribers    Int      @default(0)
+  totalViews     Int      @default(0)
+  videoCount     Int      @default(0)
+  date           String   @default("") // YYYY-MM-DD
+  createdAt      DateTime @default(now())
+}
+
+model VideoVelocity {
+  id          Int      @id @default(autoincrement())
+  ytVideoId   String
+  title       String   @default("")
+  channelName String   @default("")
+  views       Int      @default(0)
+  prevViews   Int      @default(0)
+  velocity    Float    @default(0) // views per hour
+  checkedAt   DateTime @default(now())
+}
+
+model CpmReference {
+  id          Int      @id @default(autoincrement())
+  niche       String
+  country     String   @default("US")
+  avgCpm      Float    @default(0)
+  minCpm      Float    @default(0)
+  maxCpm      Float    @default(0)
+  lastUpdated DateTime @default(now())
+}
+
+model RepurposePiece {
+  id          Int      @id @default(autoincrement())
+  videoId     Int?
+  platform    String   @default("")
+  type        String   @default("")
+  title       String   @default("")
+  content     String   @default("")
+  hook        String   @default("")
+  status      String   @default("draft") // draft, scheduled, published
+  scheduledAt String   @default("")
+  userId      Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model RevenueEntry {
+  id        Int      @id @default(autoincrement())
+  channelId Int?
+  source    String   @default("adsense") // adsense, affiliate, sponsor, product, membership, merch
+  amount    Float    @default(0)
+  currency  String   @default("BRL")
+  month     String   @default("") // YYYY-MM
+  notes     String   @default("")
+  userId    Int
+  createdAt DateTime @default(now())
+}

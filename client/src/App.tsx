@@ -35,14 +35,21 @@ const Equipe = lazy(() => import("./pages/Equipe"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Ideas = lazy(() => import("./pages/Ideas"));
 const Admin = lazy(() => import("./pages/Admin"));
+const Keywords = lazy(() => import("./pages/Keywords"));
+const TagSpy = lazy(() => import("./pages/TagSpy"));
+const SeoAudit = lazy(() => import("./pages/SeoAudit"));
+const Compare = lazy(() => import("./pages/Compare"));
+const DailyIdeas = lazy(() => import("./pages/DailyIdeas"));
+const RetentionAnalyzer = lazy(() => import("./pages/RetentionAnalyzer"));
+const ShortsClipper = lazy(() => import("./pages/ShortsClipper"));
 function Layout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <main className="main-content" style={{ marginLeft: 220, flex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", transition: "margin 0.2s" }}>
+      <main className="main-content" style={{ marginLeft: 230, flex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", transition: "margin 0.25s cubic-bezier(0.4,0,0.2,1)" }}>
         <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        <div className="page-padding" style={{ padding: "24px 32px", flex: 1, background: `radial-gradient(ellipse at 30% 0%, rgba(239,68,68,0.03) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(59,130,246,0.02) 0%, transparent 60%)` }}>
+        <div className="page-padding" style={{ padding: "28px 36px", flex: 1, background: `radial-gradient(ellipse at 20% 0%, rgba(240,68,68,0.02) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(75,141,248,0.015) 0%, transparent 50%)` }}>
           <ProgressProvider><Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",flex:1,padding:40}}><Spinner/></div>}><ErrorBoundary>{children}</ErrorBoundary></Suspense></ProgressProvider>
         </div>
       </main>
@@ -83,6 +90,13 @@ export default function App() {
       <Route path="/settings" element={<Layout><Settings /></Layout>} />
             <Route path="/admin" element={<Layout><Admin /></Layout>} />
       <Route path="/ideas" element={<Layout><Ideas /></Layout>} />
+      <Route path="/keywords" element={<Layout><Keywords /></Layout>} />
+      <Route path="/tag-spy" element={<Layout><TagSpy /></Layout>} />
+      <Route path="/seo-audit" element={<Layout><SeoAudit /></Layout>} />
+      <Route path="/compare" element={<Layout><Compare /></Layout>} />
+      <Route path="/daily-ideas" element={<Layout><DailyIdeas /></Layout>} />
+      <Route path="/retention" element={<Layout><RetentionAnalyzer /></Layout>} />
+      <Route path="/shorts-clip" element={<Layout><ShortsClipper /></Layout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

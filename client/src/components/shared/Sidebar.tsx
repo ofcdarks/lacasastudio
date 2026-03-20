@@ -65,12 +65,12 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
     <>
       <div className={`sidebar-overlay ${isOpen ? "show" : ""}`} onClick={onClose} />
       <aside className={`sidebar ${isOpen ? "open" : ""}`}
-        style={{ width: 220, minWidth: 220, background: C.bgSidebar, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", position: "fixed", top: 0, left: 0, bottom: 0, overflowY: "auto", zIndex: 100, transition: "transform 0.2s ease" }}>
-        <div style={{ padding: "20px 16px 8px", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${C.red}, ${C.orange})`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13, color: "#fff", flexShrink: 0 }}>LC</div>
+        style={{ width: 230, minWidth: 230, background: C.bgSidebar, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", position: "fixed", top: 0, left: 0, bottom: 0, overflowY: "auto", zIndex: 100, transition: "transform 0.25s cubic-bezier(0.4,0,0.2,1)" }}>
+        <div style={{ padding: "22px 18px 10px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: `linear-gradient(135deg, ${C.red}, #D03030)`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13, color: "#fff", flexShrink: 0, boxShadow: `0 4px 12px ${C.red}30` }}>LC</div>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 800, fontSize: 14, letterSpacing: "-0.02em" }}>LaCasaStudio</div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: C.dim }}>V2.3 · YOUTUBE OS</div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: C.dim }}>V2.4 · YOUTUBE OS</div>
           </div>
         </div>
         <div style={{ flex: 1, padding: "4px 8px" }}>
@@ -96,6 +96,16 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
           <SItem icon="🔮" label="Preditor Viral" path="/preditor" onClick={closeMobile} />
           <SItem icon="🧠" label="Hooks Virais" path="/hooks" onClick={closeMobile} />
           <SItem icon="⚡" label="Armas do Algoritmo" path="/algoritmo" onClick={closeMobile} />
+
+        {/* DADOS */}
+        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>DADOS</div></div>
+          <SItem icon="🔑" label="Keywords" path="/keywords" onClick={closeMobile} />
+          <SItem icon="🏷️" label="Tag Spy" path="/tag-spy" onClick={closeMobile} />
+          <SItem icon="✅" label="SEO Audit" path="/seo-audit" onClick={closeMobile} />
+          <SItem icon="📊" label="Comparador" path="/compare" onClick={closeMobile} />
+          <SItem icon="💡" label="Ideias do Dia" path="/daily-ideas" onClick={closeMobile} />
+          <SItem icon="🎯" label="Retenção" path="/retention" onClick={closeMobile} />
+          <SItem icon="✂️" label="Shorts Clipper" path="/shorts-clip" onClick={closeMobile} />
 
         {/* OTIMIZAÇÃO */}
         <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>OTIMIZAÇÃO</div></div>

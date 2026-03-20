@@ -1,6 +1,6 @@
-# LaCasaStudio V2.0 — YouTube Production OS
+# LaCasaStudio V2.4 — YouTube Production OS
 
-Sistema completo de gestão e produção de vídeos para YouTube com multi-canais, storyboard visual, planner kanban e muito mais.
+Sistema completo de gestão e produção de vídeos para YouTube com multi-canais, storyboard visual, planner kanban, keyword research, tag spy, SEO audit e muito mais.
 
 ## Stack
 

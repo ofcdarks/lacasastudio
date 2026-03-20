@@ -1,11 +1,12 @@
 import { useState, ReactNode, CSSProperties } from "react";
 
 export const C = {
-  bg: "#0B0C14", bgCard: "#111219", bgSidebar: "#0E0F17", bgHover: "rgba(255,255,255,0.03)",
-  border: "rgba(255,255,255,0.06)", borderH: "rgba(255,255,255,0.12)",
-  text: "#E2E0EC", muted: "rgba(255,255,255,0.42)", dim: "rgba(255,255,255,0.22)",
-  red: "#EF4444", green: "#22C55E", blue: "#3B82F6", purple: "#A855F7",
-  orange: "#F59E0B", pink: "#EC4899", cyan: "#06B6D4", teal: "#14B8A6",
+  bg: "#08090E", bgCard: "#0F1017", bgCardElevated: "#13141D", bgSidebar: "#0B0C13",
+  bgHover: "rgba(255,255,255,0.025)", bgGlass: "rgba(255,255,255,0.015)",
+  border: "rgba(255,255,255,0.055)", borderH: "rgba(255,255,255,0.10)", borderAccent: "rgba(255,255,255,0.08)",
+  text: "#E8E6F0", muted: "rgba(255,255,255,0.50)", dim: "rgba(255,255,255,0.25)",
+  red: "#F04444", green: "#22D35E", blue: "#4B8DF8", purple: "#A855F7",
+  orange: "#F5A623", pink: "#EC4899", cyan: "#06B6D4", teal: "#14B8A6",
 };
 
 export const ST: Record<string, { l: string; c: string; i: string }> = {
@@ -17,24 +18,23 @@ export const ST: Record<string, { l: string; c: string; i: string }> = {
   scheduled: { l: "Agendado", c: C.blue, i: "📅" },
   published: { l: "Publicado", c: C.green, i: "✅" },
 };
-
 export const STATUS_KEYS = Object.keys(ST);
 
 interface PBarProps { current: number; target: number; color: string; h?: number; }
-export function PBar({ current, target, color, h = 6 }: PBarProps) {
+export function PBar({ current, target, color, h = 5 }: PBarProps) {
   const pct = target > 0 ? Math.min((current / target) * 100, 100) : 0;
   return (
-    <div style={{ width: "100%", height: h, borderRadius: h, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-      <div style={{ width: `${pct}%`, height: "100%", borderRadius: h, background: color, transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)", boxShadow: `0 0 12px ${color}40` }} />
+    <div style={{ width: "100%", height: h, borderRadius: h, background: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
+      <div style={{ width: `${pct}%`, height: "100%", borderRadius: h, background: `linear-gradient(90deg, ${color}, ${color}cc)`, transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)" }} />
     </div>
   );
 }
 
 interface BadgeProps { text?: string; color?: string; v?: string; }
 export function Badge({ text, color = C.red, v = "dot" }: BadgeProps) {
-  if (v === "count") return <span style={{ fontFamily: "var(--mono)", fontSize: 10, fontWeight: 600, color: "#fff", background: color, borderRadius: 10, padding: "2px 7px", lineHeight: "16px" }}>{text}</span>;
-  if (v === "tag") return <span style={{ fontSize: 10, fontWeight: 600, color, background: `${color}18`, borderRadius: 6, padding: "3px 8px" }}>{text}</span>;
-  return <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0, display: "inline-block" }} />;
+  if (v === "count") return <span style={{ fontFamily: "var(--mono)", fontSize: 10, fontWeight: 600, color: "#fff", background: color, borderRadius: 10, padding: "2px 7px", lineHeight: "16px", letterSpacing: "0.02em" }}>{text}</span>;
+  if (v === "tag") return <span style={{ fontSize: 10, fontWeight: 600, color, background: `${color}14`, borderRadius: 6, padding: "3px 8px", border: `1px solid ${color}18`, letterSpacing: "0.01em" }}>{text}</span>;
+  return <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0, display: "inline-block", boxShadow: `0 0 6px ${color}40` }} />;
 }
 
 interface CardProps { children: ReactNode; style?: CSSProperties; color?: string; onClick?: () => void; hov?: boolean; }
@@ -46,11 +46,12 @@ export function Card({ children, style: s = {}, color, onClick, hov = false }: C
       onMouseLeave={() => hov && setH(false)}
       style={{
         background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, padding: 22,
-        position: "relative", overflow: "hidden", transition: "all 0.25s ease",
-        ...(hov && h ? { borderColor: C.borderH, transform: "translateY(-1px)", boxShadow: "0 8px 30px rgba(0,0,0,0.3)" } : {}),
+        position: "relative", overflow: "hidden",
+        transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
+        ...(hov && h ? { borderColor: C.borderH, transform: "translateY(-2px)", boxShadow: "0 8px 32px rgba(0,0,0,0.45)" } : {}),
         ...(onClick ? { cursor: "pointer" } : {}), ...s,
       }}>
-      {color && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: color, opacity: 0.7 }} />}
+      {color && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${color}, ${color}60)` }} />}
       {children}
     </div>
   );
@@ -61,15 +62,16 @@ export function Btn({ children, onClick, vr = "primary", style: s = {}, disabled
   const [h, setH] = useState(false);
   const base: CSSProperties = {
     border: "none", cursor: disabled ? "not-allowed" : "pointer",
-    fontWeight: 600, fontSize: 12.5, borderRadius: 8,
+    fontWeight: 600, fontSize: 12.5, borderRadius: 10,
     display: "inline-flex", alignItems: "center", gap: 6,
-    transition: "all 0.2s", padding: "9px 18px",
-    opacity: disabled ? 0.5 : 1, ...s,
+    transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
+    padding: "10px 20px", letterSpacing: "0.01em",
+    opacity: disabled ? 0.45 : 1, ...s,
   };
   const vs: Record<string, CSSProperties> = {
-    primary: { background: C.red, color: "#fff", boxShadow: h && !disabled ? `0 4px 20px ${C.red}40` : "none" },
-    ghost: { background: "rgba(255,255,255,0.05)", color: C.muted, border: `1px solid ${C.border}` },
-    subtle: { background: "transparent", color: C.muted, padding: "6px 10px" },
+    primary: { background: h && !disabled ? "#E03838" : C.red, color: "#fff", boxShadow: h && !disabled ? `0 4px 24px ${C.red}35` : "none", transform: h && !disabled ? "translateY(-1px)" : "none" },
+    ghost: { background: "rgba(255,255,255,0.04)", color: C.muted, border: `1px solid ${C.border}`, ...(h ? { borderColor: C.borderH, background: "rgba(255,255,255,0.06)" } : {}) },
+    subtle: { background: "transparent", color: C.muted, padding: "6px 12px" },
   };
   return (
     <button onClick={disabled ? undefined : onClick}
@@ -81,10 +83,10 @@ export function Btn({ children, onClick, vr = "primary", style: s = {}, disabled
 interface HdrProps { title: string; sub?: string; action?: ReactNode; }
 export function Hdr({ title, sub, action }: HdrProps) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32, gap: 16 }}>
       <div>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: 0, letterSpacing: "-0.02em" }}>{title}</h1>
-        {sub && <p style={{ fontSize: 13, color: C.muted, margin: "4px 0 0" }}>{sub}</p>}
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: C.text, margin: 0, letterSpacing: "-0.03em", lineHeight: 1.2 }}>{title}</h1>
+        {sub && <p style={{ fontSize: 13, color: C.dim, margin: "6px 0 0", lineHeight: 1.5, letterSpacing: "0.01em" }}>{sub}</p>}
       </div>
       {action}
     </div>
@@ -92,36 +94,51 @@ export function Hdr({ title, sub, action }: HdrProps) {
 }
 
 export function Label({ t }: { t: string }) {
-  return <div style={{ fontSize: 10, color: C.dim, marginBottom: 5, textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em" }}>{t}</div>;
+  return <div style={{ fontSize: 10, color: C.dim, marginBottom: 6, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.08em" }}>{t}</div>;
 }
 
 export function SecTitle({ t }: { t: string }) {
-  return <div style={{ fontSize: 11, fontWeight: 700, color: C.dim, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>{t}</div>;
+  return <div style={{ fontSize: 10, fontWeight: 700, color: C.dim, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 14 }}>{t}</div>;
 }
 
 export function Input(props: any) {
-  return <input {...props} style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, outline: "none", width: "100%", ...props.style }} />;
+  return <input {...props} style={{
+    background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: 10,
+    padding: "10px 14px", color: C.text, fontSize: 13, outline: "none", width: "100%",
+    transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
+    ...props.style
+  }}
+  onFocus={e => { e.target.style.borderColor = "rgba(75,141,248,0.4)"; e.target.style.boxShadow = "0 0 0 3px rgba(75,141,248,0.08)"; }}
+  onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+  />;
 }
 
 export function Select({ children, ...props }: any) {
-  return <select {...props} style={{ background: "#1a1b25", border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, outline: "none", width: "100%", appearance: "none" as const, cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center", paddingRight: 30, ...props.style }}>{children}</select>;
+  return <select {...props} style={{
+    background: C.bgCardElevated, border: `1px solid ${C.border}`, borderRadius: 10,
+    padding: "10px 14px", color: C.text, fontSize: 13, outline: "none", width: "100%",
+    appearance: "none" as const, cursor: "pointer",
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23555' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E")`,
+    backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32,
+    transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
+    ...props.style
+  }}>{children}</select>;
 }
 
 export function Spinner() {
   return (
     <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
-      <div style={{ width: 32, height: 32, border: `3px solid ${C.border}`, borderTopColor: C.red, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ width: 28, height: 28, border: `2.5px solid rgba(255,255,255,0.06)`, borderTopColor: C.red, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
     </div>
   );
 }
 
 export function Empty({ icon = "📭", title = "Nada aqui ainda", sub = "" }) {
   return (
-    <div style={{ textAlign: "center", padding: 48, color: C.dim }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>{icon}</div>
-      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{title}</div>
-      {sub && <div style={{ fontSize: 13 }}>{sub}</div>}
+    <div style={{ textAlign: "center", padding: 56, color: C.dim }}>
+      <div style={{ fontSize: 36, marginBottom: 14, opacity: 0.6 }}>{icon}</div>
+      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4, color: C.muted }}>{title}</div>
+      {sub && <div style={{ fontSize: 13, lineHeight: 1.5 }}>{sub}</div>}
     </div>
   );
 }

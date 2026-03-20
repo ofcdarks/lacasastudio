@@ -225,6 +225,25 @@ export const researchApi = {
   updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
 };
 
+export const competitiveApi = {
+  keywordSearch: (data: any) => api.post<any>("/competitive/keywords/search", data),
+  keywordHistory: () => api.get<any[]>("/competitive/keywords/history"),
+  tagSpy: (data: any) => api.post<any>("/competitive/tag-spy", data),
+  tagSpyBulk: (data: any) => api.post<any>("/competitive/tag-spy/bulk", data),
+  seoAudit: (data: any) => api.post<any>("/competitive/seo-audit", data),
+  seoAuditPrePub: (data: any) => api.post<any>("/competitive/seo-audit/pre-publish", data),
+  dailyIdeasGenerate: () => api.post<any>("/competitive/daily-ideas/generate", {}),
+  dailyIdeasList: () => api.get<any[]>("/competitive/daily-ideas"),
+  dailyIdeaUse: (id: number) => api.put<any>(`/competitive/daily-ideas/${id}/use`, {}),
+  compare: (data: any) => api.post<any>("/competitive/compare", data),
+  velocityCheck: () => api.post<any>("/competitive/velocity/check", {}),
+  velocityHistory: (videoId: string) => api.get<any[]>(`/competitive/velocity/history/${videoId}`),
+  retentionAnalyze: (data: any) => api.post<any>("/competitive/retention-analyze", data),
+  shortsClip: (data: any) => api.post<any>("/competitive/shorts-clip", data),
+  snapshotsCollect: () => api.post<any>("/competitive/snapshots/collect", {}),
+  snapshotsList: (channelId: number) => api.get<any[]>(`/competitive/snapshots/${channelId}`),
+};
+
 export const chatApi = {
   send: (messages: any[], context?: string) => api.post<{ reply: string }>("/chat", { messages, context }),
   shorts: (data: any) => api.post<{ shorts: any[] }>("/chat/shorts", data),

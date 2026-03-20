@@ -29,6 +29,7 @@ import exportRoutes from "./routes/export";
 import adminRoutes from "./routes/admin";
 import researchRoutes from "./routes/research";
 import chatRoutes from "./routes/chat";
+import competitiveRoutes from "./routes/competitive";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -79,9 +80,10 @@ app.use("/api/export", exportRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/research", researchRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/competitive", competitiveRoutes);
 
 app.get("/api/health", (_: Request, res: Response) => {
-  res.json({ status: "ok", version: "2.2.0", uptime: process.uptime() });
+  res.json({ status: "ok", version: "2.4.0", uptime: process.uptime() });
 });
 
 const publicPath = path.join(__dirname, "..", "public");
@@ -101,7 +103,7 @@ app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  logger.info(`LaCasaStudio V2.2 running on http://0.0.0.0:${PORT}`);
+  logger.info(`LaCasaStudio V2.4 running on http://0.0.0.0:${PORT}`);
 });
 
 export default app;
