@@ -64,12 +64,14 @@ router.post("/seo", async (req: any, res: Response, next: NextFunction) => {
     const apiKey = await getApiKey();
     if (!apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
     const model = await getModel();
-    const { title, topic, channelName } = req.body as { title: string; topic?: string; channelName?: string };
+    const { title, topic, channelName, language, competitors } = req.body as any;
 
-    const raw = await callAI(apiKey, model, VIRAL_SYSTEM,
-      `Otimize para viralizar no YouTube. Canal: "${channelName}". Vídeo: "${title}". Tópico: "${topic || title}".
-Responda APENAS com JSON válido, sem markdown:
-{"titles":["5 títulos"],"description":"descrição otimizada","tags":["8-12 tags"],"score":{"seo":0-100,"ctr":0-100,"reach":0-100},"tips":"3 dicas específicas"}`
+    const raw = await callAI(apiKey, model, "Expert em SEO YouTube, copywriting viral e otimização de CTR. APENAS JSON válido sem markdown.",
+      `Crie SEO COMPLETO e SUPERIOR pra este vídeo YouTube. Canal: "${channelName}". Vídeo: "${title}". Tópico: "${topic || title}". Idioma principal: ${language || "pt"}.
+${competitors ? `Competidores a SUPERAR: ${competitors}` : ""}
+
+JSON:
+{"titles":[{"text":"Título 1 mais viral","hook":"Por que funciona","ctrScore":90},{"text":"T2","hook":"...","ctrScore":85},{"text":"T3","hook":"...","ctrScore":88},{"text":"T4","hook":"...","ctrScore":82},{"text":"T5","hook":"...","ctrScore":87},{"text":"T6","hook":"...","ctrScore":84},{"text":"T7","hook":"...","ctrScore":91},{"text":"T8","hook":"...","ctrScore":86},{"text":"T9","hook":"...","ctrScore":83},{"text":"T10","hook":"...","ctrScore":89}],"description":"Descrição SEO otimizada com timestamps e links (400 palavras)","shortDescription":"Descrição curta 2 linhas pra mobile","tags":["tag1","tag2","tag3","tag4","tag5","tag6","tag7","tag8","tag9","tag10","tag11","tag12","tag13","tag14","tag15"],"hashtags":["#hash1","#hash2","#hash3","#hash4","#hash5"],"score":{"seo":90,"ctr":85,"reach":88,"retention":82,"viral":87},"timestamps":["0:00 Introdução","0:30 Tópico 1","2:00 Tópico 2","5:00 Tópico 3","8:00 Conclusão"],"thumbnailIdeas":["Ideia visual 1 pra thumb","Ideia 2","Ideia 3"],"hookScript":"Frase de hook dos primeiros 5 segundos do vídeo","endScreen":"Texto pra end screen / call to action","pinComment":"Comentário fixado sugerido pra engajamento","tips":["Dica específica 1","Dica 2","Dica 3","Dica 4","Dica 5"]}`
     );
     await NotifService.aiGenerated(req.userId, "seo");
     res.json(parseJSON(raw));
