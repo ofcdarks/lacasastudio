@@ -105,12 +105,12 @@ router.get("/oauth/url", async (req: any, res: Response) => {
     "https://www.googleapis.com/auth/youtube.force-ssl",
     "https://www.googleapis.com/auth/yt-analytics.readonly",
   ].join(" ");
-  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(OAUTH_REDIRECT)}&response_type=code&scope=${encodeURIComponent(scopes)}&access_type=offline&prompt=consent&state=${req.user.id}`;
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(OAUTH_REDIRECT)}&response_type=code&scope=${encodeURIComponent(scopes)}&access_type=offline&prompt=consent&state=${req.userId}`;
   res.json({ url });
 });
 
 router.get("/oauth/status", async (req: any, res: Response) => {
-  const token = await (prisma as any).oAuthToken.findUnique({ where: { userId: req.user.id } });
+  const token = await (prisma as any).oAuthToken.findUnique({ where: { userId: req.userId } });
   res.json({ connected: !!token, channelName: token?.channelName || "", channelId: token?.channelId || "" });
 });
 
@@ -149,7 +149,7 @@ async function ytAnalytics(accessToken: string, params: string) {
 // ═══════════════════════════════════════════
 router.get("/my-channel/overview", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const at = await getAccessToken(req.user.id);
+    const at = await getAccessToken(req.userId);
     if (!at) { res.status(401).json({ error: "Conecte sua conta YouTube nas Configurações" }); return; }
     const days = Number(req.query.days) || 28;
     const end = new Date().toISOString().split("T")[0];
@@ -177,7 +177,7 @@ router.get("/my-channel/overview", async (req: any, res: Response, next: NextFun
 
 router.get("/my-channel/videos", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const at = await getAccessToken(req.user.id);
+    const at = await getAccessToken(req.userId);
     if (!at) { res.status(401).json({ error: "Conecte sua conta YouTube" }); return; }
     const days = Number(req.query.days) || 28;
     const end = new Date().toISOString().split("T")[0];
@@ -207,7 +207,7 @@ router.get("/my-channel/videos", async (req: any, res: Response, next: NextFunct
 // Traffic sources & devices for a specific video
 router.get("/my-channel/video/:videoId/details", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const at = await getAccessToken(req.user.id);
+    const at = await getAccessToken(req.userId);
     if (!at) { res.status(401).json({ error: "Conecte sua conta YouTube" }); return; }
     const { videoId } = req.params;
     const end = new Date().toISOString().split("T")[0];
@@ -233,13 +233,13 @@ router.get("/my-channel/video/:videoId/details", async (req: any, res: Response,
 // ═══════════════════════════════════════════
 router.post("/ab-test/create", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const at = await getAccessToken(req.user.id);
+    const at = await getAccessToken(req.userId);
     if (!at) { res.status(401).json({ error: "Conecte sua conta YouTube" }); return; }
     const { videoId, type, variants, rotationHrs } = req.body;
     if (!videoId || !variants?.length) { res.status(400).json({ error: "videoId e variants obrigatórios" }); return; }
 
     const test = await (prisma as any).aBTest.create({
-      data: { videoId, type: type || "thumbnail", variants: JSON.stringify(variants.map((v: any, i: number) => ({ ...v, id: i, impressions: 0, clicks: 0, ctr: 0, watchTime: 0 }))), rotationHrs: rotationHrs || 1, userId: req.user.id }
+      data: { videoId, type: type || "thumbnail", variants: JSON.stringify(variants.map((v: any, i: number) => ({ ...v, id: i, impressions: 0, clicks: 0, ctr: 0, watchTime: 0 }))), rotationHrs: rotationHrs || 1, userId: req.userId }
     });
     res.json(test);
   } catch (err) { next(err); }
@@ -247,14 +247,14 @@ router.post("/ab-test/create", async (req: any, res: Response, next: NextFunctio
 
 router.get("/ab-test/list", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const tests = await (prisma as any).aBTest.findMany({ where: { userId: req.user.id }, orderBy: { createdAt: "desc" }, take: 20 });
+    const tests = await (prisma as any).aBTest.findMany({ where: { userId: req.userId }, orderBy: { createdAt: "desc" }, take: 20 });
     res.json(tests.map((t: any) => ({ ...t, variants: JSON.parse(t.variants || "[]") })));
   } catch (err) { next(err); }
 });
 
 router.post("/ab-test/:id/rotate", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const at = await getAccessToken(req.user.id);
+    const at = await getAccessToken(req.userId);
     if (!at) { res.status(401).json({ error: "Conecte YouTube" }); return; }
     const test = await (prisma as any).aBTest.findUnique({ where: { id: Number(req.params.id) } });
     if (!test || test.status !== "running") { res.status(404).json({ error: "Test not found or not running" }); return; }
@@ -296,7 +296,7 @@ router.post("/ab-test/:id/complete", async (req: any, res: Response, next: NextF
 // ═══════════════════════════════════════════
 router.post("/command-center", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const at = await getAccessToken(req.user.id);
+    const at = await getAccessToken(req.userId);
     if (!at) { res.status(401).json({ error: "Conecte YouTube" }); return; }
     const { videoId } = req.body;
     if (!videoId) { res.status(400).json({ error: "videoId obrigatório" }); return; }
@@ -330,7 +330,7 @@ router.post("/command-center", async (req: any, res: Response, next: NextFunctio
         subsGained: totals[8] || 0, subsLost: totals[9] || 0, avgViewDuration: totals[2] || 0,
         avgViewPct: totals[3] || 0, watchTimeMin: totals[1] || 0,
         satisfaction: likes + dislikes > 0 ? Math.round((likes / (likes + dislikes)) * 100) : 0,
-        layer, userId: req.user.id,
+        layer, userId: req.userId,
       }
     });
 
@@ -355,7 +355,7 @@ router.post("/command-center", async (req: any, res: Response, next: NextFunctio
 // ═══════════════════════════════════════════
 router.get("/satisfaction", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const at = await getAccessToken(req.user.id);
+    const at = await getAccessToken(req.userId);
     if (!at) { res.status(401).json({ error: "Conecte YouTube" }); return; }
     const end = new Date().toISOString().split("T")[0];
     const start = new Date(Date.now() - 90 * 86400000).toISOString().split("T")[0];
@@ -425,7 +425,7 @@ router.post("/community/save", async (req: any, res: Response, next: NextFunctio
   try {
     const { type, content, options, scheduledAt, videoId, channelId } = req.body;
     const post = await (prisma as any).communityPost.create({
-      data: { type, content, options: JSON.stringify(options || []), scheduledAt: scheduledAt || "", videoId, channelId, userId: req.user.id }
+      data: { type, content, options: JSON.stringify(options || []), scheduledAt: scheduledAt || "", videoId, channelId, userId: req.userId }
     });
     res.json(post);
   } catch (err) { next(err); }
@@ -433,7 +433,7 @@ router.post("/community/save", async (req: any, res: Response, next: NextFunctio
 
 router.get("/community/list", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const posts = await (prisma as any).communityPost.findMany({ where: { userId: req.user.id }, orderBy: { createdAt: "desc" }, take: 30 });
+    const posts = await (prisma as any).communityPost.findMany({ where: { userId: req.userId }, orderBy: { createdAt: "desc" }, take: 30 });
     res.json(posts.map((p: any) => ({ ...p, options: JSON.parse(p.options || "[]") })));
   } catch (err) { next(err); }
 });
@@ -468,7 +468,7 @@ router.post("/streak/log", async (req: any, res: Response, next: NextFunction) =
   try {
     const { date, videoTitle, type, channelId } = req.body;
     const d = date || new Date().toISOString().split("T")[0];
-    await (prisma as any).uploadStreak.create({ data: { userId: req.user.id, channelId, date: d, videoTitle: videoTitle || "", type: type || "long" } });
+    await (prisma as any).uploadStreak.create({ data: { userId: req.userId, channelId, date: d, videoTitle: videoTitle || "", type: type || "long" } });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -476,7 +476,7 @@ router.post("/streak/log", async (req: any, res: Response, next: NextFunction) =
 router.get("/streak/data", async (req: any, res: Response, next: NextFunction) => {
   try {
     const entries = await (prisma as any).uploadStreak.findMany({
-      where: { userId: req.user.id }, orderBy: { date: "desc" }, take: 365,
+      where: { userId: req.userId }, orderBy: { date: "desc" }, take: 365,
     });
     const dates: string[] = entries.map((e: any) => String(e.date));
     const uniqueDates = Array.from(new Set(dates)).sort();
@@ -606,8 +606,8 @@ router.post("/catalog/scan", async (req: any, res: Response, next: NextFunction)
   try {
     const ytKey = await getYtKey();
     if (!ytKey) { res.status(400).json({ error: "Configure YouTube API Key" }); return; }
-    const at = await getAccessToken(req.user.id);
-    const oauthToken = await (prisma as any).oAuthToken.findUnique({ where: { userId: req.user.id } });
+    const at = await getAccessToken(req.userId);
+    const oauthToken = await (prisma as any).oAuthToken.findUnique({ where: { userId: req.userId } });
     const channelId = oauthToken?.channelId;
     if (!channelId) { res.status(400).json({ error: "Conecte YouTube primeiro" }); return; }
 
@@ -649,10 +649,10 @@ router.post("/catalog/scan", async (req: any, res: Response, next: NextFunction)
 
         await (prisma as any).catalogAudit.upsert({
           where: { id: 0 }, // Dummy — will create
-          create: { ytVideoId: v.id, title, seoScore, issues: JSON.stringify(issues), userId: req.user.id },
+          create: { ytVideoId: v.id, title, seoScore, issues: JSON.stringify(issues), userId: req.userId },
           update: {},
         }).catch(() => {
-          (prisma as any).catalogAudit.create({ data: { ytVideoId: v.id, title, seoScore, issues: JSON.stringify(issues), userId: req.user.id } });
+          (prisma as any).catalogAudit.create({ data: { ytVideoId: v.id, title, seoScore, issues: JSON.stringify(issues), userId: req.userId } });
         });
       }
     }
@@ -683,7 +683,7 @@ JSON: {"newTitle":"Título otimizado","newDescription":"Descrição otimizada co
 // ═══════════════════════════════════════════
 router.get("/devices", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const at = await getAccessToken(req.user.id);
+    const at = await getAccessToken(req.userId);
     if (!at) { res.status(401).json({ error: "Conecte YouTube" }); return; }
     const end = new Date().toISOString().split("T")[0];
     const start = new Date(Date.now() - 28 * 86400000).toISOString().split("T")[0];

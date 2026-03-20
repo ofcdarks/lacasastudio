@@ -172,7 +172,7 @@ router.post("/keywords/search", async (req: any, res: Response, next: NextFuncti
 
     // Save to DB
     await (prisma as any).keywordResult.create({
-      data: { keyword, score, volume: String(volumeScore), competition: String(competition), avgViews, topResults: JSON.stringify(videos.slice(0, 10)), related: JSON.stringify(related), niche: niche || "", userId: req.user.id }
+      data: { keyword, score, volume: String(volumeScore), competition: String(competition), avgViews, topResults: JSON.stringify(videos.slice(0, 10)), related: JSON.stringify(related), niche: niche || "", userId: req.userId }
     });
 
     res.json({
@@ -197,7 +197,7 @@ router.post("/keywords/search", async (req: any, res: Response, next: NextFuncti
 router.get("/keywords/history", async (req: any, res: Response, next: NextFunction) => {
   try {
     const results = await (prisma as any).keywordResult.findMany({
-      where: { userId: req.user.id },
+      where: { userId: req.userId },
       orderBy: { createdAt: "desc" },
       take: 50,
     });
@@ -505,7 +505,7 @@ router.post("/daily-ideas/generate", async (req: any, res: Response, next: NextF
     if (!ytKey || !aiKey) { res.status(400).json({ error: "Configure YouTube + AI API Keys" }); return; }
 
     // Get user's saved channels for context
-    const saved = await prisma.savedChannel.findMany({ where: { userId: req.user.id }, take: 10 });
+    const saved = await prisma.savedChannel.findMany({ where: { userId: req.userId }, take: 10 });
     const niches: string[] = Array.from(new Set(saved.map((s: any) => String(s.niche)).filter(Boolean)));
     const channelNames = saved.map(s => s.name).slice(0, 5);
     
@@ -539,7 +539,7 @@ Priorize ideias que surfam tendências ATUAIS e que combinem com os nichos do cr
           niche: idea.niche || "",
           reasoning: idea.reasoning || "",
           tags: idea.tags || "",
-          userId: req.user.id,
+          userId: req.userId,
         }
       });
     }
@@ -552,7 +552,7 @@ router.get("/daily-ideas", async (req: any, res: Response, next: NextFunction) =
   try {
     const today = new Date().toISOString().split("T")[0];
     const ideas = await (prisma as any).dailyIdea.findMany({
-      where: { userId: req.user.id },
+      where: { userId: req.userId },
       orderBy: { createdAt: "desc" },
       take: 30,
     });
@@ -667,7 +667,7 @@ router.post("/velocity/check", async (req: any, res: Response, next: NextFunctio
     if (!ytKey) { res.status(400).json({ error: "Configure YouTube API Key" }); return; }
 
     // Get recent videos from saved channels
-    const saved = await prisma.savedChannel.findMany({ where: { userId: req.user.id }, take: 10 });
+    const saved = await prisma.savedChannel.findMany({ where: { userId: req.userId }, take: 10 });
     const results: any[] = [];
 
     for (const ch of saved) {
@@ -807,7 +807,7 @@ router.post("/snapshots/collect", async (req: any, res: Response, next: NextFunc
     const ytKey = await getYtKey();
     if (!ytKey) { res.status(400).json({ error: "Configure YouTube API Key" }); return; }
     
-    const saved = await prisma.savedChannel.findMany({ where: { userId: req.user.id } });
+    const saved = await prisma.savedChannel.findMany({ where: { userId: req.userId } });
     const today = new Date().toISOString().split("T")[0];
     let collected = 0;
 

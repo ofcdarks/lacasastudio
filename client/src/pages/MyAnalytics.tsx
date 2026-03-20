@@ -6,12 +6,12 @@ import { useProgress } from "../components/shared/ProgressModal";
 import MagicTabs from "../components/shared/MagicTabs";
 
 const api = {
-  status: () => fetch("/api/algorithm/oauth/status", { headers: { Authorization: `Bearer ${localStorage.getItem("lc_token")}` } }).then(r => r.json()),
-  url: () => fetch("/api/algorithm/oauth/url", { headers: { Authorization: `Bearer ${localStorage.getItem("lc_token")}` } }).then(r => r.json()),
-  overview: (days) => fetch(`/api/algorithm/my-channel/overview?days=${days}`, { headers: { Authorization: `Bearer ${localStorage.getItem("lc_token")}` } }).then(r => r.json()),
-  videos: (days) => fetch(`/api/algorithm/my-channel/videos?days=${days}`, { headers: { Authorization: `Bearer ${localStorage.getItem("lc_token")}` } }).then(r => r.json()),
-  satisfaction: () => fetch("/api/algorithm/satisfaction", { headers: { Authorization: `Bearer ${localStorage.getItem("lc_token")}` } }).then(r => r.json()),
-  devices: () => fetch("/api/algorithm/devices", { headers: { Authorization: `Bearer ${localStorage.getItem("lc_token")}` } }).then(r => r.json()),
+  status: () => fetch("/api/algorithm/oauth/status", { headers: { Authorization: `Bearer ${localStorage.getItem("lc_token")}` } }).then(r => { if (!r.ok) throw new Error(`Status ${r.status}`); return r.json(); }),
+  url: () => fetch("/api/algorithm/oauth/url", { headers: { Authorization: `Bearer ${localStorage.getItem("lc_token")}` } }).then(async r => { const text = await r.text(); try { return JSON.parse(text); } catch { throw new Error(r.ok ? "Resposta inválida do servidor" : `Erro ${r.status}: ${text.slice(0, 100)}`); } }),
+  overview: (days) => fetch(`/api/algorithm/my-channel/overview?days=${days}`, { headers: { Authorization: `Bearer ${localStorage.getItem("lc_token")}` } }).then(r => { if (!r.ok) throw new Error(`Erro ${r.status}`); return r.json(); }),
+  videos: (days) => fetch(`/api/algorithm/my-channel/videos?days=${days}`, { headers: { Authorization: `Bearer ${localStorage.getItem("lc_token")}` } }).then(r => { if (!r.ok) throw new Error(`Erro ${r.status}`); return r.json(); }),
+  satisfaction: () => fetch("/api/algorithm/satisfaction", { headers: { Authorization: `Bearer ${localStorage.getItem("lc_token")}` } }).then(r => { if (!r.ok) throw new Error(`Erro ${r.status}`); return r.json(); }),
+  devices: () => fetch("/api/algorithm/devices", { headers: { Authorization: `Bearer ${localStorage.getItem("lc_token")}` } }).then(r => { if (!r.ok) throw new Error(`Erro ${r.status}`); return r.json(); }),
 };
 const fmt=n=>{if(!n)return"0";if(n>=1e6)return(n/1e6).toFixed(1)+"M";if(n>=1e3)return(n/1e3).toFixed(1)+"K";return String(n);};
 
