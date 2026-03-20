@@ -90,6 +90,10 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
           <SItem icon="🧠" label="Hooks Virais" path="/hooks" onClick={closeMobile} />
           <SItem icon="💎" label="Score Pub." path="/score" onClick={closeMobile} />
           <SItem icon="🌐" label="Multi-Idioma" path="/multilang" onClick={closeMobile} />
+          <SItem icon="📜" label="Roteiro" path="/roteiro" onClick={closeMobile} />
+          <SItem icon="🔮" label="Preditor" path="/preditor" onClick={closeMobile} />
+          <SItem icon="💸" label="Monetizar" path="/monetizar" onClick={closeMobile} />
+          <SItem icon="♻️" label="Repurpose" path="/repurpose" onClick={closeMobile} />
           <SItem icon="🔥" label="Inteligência" path="/research" onClick={closeMobile} />
           <SItem icon="◎" label="Metas & OKRs" path="/metas" onClick={closeMobile} />
           <SItem icon="◆" label="Templates de Série" path="/templates" onClick={closeMobile} />

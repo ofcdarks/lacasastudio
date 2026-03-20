@@ -28,6 +28,10 @@ const Hooks = lazy(() => import("./pages/Hooks"));
 const PrePublish = lazy(() => import("./pages/PrePublish"));
 const MultiLang = lazy(() => import("./pages/MultiLang"));
 const Pipeline = lazy(() => import("./pages/Pipeline"));
+const FullScript = lazy(() => import("./pages/FullScript"));
+const ViralPredict = lazy(() => import("./pages/ViralPredict"));
+const Monetize360 = lazy(() => import("./pages/Monetize360"));
+const Repurpose = lazy(() => import("./pages/Repurpose"));
 const Orcamento = lazy(() => import("./pages/Orcamento"));
 const Ativos = lazy(() => import("./pages/Ativos"));
 const Equipe = lazy(() => import("./pages/Equipe"));
@@ -75,6 +79,10 @@ export default function App() {
       <Route path="/score" element={<Layout><PrePublish /></Layout>} />
       <Route path="/multilang" element={<Layout><MultiLang /></Layout>} />
       <Route path="/pipeline" element={<Layout><Pipeline /></Layout>} />
+      <Route path="/roteiro" element={<Layout><FullScript /></Layout>} />
+      <Route path="/preditor" element={<Layout><ViralPredict /></Layout>} />
+      <Route path="/monetizar" element={<Layout><Monetize360 /></Layout>} />
+      <Route path="/repurpose" element={<Layout><Repurpose /></Layout>} />
       <Route path="/orcamento" element={<Layout><Orcamento /></Layout>} />
       <Route path="/ativos" element={<Layout><Ativos /></Layout>} />
       <Route path="/equipe" element={<Layout><Equipe /></Layout>} />

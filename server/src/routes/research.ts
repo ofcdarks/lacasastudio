@@ -962,4 +962,105 @@ Retorne 10 trending + 8 emerging. Nichos REAIS de 2025/2026, não genéricos.` }
   } catch (err) { next(err); }
 });
 
+
+// 📜 Full Script Generator
+router.post("/full-script", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey(); if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { title, niche, duration, style, language, hook } = req.body;
+    const model = await getModel();
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({ model, temperature: 0.7, max_tokens: 4000,
+        messages: [{ role: "system", content: "Roteirista profissional de YouTube. Cria roteiros completos palavra-por-palavra. APENAS JSON." },
+          { role: "user", content: `Roteiro COMPLETO palavra-por-palavra para: "${title}"
+Nicho: ${niche||"geral"}, Duração: ${duration||"10:00"}, Estilo: ${style||"educativo"}, Idioma: ${language||"pt"}
+${hook ? `Hook sugerido: ${hook}` : ""}
+
+JSON:
+{"title":"${title}","totalDuration":"${duration||"10:00"}","sections":[{"timestamp":"0:00","duration":"0:30","type":"hook","title":"Gancho","narration":"TEXTO COMPLETO da narração palavra por palavra que o narrador vai ler","visualCue":"Descrição do que aparece na tela","broll":"Sugestão de B-roll ou imagem","music":"Tipo de música de fundo","editNote":"Nota de edição (corte, zoom, efeito)"},{"timestamp":"0:30","duration":"1:30","type":"intro","title":"Introdução","narration":"...","visualCue":"...","broll":"...","music":"...","editNote":"..."},{"timestamp":"2:00","duration":"3:00","type":"content","title":"Desenvolvimento 1","narration":"...","visualCue":"...","broll":"...","music":"...","editNote":"..."},{"timestamp":"5:00","duration":"3:00","type":"content","title":"Desenvolvimento 2","narration":"...","visualCue":"...","broll":"...","music":"...","editNote":"..."},{"timestamp":"8:00","duration":"1:30","type":"climax","title":"Clímax/Revelação","narration":"...","visualCue":"...","broll":"...","music":"...","editNote":"..."},{"timestamp":"9:30","duration":"0:30","type":"cta","title":"CTA","narration":"...","visualCue":"...","broll":"...","music":"...","editNote":"..."}],"retentionTips":["Dica 1 pra manter retenção alta","Dica 2","Dica 3"],"thumbnailPrompt":"Prompt detalhado pra thumbnail","seoTitle":"Título SEO otimizado","wordCount":1500}` }]
+      })
+    });
+    if (!aiRes.ok) { res.status(500).json({ error: "AI error " + aiRes.status }); return; }
+    const data = await aiRes.json() as any;
+    const raw = (data.choices?.[0]?.message?.content || "{}").trim();
+    try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
+    catch { res.status(500).json({ error: "Formato inválido" }); }
+  } catch (err) { next(err); }
+});
+
+// 🔮 Viral Predictor
+router.post("/predict-viral", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey(); if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { title, thumbnailConcept, niche, uploadTime, tags, subscribers } = req.body;
+    const model = await getModel();
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({ model, temperature: 0.3, max_tokens: 1500,
+        messages: [{ role: "system", content: "Analista de dados YouTube. Preveja performance de vídeos. APENAS JSON." },
+          { role: "user", content: `Preveja a performance deste vídeo ANTES de publicar:
+Título: "${title}", Thumb: "${thumbnailConcept||""}", Nicho: ${niche||"geral"}
+Horário: ${uploadTime||"não definido"}, Tags: ${tags||""}, Inscritos: ${subscribers||"novo canal"}
+
+JSON: {"viralScore":85,"views":{"pessimist":"1K-5K","realistic":"10K-50K","optimist":"100K-500K"},"ctr":{"score":80,"analysis":"Por que esse CTR"},"retention":{"score":75,"analysis":"Previsão de retenção"},"timing":{"bestDay":"Terça","bestHour":"14:00 BRT","reason":"Por que esse horário"},"strengths":["Ponto forte 1","2","3"],"weaknesses":["Fraqueza 1","2"],"improvements":["Melhoria 1 pra aumentar views","2","3"],"similarSuccesses":["Vídeo similar que viralizou 1","2"],"estimatedRevenue":{"cpm":"$2-5","revenue30d":"$50-200","revenue90d":"$200-800"},"verdict":"Publicar/Ajustar/Repensar — com explicação"}` }]
+      })
+    });
+    if (!aiRes.ok) { res.status(500).json({ error: "AI error" }); return; }
+    const data = await aiRes.json() as any;
+    const raw = (data.choices?.[0]?.message?.content || "{}").trim();
+    try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
+    catch { res.status(500).json({ error: "Formato inválido" }); }
+  } catch (err) { next(err); }
+});
+
+// 💸 Monetization 360
+router.post("/monetize-360", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey(); if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { niche, subscribers, avgViews, country, style } = req.body;
+    const model = await getModel();
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({ model, temperature: 0.5, max_tokens: 3000,
+        messages: [{ role: "system", content: "Consultor de monetização YouTube expert. APENAS JSON." },
+          { role: "user", content: `Estratégia COMPLETA de monetização para canal YouTube:
+Nicho: ${niche}, Inscritos: ${subscribers||"1K"}, Views médias: ${avgViews||"10K"}, País: ${country||"BR"}, Estilo: ${style||"faceless"}
+
+JSON: {"totalPotential":"R$X-Y/mês","streams":[{"name":"AdSense","icon":"💰","monthlyMin":100,"monthlyMax":500,"difficulty":"fácil","timeToStart":"imediato","howTo":"Passo a passo","tips":["Dica 1","2"]},{"name":"Marketing de Afiliados","icon":"🔗","monthlyMin":200,"monthlyMax":2000,"difficulty":"médio","timeToStart":"1 mês","howTo":"...","tips":["..."],"platforms":["Hotmart","Amazon","Eduzz"]},{"name":"Produtos Digitais (Cursos/Ebooks)","icon":"📚","monthlyMin":500,"monthlyMax":5000,"difficulty":"médio","timeToStart":"2 meses","howTo":"...","tips":["..."]},{"name":"Patrocínios","icon":"🤝","monthlyMin":300,"monthlyMax":3000,"difficulty":"médio","timeToStart":"3 meses","howTo":"...","tips":["..."],"emailTemplate":"Template de email pra marcas"},{"name":"Membership/Canal Exclusivo","icon":"⭐","monthlyMin":100,"monthlyMax":1000,"difficulty":"fácil","timeToStart":"1 mês","howTo":"...","tips":["..."]},{"name":"Merchandise","icon":"👕","monthlyMin":50,"monthlyMax":500,"difficulty":"difícil","timeToStart":"6 meses","howTo":"...","tips":["..."]}],"timeline":[{"month":"Mês 1-3","focus":"Foco","revenue":"R$X","actions":["Ação 1","2"]},{"month":"Mês 4-6","focus":"...","revenue":"...","actions":["..."]},{"month":"Mês 7-12","focus":"...","revenue":"...","actions":["..."]}],"quickWins":["Ação rápida pra monetizar HOJE 1","2","3"]}` }]
+      })
+    });
+    if (!aiRes.ok) { res.status(500).json({ error: "AI error" }); return; }
+    const data = await aiRes.json() as any;
+    const raw = (data.choices?.[0]?.message?.content || "{}").trim();
+    try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
+    catch { res.status(500).json({ error: "Formato inválido" }); }
+  } catch (err) { next(err); }
+});
+
+// ♻️ Repurpose Machine
+router.post("/repurpose", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey(); if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { title, script, niche, language } = req.body;
+    const model = await getModel();
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({ model, temperature: 0.6, max_tokens: 3500,
+        messages: [{ role: "system", content: "Expert em repurpose de conteúdo multiplataforma. APENAS JSON." },
+          { role: "user", content: `Transforme este vídeo YouTube em 10+ peças de conteúdo:
+Título: "${title}", Nicho: ${niche||"geral"}, Idioma: ${language||"pt"}
+${script ? `Roteiro/resumo: ${script.slice(0,500)}` : ""}
+
+JSON: {"original":"${title}","pieces":[{"type":"short","platform":"YouTube Shorts","title":"Título do Short 1","content":"Roteiro completo do short (30-60s)","hook":"Hook dos 3 primeiros segundos"},{"type":"short","platform":"YouTube Shorts","title":"Short 2","content":"...","hook":"..."},{"type":"short","platform":"YouTube Shorts","title":"Short 3","content":"...","hook":"..."},{"type":"tweet","platform":"Twitter/X","content":"Tweet thread completo (máx 280 chars por tweet)","hook":"Primeiro tweet"},{"type":"tweet","platform":"Twitter/X","content":"Tweet 2","hook":"..."},{"type":"carousel","platform":"Instagram","title":"Título do carrossel","slides":["Slide 1 texto","Slide 2","Slide 3","Slide 4","Slide 5","CTA"]},{"type":"blog","platform":"Blog/Medium","title":"Título do post","outline":["Intro","H2: Tópico 1","H2: Tópico 2","Conclusão"],"excerpt":"Resumo 2 linhas"},{"type":"newsletter","platform":"Email","subject":"Subject do email","preview":"Preview text","outline":["Intro pessoal","Conteúdo principal","CTA"]},{"type":"linkedin","platform":"LinkedIn","content":"Post LinkedIn completo"},{"type":"tiktok","platform":"TikTok","title":"Título TikTok","content":"Roteiro TikTok (15-60s)","hook":"Hook"}],"strategy":"Como distribuir: publicar primeiro X, depois Y, espaçar Z dias"}` }]
+      })
+    });
+    if (!aiRes.ok) { res.status(500).json({ error: "AI error" }); return; }
+    const data = await aiRes.json() as any;
+    const raw = (data.choices?.[0]?.message?.content || "{}").trim();
+    try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
+    catch { res.status(500).json({ error: "Formato inválido" }); }
+  } catch (err) { next(err); }
+});
+
 export default router;

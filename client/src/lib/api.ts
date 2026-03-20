@@ -202,6 +202,10 @@ export const researchApi = {
   multiLanguage: (data: any) => api.post<any>("/research/multi-language", data),
   pipeline: (data: any) => api.post<any>("/research/pipeline", data),
   trendingNiches: () => api.post<any>("/research/trending-niches", {}),
+  fullScript: (data: any) => api.post<any>("/research/full-script", data),
+  predictViral: (data: any) => api.post<any>("/research/predict-viral", data),
+  monetize360: (data: any) => api.post<any>("/research/monetize-360", data),
+  repurpose: (data: any) => api.post<any>("/research/repurpose", data),
   updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
 };
 
