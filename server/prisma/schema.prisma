@@ -357,3 +357,112 @@ model RevenueEntry {
   userId    Int
   createdAt DateTime @default(now())
 }
+
+model OAuthToken {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @unique
+  accessToken  String   @default("")
+  refreshToken String   @default("")
+  expiresAt    String   @default("")
+  scope        String   @default("")
+  channelId    String   @default("")
+  channelName  String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ABTest {
+  id           Int      @id @default(autoincrement())
+  videoId      String
+  type         String   @default("thumbnail") // thumbnail, title, description
+  status       String   @default("running") // running, completed, cancelled
+  variants     String   @default("[]") // JSON array [{label,value,impressions,clicks,ctr,watchTime}]
+  winnerId     Int?
+  startedAt    DateTime @default(now())
+  endedAt      String   @default("")
+  rotationHrs  Int      @default(1)
+  userId       Int
+  createdAt    DateTime @default(now())
+}
+
+model VideoPerformance {
+  id            Int      @id @default(autoincrement())
+  ytVideoId     String
+  title         String   @default("")
+  publishedAt   String   @default("")
+  impressions   Int      @default(0)
+  clicks        Int      @default(0)
+  ctr           Float    @default(0)
+  avgViewDuration Float  @default(0)
+  avgViewPct    Float    @default(0)
+  views         Int      @default(0)
+  likes         Int      @default(0)
+  dislikes      Int      @default(0)
+  comments      Int      @default(0)
+  shares        Int      @default(0)
+  subsGained    Int      @default(0)
+  subsLost      Int      @default(0)
+  watchTimeMin  Float    @default(0)
+  satisfaction  Float    @default(0)
+  trafficSources String  @default("{}") // JSON
+  devices       String   @default("{}") // JSON {mobile,desktop,tv,tablet}
+  countries     String   @default("{}") // JSON
+  layer         String   @default("testing") // testing,core,recent,topic,adjacent,viral
+  channelId     String   @default("")
+  userId        Int
+  checkedAt     DateTime @default(now())
+}
+
+model CommunityPost {
+  id          Int      @id @default(autoincrement())
+  type        String   @default("text") // text, poll, image, teaser
+  content     String   @default("")
+  options     String   @default("[]") // JSON for polls
+  status      String   @default("draft") // draft, scheduled, published
+  scheduledAt String   @default("")
+  videoId     Int?
+  channelId   Int?
+  userId      Int
+  createdAt   DateTime @default(now())
+}
+
+model CommentTemplate {
+  id       Int    @id @default(autoincrement())
+  label    String
+  type     String @default("reply") // reply, pinned, first
+  content  String @default("")
+  userId   Int
+}
+
+model UploadStreak {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  channelId Int?
+  date      String   // YYYY-MM-DD
+  videoTitle String  @default("")
+  type      String   @default("long") // long, short
+  createdAt DateTime @default(now())
+}
+
+model PlaylistStrategy {
+  id          Int    @id @default(autoincrement())
+  name        String
+  videoIds    String @default("[]") // JSON ordered array of ytVideoIds
+  strategy    String @default("") // AI generated strategy
+  sessionEst  String @default("") // estimated session duration
+  userId      Int
+  channelId   Int?
+  createdAt   DateTime @default(now())
+}
+
+model CatalogAudit {
+  id         Int      @id @default(autoincrement())
+  ytVideoId  String
+  title      String   @default("")
+  seoScore   Int      @default(0)
+  issues     String   @default("[]") // JSON
+  fixes      String   @default("[]") // JSON
+  status     String   @default("pending") // pending, fixed, skipped
+  userId     Int
+  createdAt  DateTime @default(now())
+}

@@ -42,6 +42,14 @@ const Compare = lazy(() => import("./pages/Compare"));
 const DailyIdeas = lazy(() => import("./pages/DailyIdeas"));
 const RetentionAnalyzer = lazy(() => import("./pages/RetentionAnalyzer"));
 const ShortsClipper = lazy(() => import("./pages/ShortsClipper"));
+const MyAnalytics = lazy(() => import("./pages/MyAnalytics"));
+const CommandCenter = lazy(() => import("./pages/CommandCenter"));
+const ABTesting = lazy(() => import("./pages/ABTesting"));
+const StreakTracker = lazy(() => import("./pages/StreakTracker"));
+const CommunityPlanner = lazy(() => import("./pages/CommunityPlanner"));
+const ShortsOptimizer = lazy(() => import("./pages/ShortsOptimizer"));
+const CatalogOptimizer = lazy(() => import("./pages/CatalogOptimizer"));
+const HypeStrategy = lazy(() => import("./pages/HypeStrategy"));
 function Layout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
@@ -97,6 +105,14 @@ export default function App() {
       <Route path="/daily-ideas" element={<Layout><DailyIdeas /></Layout>} />
       <Route path="/retention" element={<Layout><RetentionAnalyzer /></Layout>} />
       <Route path="/shorts-clip" element={<Layout><ShortsClipper /></Layout>} />
+      <Route path="/my-analytics" element={<Layout><MyAnalytics /></Layout>} />
+      <Route path="/command-center" element={<Layout><CommandCenter /></Layout>} />
+      <Route path="/ab-testing" element={<Layout><ABTesting /></Layout>} />
+      <Route path="/streak" element={<Layout><StreakTracker /></Layout>} />
+      <Route path="/community" element={<Layout><CommunityPlanner /></Layout>} />
+      <Route path="/shorts-optimizer" element={<Layout><ShortsOptimizer /></Layout>} />
+      <Route path="/catalog" element={<Layout><CatalogOptimizer /></Layout>} />
+      <Route path="/hype" element={<Layout><HypeStrategy /></Layout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

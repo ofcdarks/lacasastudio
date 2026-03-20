@@ -244,6 +244,33 @@ export const competitiveApi = {
   snapshotsList: (channelId: number) => api.get<any[]>(`/competitive/snapshots/${channelId}`),
 };
 
+export const algorithmApi = {
+  oauthUrl: () => api.get<{ url: string }>("/algorithm/oauth/url"),
+  oauthStatus: () => api.get<any>("/algorithm/oauth/status"),
+  overview: (days = 28) => api.get<any>(`/algorithm/my-channel/overview?days=${days}`),
+  videos: (days = 28) => api.get<any>(`/algorithm/my-channel/videos?days=${days}`),
+  videoDetails: (videoId: string) => api.get<any>(`/algorithm/my-channel/video/${videoId}/details`),
+  abTestCreate: (data: any) => api.post<any>("/algorithm/ab-test/create", data),
+  abTestList: () => api.get<any[]>("/algorithm/ab-test/list"),
+  abTestRotate: (id: number, data: any) => api.post<any>(`/algorithm/ab-test/${id}/rotate`, data),
+  abTestComplete: (id: number, data: any) => api.post<any>(`/algorithm/ab-test/${id}/complete`, data),
+  commandCenter: (data: any) => api.post<any>("/algorithm/command-center", data),
+  satisfaction: () => api.get<any>("/algorithm/satisfaction"),
+  playlistOptimize: (data: any) => api.post<any>("/algorithm/playlist-optimize", data),
+  communityGenerate: (data: any) => api.post<any>("/algorithm/community/generate", data),
+  communityList: () => api.get<any[]>("/algorithm/community/list"),
+  communitySave: (data: any) => api.post<any>("/algorithm/community/save", data),
+  shortsOptimize: (data: any) => api.post<any>("/algorithm/shorts-optimize", data),
+  streakLog: (data: any) => api.post<any>("/algorithm/streak/log", data),
+  streakData: () => api.get<any>("/algorithm/streak/data"),
+  endScreenSuggest: (data: any) => api.post<any>("/algorithm/end-screen/suggest", data),
+  hypeStrategy: (data: any) => api.post<any>("/algorithm/hype-strategy", data),
+  aiDisclosureCheck: (data: any) => api.post<any>("/algorithm/ai-disclosure/check", data),
+  catalogScan: () => api.post<any>("/algorithm/catalog/scan", {}),
+  catalogFix: (data: any) => api.post<any>("/algorithm/catalog/fix", data),
+  devices: () => api.get<any>("/algorithm/devices"),
+};
+
 export const chatApi = {
   send: (messages: any[], context?: string) => api.post<{ reply: string }>("/chat", { messages, context }),
   shorts: (data: any) => api.post<{ shorts: any[] }>("/chat/shorts", data),

@@ -107,6 +107,17 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
           <SItem icon="🎯" label="Retenção" path="/retention" onClick={closeMobile} />
           <SItem icon="✂️" label="Shorts Clipper" path="/shorts-clip" onClick={closeMobile} />
 
+        {/* ALGORITMO */}
+        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>ALGORITMO</div></div>
+          <SItem icon="📺" label="Meu Canal (OAuth)" path="/my-analytics" onClick={closeMobile} />
+          <SItem icon="🎯" label="Command Center 48h" path="/command-center" onClick={closeMobile} />
+          <SItem icon="🧪" label="A/B Testing" path="/ab-testing" onClick={closeMobile} />
+          <SItem icon="📱" label="Shorts Optimizer" path="/shorts-optimizer" onClick={closeMobile} />
+          <SItem icon="💬" label="Community" path="/community" onClick={closeMobile} />
+          <SItem icon="🔥" label="Hype Strategy" path="/hype" onClick={closeMobile} />
+          <SItem icon="🔄" label="Re-Otimizar Catálogo" path="/catalog" onClick={closeMobile} />
+          <SItem icon="📅" label="Upload Streak" path="/streak" onClick={closeMobile} />
+
         {/* OTIMIZAÇÃO */}
         <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>OTIMIZAÇÃO</div></div>
           <SItem icon="🚀" label="SEO Viral" path="/seo" onClick={closeMobile} />

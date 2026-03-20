@@ -30,6 +30,7 @@ import adminRoutes from "./routes/admin";
 import researchRoutes from "./routes/research";
 import chatRoutes from "./routes/chat";
 import competitiveRoutes from "./routes/competitive";
+import algorithmRoutes from "./routes/algorithm";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -81,6 +82,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/research", researchRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/competitive", competitiveRoutes);
+app.use("/api/algorithm", algorithmRoutes);
 
 app.get("/api/health", (_: Request, res: Response) => {
   res.json({ status: "ok", version: "2.4.0", uptime: process.uptime() });
