@@ -52,7 +52,14 @@ function render(ctx,el,sel){
   else if(el.type==="ellipse"){ctx.beginPath();ctx.ellipse(el.x+el.w/2,el.y+el.h/2,Math.abs(el.w/2)||1,Math.abs(el.h/2)||1,0,0,Math.PI*2);if(hf){ctx.fillStyle=(el.color||"#fff")+"25";ctx.fill();}ctx.stroke();}
   else if(el.type==="diamond"){const cx=el.x+el.w/2,cy=el.y+el.h/2;ctx.beginPath();ctx.moveTo(cx,el.y);ctx.lineTo(el.x+el.w,cy);ctx.lineTo(cx,el.y+el.h);ctx.lineTo(el.x,cy);ctx.closePath();if(hf){ctx.fillStyle=(el.color||"#fff")+"25";ctx.fill();}ctx.stroke();}
   else if(el.type==="line"){ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(el.x+el.w,el.y+el.h);ctx.stroke();}
-  else if(el.type==="arrow"){const ex=el.x+el.w,ey=el.y+el.h;ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(ex,ey);ctx.stroke();const a=Math.atan2(el.h,el.w),hl=16;ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(a-.4),ey-hl*Math.sin(a-.4));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(a+.4),ey-hl*Math.sin(a+.4));ctx.stroke();}
+  else if(el.type==="arrow"){const ex=el.x+el.w,ey=el.y+el.h,at=el.arrowType||"straight",hl=Math.max(12,el.sw*4),a=Math.atan2(el.h,el.w);
+    if(el.dash)ctx.setLineDash(el.dash);
+    if(at==="curved"||at==="curveUp"||at==="curveDown"){const cp1x=el.x+el.w*.4,cp1y=at==="curveUp"?Math.min(el.y,ey)-Math.abs(el.h||80):at==="curveDown"?Math.max(el.y,ey)+Math.abs(el.h||80):el.y-60,cp2x=el.x+el.w*.6,cp2y=cp1y;ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,ex,ey);ctx.stroke();const dt=.98,tx=Math.pow(1-dt,3)*el.x+3*Math.pow(1-dt,2)*dt*cp1x+3*(1-dt)*dt*dt*cp2x+dt*dt*dt*ex,ty=Math.pow(1-dt,3)*el.y+3*Math.pow(1-dt,2)*dt*cp1y+3*(1-dt)*dt*dt*cp2y+dt*dt*dt*ey,ca=Math.atan2(ey-ty,ex-tx);ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(ca-.4),ey-hl*Math.sin(ca-.4));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(ca+.4),ey-hl*Math.sin(ca+.4));ctx.fill?ctx.fill():0;ctx.stroke();}
+    else if(at==="double"){ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(ex,ey);ctx.stroke();ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(a-.4),ey-hl*Math.sin(a-.4));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(a+.4),ey-hl*Math.sin(a+.4));ctx.stroke();const ra=a+Math.PI;ctx.beginPath();ctx.moveTo(el.x-hl*Math.cos(ra-.4),el.y-hl*Math.sin(ra-.4));ctx.lineTo(el.x,el.y);ctx.lineTo(el.x-hl*Math.cos(ra+.4),el.y-hl*Math.sin(ra+.4));ctx.stroke();}
+    else if(at==="filled"){ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(ex,ey);ctx.stroke();ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(a-.35),ey-hl*Math.sin(a-.35));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(a+.35),ey-hl*Math.sin(a+.35));ctx.closePath();ctx.fillStyle=el.color;ctx.fill();}
+    else if(at==="elbow"){const mx=el.x+el.w/2;ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(mx,el.y);ctx.lineTo(mx,ey);ctx.lineTo(ex,ey);ctx.stroke();const ea=el.w>0?0:Math.PI;ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(ea-.4),ey-hl*Math.sin(ea-.4));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(ea+.4),ey-hl*Math.sin(ea+.4));ctx.stroke();}
+    else{ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(ex,ey);ctx.stroke();ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(a-.4),ey-hl*Math.sin(a-.4));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(a+.4),ey-hl*Math.sin(a+.4));ctx.stroke();}
+    if(el.dash)ctx.setLineDash([]);}
   else if(el.type==="draw"){const p=el.points||[];if(p.length>=2){ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)ctx.lineTo(p[i][0],p[i][1]);ctx.stroke();}}
   else if(el.type==="text"){const fs=el.fontSize||24;ctx.font=`${el.bold?"bold ":""}${el.italic?"italic ":""}${fs}px ${el.fontFamily||FONTS[1].f}`;ctx.fillStyle=el.color||"#fff";ctx.textAlign=el.align||"left";const lines=(el.text||"").split("\n");lines.forEach((l,i)=>ctx.fillText(l,el.x,el.y+i*(fs*1.4)));}
   else if(el.type==="sticky"){const sw=el.w||220,sh=el.h||160;ctx.fillStyle=el.stickyColor||"#FEF08A";ctx.shadowColor="rgba(0,0,0,.15)";ctx.shadowBlur=10;ctx.shadowOffsetY=4;rrFn(ctx,el.x,el.y,sw,sh,8);ctx.fill();ctx.shadowColor="transparent";ctx.strokeStyle="rgba(0,0,0,.08)";ctx.lineWidth=1;rrFn(ctx,el.x,el.y,sw,sh,8);ctx.stroke();ctx.fillStyle="rgba(0,0,0,.05)";ctx.fillRect(el.x+1,el.y+1,sw-2,30);ctx.fillStyle="#1a1a1a";ctx.font="bold 13px 'Plus Jakarta Sans',sans-serif";ctx.fillText(el.title||"Post-it",el.x+12,el.y+20);ctx.font="12px 'Plus Jakarta Sans',sans-serif";wrapFn(ctx,el.text||"",el.x+12,el.y+46,sw-24,16,6);}
@@ -68,11 +75,28 @@ function gridFn(c,W,H,ox,oy,z){c.strokeStyle="rgba(255,255,255,.03)";c.lineWidth
 /* ── element library ──────────────────────── */
 const ICONS=["📱","💻","🎥","🎬","📊","📈","💰","🎯","🚀","⭐","❤️","🔥","💡","✅","❌","⚠️","📌","🎨","📝","🔗","👤","👥","🌍","📦","🔒","🔓","⏰","📅","💬","📢","🎉","🏆","🎮","📸","🎧","📻","🖥","⚡","🧠","💎","🌟","👑","🎪","🏠","🔔","📮","🗂","📂","🔍","⚙️"];
 const ARROWS_LIB=[
-  {n:"Seta simples →",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#fff",sw:2})},
-  {n:"Seta curva ↗",make:(x,y)=>({type:"arrow",x,y,w:150,h:-80,color:"#3B82F6",sw:3})},
-  {n:"Seta grossa →",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#EF4444",sw:5})},
-  {n:"Seta dupla ↔",make:(x,y)=>([{type:"arrow",x,y,w:120,h:0,color:"#22C55E",sw:2},{type:"arrow",x:x+120,y,w:-120,h:0,color:"#22C55E",sw:2}])},
-  {n:"Conector L ↳",make:(x,y)=>([{type:"line",x,y,w:0,h:80,color:"#F59E0B",sw:2},{type:"arrow",x,y:y+80,w:100,h:0,color:"#F59E0B",sw:2}])},
+  {n:"→ Seta simples",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#fff",sw:2,arrowType:"straight"})},
+  {n:"→ Seta fina",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#94A3B8",sw:1,arrowType:"straight"})},
+  {n:"→ Seta média",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#fff",sw:3,arrowType:"straight"})},
+  {n:"→ Seta grossa",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#EF4444",sw:5,arrowType:"straight"})},
+  {n:"→ Seta extra grossa",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#F59E0B",sw:8,arrowType:"straight"})},
+  {n:"▶ Seta preenchida",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#3B82F6",sw:3,arrowType:"filled"})},
+  {n:"↔ Seta dupla",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#22C55E",sw:2,arrowType:"double"})},
+  {n:"↔ Dupla grossa",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#A855F7",sw:4,arrowType:"double"})},
+  {n:"⤴ Curva pra cima",make:(x,y)=>({type:"arrow",x,y,w:200,h:0,color:"#3B82F6",sw:2,arrowType:"curveUp"})},
+  {n:"⤵ Curva pra baixo",make:(x,y)=>({type:"arrow",x,y,w:200,h:0,color:"#EC4899",sw:2,arrowType:"curveDown"})},
+  {n:"↗ Curva diagonal",make:(x,y)=>({type:"arrow",x,y,w:200,h:-100,color:"#F59E0B",sw:3,arrowType:"curved"})},
+  {n:"⤴ Curva grossa",make:(x,y)=>({type:"arrow",x,y,w:200,h:0,color:"#EF4444",sw:5,arrowType:"curveUp"})},
+  {n:"↳ Cotovelo (L)",make:(x,y)=>({type:"arrow",x,y,w:120,h:80,color:"#F59E0B",sw:2,arrowType:"elbow"})},
+  {n:"↳ Cotovelo grossa",make:(x,y)=>({type:"arrow",x,y,w:120,h:80,color:"#22C55E",sw:4,arrowType:"elbow"})},
+  {n:"⇢ Tracejada",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#94A3B8",sw:2,arrowType:"straight",dash:[8,4]})},
+  {n:"⇢ Tracejada grossa",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#fff",sw:4,arrowType:"straight",dash:[12,6]})},
+  {n:"⇢ Pontilhada",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#3B82F6",sw:2,arrowType:"straight",dash:[3,5]})},
+  {n:"⤴ Curva tracejada",make:(x,y)=>({type:"arrow",x,y,w:200,h:0,color:"#A855F7",sw:2,arrowType:"curveUp",dash:[8,4]})},
+  {n:"↓ Seta pra baixo",make:(x,y)=>({type:"arrow",x,y,w:0,h:120,color:"#EF4444",sw:3,arrowType:"straight"})},
+  {n:"↑ Seta pra cima",make:(x,y)=>({type:"arrow",x,y,w:0,h:-120,color:"#22C55E",sw:3,arrowType:"straight"})},
+  {n:"↙ Diagonal ↘",make:(x,y)=>({type:"arrow",x,y,w:120,h:80,color:"#F59E0B",sw:2,arrowType:"straight"})},
+  {n:"↗ Diagonal ↖",make:(x,y)=>({type:"arrow",x,y,w:120,h:-80,color:"#3B82F6",sw:2,arrowType:"straight"})},
 ];
 const SHAPES_LIB=[
   {n:"Balão de fala",make:(x,y)=>({type:"ellipse",x,y,w:200,h:100,color:"#3B82F6",sw:2,fill:"solid"})},
@@ -441,7 +465,7 @@ export default function Ideas(){
               <div style={{fontWeight:700,fontSize:18,marginBottom:16}}>📦 Biblioteca de Elementos</div>
               <div style={{display:"flex",gap:4,marginBottom:16}}>{[["icons","Ícones"],["arrows","Setas"],["shapes","Formas"]].map(([k,l])=><button key={k} onClick={()=>setLibTab(k)} style={{padding:"6px 14px",borderRadius:6,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:libTab===k?`${C.blue}20`:"rgba(255,255,255,.04)",color:libTab===k?C.blue:C.dim}}>{l}</button>)}</div>
               {libTab==="icons"&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ICONS.map((ic,i)=><button key={i} onClick={()=>addLibItem(ic)} style={{width:44,height:44,borderRadius:8,border:"none",cursor:"pointer",fontSize:22,background:"rgba(255,255,255,.04)",transition:"all .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.04)"}>{ic}</button>)}</div>}
-              {libTab==="arrows"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{ARROWS_LIB.map((a,i)=><button key={i} onClick={()=>addLibItem(a)} style={{padding:"12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",background:"rgba(255,255,255,.04)",color:C.text}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.04)"}>{a.n}</button>)}</div>}
+              {libTab==="arrows"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>{ARROWS_LIB.map((a,i)=><button key={i} onClick={()=>addLibItem(a)} style={{padding:"12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",background:"rgba(255,255,255,.04)",color:C.text}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.04)"}>{a.n}</button>)}</div>}
               {libTab==="shapes"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>{SHAPES_LIB.map((s,i)=><button key={i} onClick={()=>addLibItem(s)} style={{padding:"14px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:12,textAlign:"center",background:"rgba(255,255,255,.04)",color:C.text}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.04)"}>{s.n}</button>)}</div>}
             </div></div>}
 
@@ -508,7 +532,16 @@ Ex: Roteiro de reels sobre produtividade" style={{width:"100%",background:"rgba(
           <PS label="Modo de desenho"><div style={{display:"flex",gap:3}}><button onClick={()=>setDrawMode("clean")} style={{flex:1,padding:"5px 0",borderRadius:6,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,background:drawMode==="clean"?`${C.blue}20`:"rgba(255,255,255,.04)",color:drawMode==="clean"?C.blue:C.dim}}>▬ Limpo</button><button onClick={()=>setDrawMode("hand")} style={{flex:1,padding:"5px 0",borderRadius:6,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,background:drawMode==="hand"?`${C.purple}20`:"rgba(255,255,255,.04)",color:drawMode==="hand"?C.purple:C.dim}}>✎ Rabisco</button></div></PS>
           {tool==="marker"&&<PS label="Marcadores"><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{MARKERS.map((m,i)=><button key={i} onClick={()=>setMrkIdx(i)} style={{width:32,height:32,borderRadius:6,border:"none",cursor:"pointer",fontSize:16,background:mrkIdx===i?`${C.blue}20`:"rgba(255,255,255,.04)"}}>{m}</button>)}</div></PS>}
           {tool==="sticky"&&<PS label="Cor do Post-it"><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{STICKY_C.map(sc=><div key={sc} onClick={()=>setStickyC(sc)} style={{width:28,height:28,borderRadius:6,cursor:"pointer",background:sc,border:stickyC===sc?"2px solid #fff":`1px solid ${C.border}`}}/>)}</div></PS>}
-          {selEl&&<PS label="Selecionado"><div style={{fontSize:11,color:C.muted,marginBottom:8}}>{selEl.type}</div>{(selEl.type==="text"||selEl.type==="sticky")&&<Btn vr="ghost" onClick={()=>{if(selEl.type==="text"){setTextEditor({id:selEl.id,value:selEl.text||"",canvasX:selEl.x,canvasY:selEl.y,fontSize:selEl.fontSize||24});}else setStickyEditor({id:selEl.id,title:selEl.title,text:selEl.text,stickyColor:selEl.stickyColor});}} style={{width:"100%",marginBottom:6,fontSize:11}}>Editar</Btn>}<Btn vr="ghost" onClick={()=>{const n=els.filter(e=>e.id!==selId);setEls(n);push(n);setSelId(null);}} style={{width:"100%",fontSize:11,color:C.red}}>Deletar</Btn></PS>}
+          {selEl&&<PS label="Selecionado"><div style={{fontSize:11,color:C.muted,marginBottom:8}}>{selEl.type==="arrow"?"Seta":selEl.type}</div>
+            {selEl.type==="arrow"&&<div style={{marginBottom:8}}>
+              <div style={{fontSize:10,color:C.dim,marginBottom:4}}>Tipo de Seta</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:3}}>{[["straight","→ Reta"],["curved","⤴ Curva"],["curveUp","↗ Cima"],["curveDown","↘ Baixo"],["double","↔ Dupla"],["filled","▶ Cheia"],["elbow","↳ L"]].map(([v,l])=><button key={v} onClick={()=>updSel({arrowType:v})} style={{padding:"4px",borderRadius:4,border:`1px solid ${selEl.arrowType===v?C.blue:C.border}`,background:selEl.arrowType===v?`${C.blue}15`:"transparent",color:selEl.arrowType===v?C.blue:C.dim,cursor:"pointer",fontSize:8,fontWeight:600}}>{l}</button>)}</div>
+              <div style={{fontSize:10,color:C.dim,marginTop:6,marginBottom:3}}>Espessura</div>
+              <div style={{display:"flex",gap:3}}>{[1,2,3,5,8].map(w=><button key={w} onClick={()=>updSel({sw:w})} style={{flex:1,padding:"4px",borderRadius:4,border:`1px solid ${selEl.sw===w?C.blue:C.border}`,background:selEl.sw===w?`${C.blue}15`:"transparent",color:selEl.sw===w?C.blue:C.dim,cursor:"pointer",fontSize:10,fontWeight:700}}>{w}px</button>)}</div>
+              <div style={{fontSize:10,color:C.dim,marginTop:6,marginBottom:3}}>Traço</div>
+              <div style={{display:"flex",gap:3}}>{[["Sólido",null],["- -",JSON.stringify([8,4])],["· ·",JSON.stringify([3,5])],["- ·",JSON.stringify([10,4,3,4])]].map(([l,v])=><button key={l} onClick={()=>updSel({dash:v?JSON.parse(v):null})} style={{flex:1,padding:"4px",borderRadius:4,border:`1px solid ${JSON.stringify(selEl.dash||null)===v?C.blue:C.border}`,background:JSON.stringify(selEl.dash||null)===v?`${C.blue}15`:"transparent",color:C.dim,cursor:"pointer",fontSize:9}}>{l}</button>)}</div>
+            </div>}
+            {(selEl.type==="text"||selEl.type==="sticky")&&<Btn vr="ghost" onClick={()=>{if(selEl.type==="text"){setTextEditor({id:selEl.id,value:selEl.text||"",canvasX:selEl.x,canvasY:selEl.y,fontSize:selEl.fontSize||24});}else setStickyEditor({id:selEl.id,title:selEl.title,text:selEl.text,stickyColor:selEl.stickyColor});}} style={{width:"100%",marginBottom:6,fontSize:11}}>Editar</Btn>}<Btn vr="ghost" onClick={()=>{const n=els.filter(e=>e.id!==selId);setEls(n);push(n);setSelId(null);}} style={{width:"100%",fontSize:11,color:C.red}}>Deletar</Btn></PS>}
         </div>}
       </div></div>);
 }
