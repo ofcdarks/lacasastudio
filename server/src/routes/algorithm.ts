@@ -5,11 +5,11 @@
 // Streaks, End Screens, Hype, Devices, AI Disclosure, Catalog
 // ============================================
 
-import { Router, Response, NextFunction } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
 const router = Router();
-router.use(authenticate);
+// NOTE: do NOT use router.use(authenticate) here — callback needs to be public
 
 const LANG_RULE = "REGRA DE IDIOMA: Toda resposta em Português BR. APENAS JSON válido sem markdown.";
 
@@ -65,26 +65,18 @@ const OAUTH_CLIENT_ID = process.env.YT_OAUTH_CLIENT_ID || "";
 const OAUTH_CLIENT_SECRET = process.env.YT_OAUTH_CLIENT_SECRET || "";
 const OAUTH_REDIRECT = process.env.YT_OAUTH_REDIRECT || "http://localhost:3000/api/algorithm/oauth/callback";
 
-router.get("/oauth/url", async (req: any, res: Response) => {
-  const scopes = [
-    "https://www.googleapis.com/auth/youtube.readonly",
-    "https://www.googleapis.com/auth/youtube.force-ssl",
-    "https://www.googleapis.com/auth/yt-analytics.readonly",
-  ].join(" ");
-  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(OAUTH_REDIRECT)}&response_type=code&scope=${encodeURIComponent(scopes)}&access_type=offline&prompt=consent&state=${req.user.id}`;
-  res.json({ url });
-});
-
-router.get("/oauth/callback", async (req: any, res: Response) => {
+// ── OAuth callback MUST be public (Google redirects here without JWT) ──
+router.get("/oauth/callback", async (req: Request, res: Response) => {
   try {
     const { code, state } = req.query;
     const userId = Number(state);
+    if (!code || !userId) { res.redirect("/?oauth=error"); return; }
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ code: String(code), client_id: OAUTH_CLIENT_ID, client_secret: OAUTH_CLIENT_SECRET, redirect_uri: OAUTH_REDIRECT, grant_type: "authorization_code" }),
     });
     const tokens = await tokenRes.json() as any;
-    if (tokens.error) { res.redirect("/?oauth=error"); return; }
+    if (tokens.error) { res.redirect("/?oauth=error&reason=" + encodeURIComponent(tokens.error)); return; }
 
     // Get channel info
     const chRes = await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true", {
@@ -98,8 +90,23 @@ router.get("/oauth/callback", async (req: any, res: Response) => {
       create: { userId, accessToken: tokens.access_token, refreshToken: tokens.refresh_token || "", expiresAt: String(Date.now() + (tokens.expires_in || 3600) * 1000), scope: tokens.scope || "", channelId: ch?.id || "", channelName: ch?.snippet?.title || "" },
       update: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token || undefined, expiresAt: String(Date.now() + (tokens.expires_in || 3600) * 1000), channelId: ch?.id || "", channelName: ch?.snippet?.title || "" },
     });
-    res.redirect("/?oauth=success");
-  } catch { res.redirect("/?oauth=error"); }
+    res.redirect("/my-analytics?oauth=success");
+  } catch (e: any) { res.redirect("/?oauth=error&reason=" + encodeURIComponent(e.message || "unknown")); }
+});
+
+// ── All routes below require authentication ──
+router.use(authenticate);
+
+router.get("/oauth/url", async (req: any, res: Response) => {
+  if (!OAUTH_CLIENT_ID) { res.status(400).json({ error: "YT_OAUTH_CLIENT_ID não configurado no .env do servidor" }); return; }
+  if (!OAUTH_CLIENT_SECRET) { res.status(400).json({ error: "YT_OAUTH_CLIENT_SECRET não configurado no .env do servidor" }); return; }
+  const scopes = [
+    "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/youtube.force-ssl",
+    "https://www.googleapis.com/auth/yt-analytics.readonly",
+  ].join(" ");
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${OAUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(OAUTH_REDIRECT)}&response_type=code&scope=${encodeURIComponent(scopes)}&access_type=offline&prompt=consent&state=${req.user.id}`;
+  res.json({ url });
 });
 
 router.get("/oauth/status", async (req: any, res: Response) => {

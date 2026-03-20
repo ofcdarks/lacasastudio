@@ -29,11 +29,19 @@ export default function MyAnalytics(){
 
   useEffect(()=>{
     api.status().then(s=>{setConnected(s.connected);setChannelName(s.channelName);}).catch(()=>{});
-    if(window.location.search.includes("oauth=success"))toast?.success("YouTube conectado!");
-    if(window.location.search.includes("oauth=error"))toast?.error("Erro na conexão OAuth");
+    const params = new URLSearchParams(window.location.search);
+    if(params.get("oauth")==="success"){toast?.success("YouTube conectado com sucesso!");window.history.replaceState({},"",window.location.pathname);}
+    if(params.get("oauth")==="error"){toast?.error("Erro OAuth: "+(params.get("reason")||"tente novamente"));window.history.replaceState({},"",window.location.pathname);}
   },[]);
 
-  const connect=async()=>{const d=await api.url();if(d.url)window.location.href=d.url;};
+  const connect=async()=>{
+    try{
+      const d=await api.url();
+      if(d.error){toast?.error(d.error);return;}
+      if(d.url)window.location.href=d.url;
+      else toast?.error("URL OAuth não retornada. Verifique YT_OAUTH_CLIENT_ID no .env");
+    }catch(e){toast?.error("Erro ao conectar: "+(e?.message||"verifique o console"));}
+  };
 
   const loadData=async(t)=>{
     setTab(t);setLoading(true);
