@@ -308,6 +308,21 @@ export default function Research(){
             </button>)}
           </div>
         </div>}
+        {niches.microNiches?.length>0&&<div style={{marginTop:20}}>
+          <div style={{fontSize:14,fontWeight:800,marginBottom:10}}>💎 Micro-Nichos — Pouca Concorrência, Muita Demanda</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:10}}>
+            {niches.microNiches.map((n,i)=><button key={i} onClick={async()=>{setQuery(n.query||n.name);setTab("search");setLoading(true);pg?.start("🔍 Buscando",["Pesquisando"]);try{const d=await researchApi.search(n.query||n.name);setResults(d.channels||[]);setFc(d.filtered||0);pg?.done();}catch{}setLoading(false);}} style={{padding:"14px",borderRadius:12,border:`1px solid #F59E0B20`,background:"rgba(245,158,11,.03)",cursor:"pointer",textAlign:"left"}} onMouseEnter={e=>e.currentTarget.style.borderColor="#F59E0B50"} onMouseLeave={e=>e.currentTarget.style.borderColor="#F59E0B20"}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontSize:18}}>{n.emoji||"💎"}</span>
+                <span style={{fontWeight:700,fontSize:13,flex:1}}>{n.name}</span>
+                <span style={{fontSize:9,fontWeight:700,color:"#F59E0B",background:"#F59E0B15",padding:"2px 8px",borderRadius:4}}>●{n.competition||"baixa"}</span>
+              </div>
+              <div style={{fontSize:10,color:C.dim,lineHeight:1.5,marginBottom:6}}>{n.description?.slice(0,100)}</div>
+              {n.howToStart&&<div style={{fontSize:9,color:C.green,marginBottom:4}}>🚀 {n.howToStart?.slice(0,80)}</div>}
+              {n.contentIdeas?.length>0&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{n.contentIdeas.slice(0,3).map((id,j)=><span key={j} style={{fontSize:8,padding:"2px 5px",borderRadius:3,background:"rgba(255,255,255,.04)",color:C.muted}}>💡 {id.slice(0,30)}</span>)}</div>}
+            </button>)}
+          </div>
+        </div>}
         <button onClick={()=>{setNiches(null);loadNiches();}} style={{marginTop:12,padding:"8px 16px",borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,cursor:"pointer",fontSize:11}}>🔄 Atualizar Nichos</button>
       </div>
       :<div><div style={{fontSize:12,color:C.dim,marginBottom:12}}>Nichos estáticos (clique pra buscar):</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:8}}>{VIRAL_Q.map(q=><button key={q} onClick={async()=>{setQuery(q);setTab("search");setLoading(true);try{const d=await researchApi.search(q);setResults(d.channels||[]);setFc(d.filtered||0);}catch{}setLoading(false);}} style={{padding:"12px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:C.bgCard,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:8}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.red+"50"} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><span style={{fontSize:18}}>🔥</span><div style={{fontWeight:600,fontSize:12,color:C.text,textTransform:"capitalize"}}>{q.replace(/channels?|youtube|viral/gi,"").trim()}</div></button>)}</div></div>}

@@ -19,6 +19,31 @@ function setCache(key: string, data: any, ttl = 300000) {
 }
 const LANG_RULE = "REGRA DE IDIOMA: Toda explicação, análise, dica, feedback, insight, estratégia e comentário deve ser SEMPRE em Português do Brasil (PT-BR), independente do idioma do canal. O conteúdo do canal (títulos, descrições, tags, roteiros, hooks) deve ser no idioma escolhido pelo usuário. APENAS JSON válido sem markdown.";
 
+// AI fetch with 60s timeout
+async function fetchAI(aiKey: string, model: string, system: string, user: string, maxTokens = 2500): Promise<any> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+  try {
+    const res = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST", signal: controller.signal,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({ model, temperature: 0.5, max_tokens: maxTokens,
+        messages: [{ role: "system", content: system }, { role: "user", content: user }]
+      })
+    });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error(`AI ${res.status}`);
+    const data = await res.json() as any;
+    const raw = (data.choices?.[0]?.message?.content || "{}").trim();
+    return JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
+  } catch (e: any) {
+    clearTimeout(timeout);
+    if (e.name === "AbortError") throw new Error("Timeout — IA demorou demais. Tente novamente.");
+    if (e instanceof SyntaxError) throw new Error("IA retornou formato inválido. Tente novamente.");
+    throw e;
+  }
+}
+
 async function getYtKey(): Promise<string> {
   const c = cached("ytkey", 60000); if (c) return c;
   const s = await prisma.setting.findUnique({ where: { key: "youtube_api_key" } });
@@ -938,30 +963,21 @@ router.post("/trending-niches", async (req: any, res: Response, next: NextFuncti
     const aiKey = await getAiKey();
     if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
     const model = await getModel();
-    const ck = "niches:" + new Date().toISOString().slice(0, 13); // cache 1hr
+    const ck = "niches:" + new Date().toISOString().slice(0, 13);
     const c = cached(ck, 3600000);
     if (c) { res.json(c); return; }
 
-    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
-      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
-      body: JSON.stringify({ model, temperature: 0.7, max_tokens: 2000,
-        messages: [{ role: "system", content: "Expert em nichos YouTube 2025/2026. " + LANG_RULE },
-          { role: "user", content: `Liste os nichos YouTube MAIS EM ALTA agora e os NOVOS crescendo rápido. Considere tendências globais atuais.
+    const parsed = await fetchAI(aiKey, model, "Expert em nichos YouTube. " + LANG_RULE,
+      `Nichos YouTube 2025/2026 com MICRO-NICHOS de pouca concorrência.
 
-JSON: {"trending":[{"name":"Nome do Nicho","emoji":"emoji","query":"query busca YouTube","status":"hot","growth":"alta","description":"Por que está bombando agora","examples":["Canal exemplo 1","Canal 2"],"tip":"Dica pra entrar nesse nicho"}],"emerging":[{"name":"Nicho Emergente","emoji":"emoji","query":"query","status":"new","growth":"explosiva","description":"Por que está crescendo","examples":["Canal 1"],"tip":"Como ser pioneiro"}]}
+JSON: {"trending":[{"name":"N","emoji":"e","query":"q","growth":"alta","description":"2 frases","tip":"Dica"}],"emerging":[{"name":"N","emoji":"e","query":"q","growth":"explosiva","description":"2 frases","tip":"Dica"}],"microNiches":[{"name":"Micro-nicho ultra-específico","emoji":"e","query":"q","competition":"baixa","monthlySearches":"estimativa","description":"Por que é oportunidade","howToStart":"Como começar do zero","contentIdeas":["Vídeo 1","Vídeo 2","Vídeo 3"]}]}
 
-Retorne 10 trending + 8 emerging. Nichos REAIS de 2025/2026, não genéricos.` }]
-      })
-    });
-    if (!aiRes.ok) { res.status(500).json({ error: "AI error" }); return; }
-    const data = await aiRes.json() as any;
-    const raw = data.choices?.[0]?.message?.content || "{}";
-    try {
-      const parsed = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
-      setCache(ck, parsed, 3600000);
-      res.json(parsed);
-    } catch { res.status(500).json({ error: "Formato inválido" }); }
-  } catch (err) { next(err); }
+8 trending + 6 emerging + 8 micro-nichos. MICRO-NICHOS = ultra-específicos com POUCA concorrência. Não "culinária" mas "receitas japonesas em air fryer". Não "fitness" mas "alongamento pra devs". Não "história" mas "civilizações esquecidas da África".`, 2500);
+    setCache(ck, parsed, 3600000);
+    res.json(parsed);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Erro" });
+  }
 });
 
 

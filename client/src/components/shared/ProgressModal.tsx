@@ -8,8 +8,7 @@ export function ProgressProvider({ children }) {
   const [task, setTask] = useState(null);
   const simRef = useRef(null);
 
-  const startSim = (total) => {
-    // Simulate progress: fast to 30%, slow to 70%, crawl to 90%
+  const startSim = () => {
     let pct = 0;
     if (simRef.current) clearInterval(simRef.current);
     simRef.current = setInterval(() => {
@@ -25,7 +24,7 @@ export function ProgressProvider({ children }) {
 
   const start = useCallback((title, steps = []) => {
     setTask({ title, steps, current: 0, total: steps.length || 1, status: steps[0] || "Iniciando...", startTime: Date.now(), simPct: 0 });
-    startSim(steps.length);
+    startSim();
   }, []);
 
   const update = useCallback((stepIndex, status) => {
@@ -35,7 +34,7 @@ export function ProgressProvider({ children }) {
   const done = useCallback(() => {
     stopSim();
     setTask(p => p ? { ...p, current: p.total, simPct: 100, status: "✅ Concluído!" } : null);
-    setTimeout(() => setTask(null), 800);
+    setTimeout(() => setTask(null), 600);
   }, []);
 
   const fail = useCallback((msg) => {
@@ -66,6 +65,7 @@ function ProgressOverlay({ task, onClose }) {
   const pct = task.simPct ?? 0;
   const isDone = pct >= 100;
   const isFail = task.status?.startsWith("❌");
+  const isStuck = elapsed > 30 && pct < 95 && !isDone;
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", backdropFilter: "blur(8px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -82,6 +82,7 @@ function ProgressOverlay({ task, onClose }) {
         {task.steps.length > 1 && <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 14 }}>
           {task.steps.map((s, i) => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: i < task.current ? C.green : i === task.current ? C.red : "rgba(255,255,255,.1)", transition: "background .3s" }} />)}
         </div>}
+        {(isStuck || elapsed > 15) && !isDone && !isFail && <button onClick={onClose} style={{ marginTop: 14, padding: "8px 20px", borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, cursor: "pointer", fontSize: 11 }}>{isStuck ? "⏳ Está demorando — Cancelar" : "✕ Cancelar"}</button>}
       </div>
     </div>
   );
