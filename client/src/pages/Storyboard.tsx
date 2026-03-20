@@ -35,9 +35,31 @@ const CSS = `
 .sb-gen-spin{animation:sb-spin 1.2s linear infinite}
 `;
 
-function buildPrompt(scene){
+const STYLE_PROMPTS={
+  "cinematográfico viral com alta retenção":"cinematic Hollywood movie frame, dramatic lighting, epic composition",
+  "documentário Netflix com narração profunda e trilha épica":"documentary photography, realistic, journalistic, moody lighting",
+  "animação 2D estilo canal dark com narração grave":"dark 2D animation, shadowy, mysterious, noir style, muted colors",
+  "vlog dinâmico com cortes rápidos":"bright casual photography, lifestyle, natural light, social media aesthetic",
+  "tutorial educativo passo-a-passo com tela e facecam":"clean educational diagram, infographic style, flat design, step by step",
+  "storytelling emocional com arco narrativo":"emotional storytelling illustration, warm tones, character-focused, painterly",
+  "shorts/reels com ganchos a cada 3s e cortes frenéticos":"bold graphic design, high contrast, punchy colors, vertical format, dynamic",
+  "true crime investigativo com suspense e revelações":"dark investigative photography, noir, evidence board, suspenseful atmosphere",
+  "faceless com imagens épicas geradas por IA e narração ASMR":"epic AI-generated landscape, hyperrealistic, dramatic, no people, atmospheric",
+  "react/commentary com webcam e conteúdo em tela":"screen recording mockup, split screen, modern UI, commentary style",
+  "top list countdown com transições energéticas":"ranking infographic, bold numbers, energetic, countdown style, vibrant",
+  "horror/creepypasta com atmosfera tensa e jump scares":"horror atmosphere, dark fog, creepy, unsettling, desaturated, eerie lighting",
+  "science explainer com animações 3D e dados visuais":"3D scientific visualization, data charts, clean, futuristic, educational",
+  "gaming montage com highlights e memes":"gaming screenshot, neon glow, HUD elements, action packed, vibrant",
+  "travel cinematic com drone shots e color grading quente":"aerial drone photography, golden hour, warm color grading, paradise, cinematic",
+  "ASMR relaxante com sons detalhados e close-ups":"extreme close-up macro photography, soft lighting, calming, detailed textures",
+  "podcast visual com cortes dinâmicos e legendas animadas":"modern podcast studio, neon accents, soundwave graphics, professional",
+  "motivacional com citações e música épica inspiradora":"motivational poster, sunrise, silhouette, epic, inspirational, golden light",
+};
+
+function buildPrompt(scene, style?){
   const m=ST[scene.type]||ST.content;
-  return `2D animated storyboard frame for "${scene.title}": ${scene.camera||scene.notes||"dramatic scene"}. Style: Netflix animation, cinematic composition, ${m.l.toLowerCase()} mood, vibrant ${m.c} color accent on dark background, professional production quality, wide shot 16:9, digital art`;
+  const sp=STYLE_PROMPTS[style||""]||"cinematic composition, dramatic lighting";
+  return `Storyboard frame: "${scene.title}". ${scene.camera||scene.notes||"dramatic scene"}. Style: ${sp}, ${m.l.toLowerCase()} mood, vibrant ${m.c} accent, professional 16:9, digital art`;
 }
 
 function SceneCard({scene,idx,total,onEdit,onDel,onAsset,onGenerate,generating}){
@@ -211,7 +233,7 @@ export default function Storyboard(){
   const generateAsset=async(scene)=>{
     setGenerating(scene.id);
     try{
-      const prompt=buildPrompt(scene);
+      const prompt=buildPrompt(scene,aiStyle);
       const result=await aiApi.generateAsset({prompt,sceneId:scene.id});
       const url=result.url||(result.b64?`data:image/png;base64,${result.b64}`:"");
       if(url){setScenes(p=>p.map(s=>s.id===scene.id?{...s,thumbnail:url}:s));toast?.success("Asset gerado!");}
@@ -228,7 +250,7 @@ export default function Storyboard(){
       const s=empty[i];
       setGenerating(s.id);pg?.update(i,`Cena ${i+1}/${empty.length}: ${s.title?.slice(0,25)}`);
       try{
-        const prompt=buildPrompt(s);
+        const prompt=buildPrompt(s,aiStyle);
         const result=await aiApi.generateAsset({prompt,sceneId:s.id});
         const url=result.url||(result.b64?`data:image/png;base64,${result.b64}`:"");
         if(url)setScenes(p=>p.map(sc=>sc.id===s.id?{...sc,thumbnail:url}:sc));
@@ -374,10 +396,21 @@ export default function Storyboard(){
         <option value="cinematográfico viral com alta retenção">🎬 Cinematográfico Viral</option>
         <option value="documentário Netflix com narração profunda e trilha épica">🎥 Documentário Netflix</option>
         <option value="animação 2D estilo canal dark com narração grave">🌙 Canal Dark 2D</option>
-        <option value="vlog dinâmico com cortes rápidos">📱 Vlog</option>
-        <option value="tutorial educativo passo-a-passo">📚 Tutorial</option>
+        <option value="vlog dinâmico com cortes rápidos">📱 Vlog Dinâmico</option>
+        <option value="tutorial educativo passo-a-passo com tela e facecam">📚 Tutorial</option>
         <option value="storytelling emocional com arco narrativo">💫 Storytelling</option>
-        <option value="shorts/reels com ganchos a cada 3s">⚡ Shorts</option>
+        <option value="shorts/reels com ganchos a cada 3s e cortes frenéticos">⚡ Shorts/Reels</option>
+        <option value="true crime investigativo com suspense e revelações">🔍 True Crime</option>
+        <option value="faceless com imagens épicas geradas por IA e narração ASMR">🤖 Faceless IA</option>
+        <option value="react/commentary com webcam e conteúdo em tela">🎙️ React/Comentário</option>
+        <option value="top list countdown com transições energéticas">🏆 Top/Ranking</option>
+        <option value="horror/creepypasta com atmosfera tensa e jump scares">👻 Horror/Creepy</option>
+        <option value="science explainer com animações 3D e dados visuais">🔬 Ciência Visual</option>
+        <option value="gaming montage com highlights e memes">🎮 Gaming</option>
+        <option value="travel cinematic com drone shots e color grading quente">✈️ Travel Cinema</option>
+        <option value="ASMR relaxante com sons detalhados e close-ups">🎧 ASMR</option>
+        <option value="podcast visual com cortes dinâmicos e legendas animadas">🎤 Podcast Visual</option>
+        <option value="motivacional com citações e música épica inspiradora">💪 Motivacional</option>
       </Select></div>
       <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}><Btn vr="ghost" onClick={()=>setShowAI(false)} disabled={aiLoading}>Cancelar</Btn><Btn onClick={generateAI} disabled={aiLoading} style={{opacity:aiLoading?.6:1,minWidth:160}}>{aiLoading?"⏳ Gerando...":"🚀 Gerar"}</Btn></div>
       {aiLoading&&<div style={{marginTop:14,padding:"10px",background:"rgba(59,130,246,.08)",borderRadius:8,fontSize:11,color:C.blue}}>Criando storyboard cinematográfico... ~20s</div>}

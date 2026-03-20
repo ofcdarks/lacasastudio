@@ -5,7 +5,7 @@ import { C, Btn, Hdr } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
 
 /* ── constants ────────────────────────────── */
-const TOOLS={select:{i:"↖",l:"Selecionar (V)",c:"default"},rect:{i:"□",l:"Retângulo (R)",c:"crosshair"},ellipse:{i:"○",l:"Elipse (O)",c:"crosshair"},diamond:{i:"◇",l:"Diamante (D)",c:"crosshair"},line:{i:"╱",l:"Linha (L)",c:"crosshair"},arrow:{i:"→",l:"Seta (A)",c:"crosshair"},draw:{i:"✎",l:"Desenho (P)",c:"crosshair"},text:{i:"T",l:"Texto (T)",c:"text"},sticky:{i:"🗒",l:"Post-it (S)",c:"crosshair"},marker:{i:"⚑",l:"Marcador (M)",c:"crosshair"},image:{i:"🖼",l:"Imagem (I)",c:"crosshair"},eraser:{i:"⌫",l:"Borracha (E)",c:"cell"}};
+const TOOLS={select:{i:"↖",l:"Selecionar (V)",c:"default"},rect:{i:"□",l:"Retângulo (R)",c:"crosshair"},ellipse:{i:"○",l:"Elipse (O)",c:"crosshair"},diamond:{i:"◇",l:"Diamante (D)",c:"crosshair"},line:{i:"╱",l:"Linha (L)",c:"crosshair"},arrow:{i:"→",l:"Seta (A)",c:"crosshair"},balloon:{i:"💬",l:"Balão (B)",c:"crosshair"},draw:{i:"✎",l:"Desenho (P)",c:"crosshair"},text:{i:"T",l:"Texto (T)",c:"text"},sticky:{i:"🗒",l:"Post-it (S)",c:"crosshair"},marker:{i:"⚑",l:"Marcador (M)",c:"crosshair"},image:{i:"🖼",l:"Imagem (I)",c:"crosshair"},eraser:{i:"⌫",l:"Borracha (E)",c:"cell"}};
 const COLORS=["#ffffff","#1e1e1e","#EF4444","#F59E0B","#22C55E","#3B82F6","#A855F7","#EC4899","#06B6D4","#F97316"];
 const STICKY_C=["#FEF08A","#FDBA74","#86EFAC","#93C5FD","#C4B5FD","#FDA4AF","#67E8F9","#FCA5A5"];
 const MARKERS=["⭐","❗","✅","❓","💡","🔥","🎯","⚠️","🚀","📌","🏆","❤️"];
@@ -32,6 +32,7 @@ function bounds(el){
   if(el.type==="marker")return{x:el.x-4,y:el.y-4,w:48,h:64};
   if(el.type==="sticky")return{x:el.x,y:el.y,w:el.w||220,h:el.h||160};
   if(el.type==="image")return{x:el.x,y:el.y,w:el.w||200,h:el.h||200};
+  if(el.type==="balloon")return{x:el.x,y:el.y,w:el.w||240,h:(el.h||100)+25};
   return{x:Math.min(el.x,el.x+(el.w||0)),y:Math.min(el.y,el.y+(el.h||0)),w:Math.abs(el.w||1),h:Math.abs(el.h||1)};
 }
 function hit(el,px,py){const b=bounds(el),m=10;return px>=b.x-m&&px<=b.x+b.w+m&&py>=b.y-m&&py<=b.y+b.h+m;}
@@ -65,6 +66,23 @@ function render(ctx,el,sel){
   else if(el.type==="sticky"){const sw=el.w||220,sh=el.h||160;ctx.fillStyle=el.stickyColor||"#FEF08A";ctx.shadowColor="rgba(0,0,0,.15)";ctx.shadowBlur=10;ctx.shadowOffsetY=4;rrFn(ctx,el.x,el.y,sw,sh,8);ctx.fill();ctx.shadowColor="transparent";ctx.strokeStyle="rgba(0,0,0,.08)";ctx.lineWidth=1;rrFn(ctx,el.x,el.y,sw,sh,8);ctx.stroke();ctx.fillStyle="rgba(0,0,0,.05)";ctx.fillRect(el.x+1,el.y+1,sw-2,30);ctx.fillStyle="#1a1a1a";ctx.font="bold 13px 'Plus Jakarta Sans',sans-serif";ctx.fillText(el.title||"Post-it",el.x+12,el.y+20);ctx.font="12px 'Plus Jakarta Sans',sans-serif";wrapFn(ctx,el.text||"",el.x+12,el.y+46,sw-24,16,6);}
   else if(el.type==="marker"){ctx.font="40px serif";ctx.fillText(el.icon||"⭐",el.x,el.y+40);if(el.label){ctx.font="bold 11px 'Plus Jakarta Sans',sans-serif";ctx.fillStyle=el.color||"#fff";ctx.fillText(el.label,el.x-2,el.y+56);}}
   else if(el.type==="image"&&el._img){try{ctx.drawImage(el._img,el.x,el.y,el.w||el._img.width,el.h||el._img.height);}catch{}}
+  else if(el.type==="balloon"){const bw=el.w||240,bh=el.h||100,br=12,tailDir=el.tailDir||"bottom-left";
+    ctx.fillStyle=(el.bgColor||"#1e293b");ctx.strokeStyle=el.color||"#3B82F6";ctx.lineWidth=el.sw||2;
+    // Draw rounded rect body
+    ctx.beginPath();ctx.moveTo(el.x+br,el.y);ctx.lineTo(el.x+bw-br,el.y);ctx.quadraticCurveTo(el.x+bw,el.y,el.x+bw,el.y+br);ctx.lineTo(el.x+bw,el.y+bh-br);ctx.quadraticCurveTo(el.x+bw,el.y+bh,el.x+bw-br,el.y+bh);
+    // Tail
+    const tx=tailDir.includes("left")?el.x+bw*0.2:tailDir.includes("right")?el.x+bw*0.8:el.x+bw*0.5;
+    const ty=tailDir.includes("bottom")?el.y+bh:tailDir.includes("top")?el.y:el.y+bh*0.5;
+    if(tailDir.includes("bottom")){ctx.lineTo(tx+15,el.y+bh);ctx.lineTo(tx-5,el.y+bh+25);ctx.lineTo(tx-10,el.y+bh);}
+    else if(tailDir.includes("top")){ctx.lineTo(el.x+br,el.y);ctx.moveTo(el.x+br,el.y);ctx.lineTo(el.x+bw-br,el.y);}
+    ctx.lineTo(el.x+br,el.y+bh);ctx.quadraticCurveTo(el.x,el.y+bh,el.x,el.y+bh-br);ctx.lineTo(el.x,el.y+br);ctx.quadraticCurveTo(el.x,el.y,el.x+br,el.y);ctx.closePath();ctx.fill();ctx.stroke();
+    // Text
+    ctx.fillStyle=el.color||"#fff";const fs=el.fontSize||14;ctx.font=`${el.bold?"bold ":""}${fs}px 'Plus Jakarta Sans',sans-serif`;
+    const lines=(el.text||"Clique 2x pra editar").split("\n");
+    lines.forEach((l,i)=>ctx.fillText(l,el.x+14,el.y+22+i*(fs*1.4)));
+    // Title
+    if(el.title){ctx.font=`bold ${fs+2}px 'Plus Jakarta Sans',sans-serif`;ctx.fillText(el.title,el.x+14,el.y+18);}
+  }
   if(sel){ctx.strokeStyle="#3B82F6";ctx.lineWidth=1.5;ctx.setLineDash([5,4]);const b=bounds(el);ctx.strokeRect(b.x-5,b.y-5,b.w+10,b.h+10);ctx.setLineDash([]);ctx.fillStyle="#fff";[[b.x-4,b.y-4],[b.x+b.w+4,b.y-4],[b.x-4,b.y+b.h+4],[b.x+b.w+4,b.y+b.h+4],[b.x+b.w/2,b.y-4],[b.x+b.w/2,b.y+b.h+4],[b.x-4,b.y+b.h/2],[b.x+b.w+4,b.y+b.h/2]].forEach(([cx,cy])=>{ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#3B82F6";ctx.lineWidth=1.5;ctx.stroke();});}
   ctx.restore();
 }
@@ -147,6 +165,8 @@ export default function Ideas(){
   const[boards,setBoards]=useState([]);const[curBoard,setCurBoard]=useState(null);const[boardName,setBoardName]=useState("");const[showList,setShowList]=useState(true);
   const[els,setEls]=useState([]);const[tool,setTool]=useState("select");const[color,setColor]=useState("#ffffff");const[swV,setSwV]=useState(2);const[fillV,setFillV]=useState("none");
   const[arrowTypeV,setArrowTypeV]=useState("straight");const[arrowDashV,setArrowDashV]=useState(null);const[showArrowModal,setShowArrowModal]=useState(false);
+  const[balloonBg,setBalloonBg]=useState("#1e293b");const[balloonTail,setBalloonTail]=useState("bottom-left");const[balloonW,setBalloonW]=useState(240);const[balloonH,setBalloonH]=useState(100);const[balloonEditor,setBalloonEditor]=useState(null);const[showBalloonModal,setShowBalloonModal]=useState(false);
+  const[marquee,setMarquee]=useState(null); // {sx,sy,ex,ey} screen coords for selection box
   const[fontIdx,setFontIdx]=useState(0);const[sizeKey,setSizeKey]=useState("M");const[alignV,setAlignV]=useState("left");const[opV,setOpV]=useState(100);const[selId,setSelId]=useState(null);
   const[multiSel,setMultiSel]=useState(new Set());
   const[stickyC,setStickyC]=useState("#FEF08A");const[mrkIdx,setMrkIdx]=useState(0);const[boldV,setBoldV]=useState(false);const[italicV,setItalicV]=useState(false);
@@ -187,7 +207,10 @@ export default function Ideas(){
   const updSel=props=>{if(!selId)return;setEls(p=>p.map(e=>e.id===selId?{...e,...props}:e));};
 
   // Canvas render
-  useEffect(()=>{const c=cvs.current,b=box.current;if(!c||!b)return;const ctx=c.getContext("2d");const r=b.getBoundingClientRect();c.width=r.width;c.height=r.height;ctx.fillStyle=canvasBg;ctx.fillRect(0,0,c.width,c.height);if(showGrid)gridFn(ctx,c.width,c.height,pan.x,pan.y,zoom);ctx.save();ctx.translate(pan.x,pan.y);ctx.scale(zoom,zoom);els.forEach(el=>render(ctx,el,el.id===selId||multiSel.has(el.id)));ctx.restore();},[els,selId,multiSel,pan,zoom,showGrid,canvasBg]);
+  useEffect(()=>{const c=cvs.current,b=box.current;if(!c||!b)return;const ctx=c.getContext("2d");const r=b.getBoundingClientRect();c.width=r.width;c.height=r.height;ctx.fillStyle=canvasBg;ctx.fillRect(0,0,c.width,c.height);if(showGrid)gridFn(ctx,c.width,c.height,pan.x,pan.y,zoom);ctx.save();ctx.translate(pan.x,pan.y);ctx.scale(zoom,zoom);els.forEach(el=>render(ctx,el,el.id===selId||multiSel.has(el.id)));
+    // Marquee selection box
+    if(marquee){const mx=Math.min(marquee.sx,marquee.ex),my=Math.min(marquee.sy,marquee.ey),mw=Math.abs(marquee.ex-marquee.sx),mh=Math.abs(marquee.ey-marquee.sy);if(mw>3||mh>3){ctx.strokeStyle="#3B82F6";ctx.lineWidth=1;ctx.setLineDash([6,3]);ctx.strokeRect(mx,my,mw,mh);ctx.fillStyle="rgba(59,130,246,.08)";ctx.fillRect(mx,my,mw,mh);ctx.setLineDash([]);}}
+    ctx.restore();},[els,selId,multiSel,pan,zoom,showGrid,canvasBg,marquee]);
   useEffect(()=>{const r=()=>{if(cvs.current&&box.current){cvs.current.width=box.current.clientWidth;cvs.current.height=box.current.clientHeight;}};window.addEventListener("resize",r);r();return()=>window.removeEventListener("resize",r);},[]);
 
   // Keys
@@ -206,7 +229,7 @@ export default function Ideas(){
       if(e.altKey&&e.key==="r"){e.preventDefault();setViewMode(p=>!p);return;}
       if(e.key==="F5"){e.preventDefault();setPresenting(true);return;}
       if(e.key===" "){e.preventDefault();setIsPan(true);return;}
-      const map={v:"select",r:"rect",o:"ellipse",d:"diamond",l:"line",a:"arrow",p:"draw",t:"text",s:"sticky",m:"marker",e:"eraser"};
+      const map={v:"select",r:"rect",o:"ellipse",d:"diamond",l:"line",a:"arrow",b:"balloon",p:"draw",t:"text",s:"sticky",m:"marker",e:"eraser"};
       if(map[e.key?.toLowerCase()]&&!e.ctrlKey&&!e.metaKey){setTool(map[e.key.toLowerCase()]);setSelId(null);}
     };
     const ku=e=>{if(e.key===" ")setIsPan(false);};
@@ -241,9 +264,10 @@ export default function Ideas(){
       if(e.shiftKey&&h){setMultiSel(p=>{const n=new Set(p);if(n.has(h.id))n.delete(h.id);else n.add(h.id);if(selId)n.add(selId);return n;});setSelId(h.id);}
       else{if(h&&h.groupId){setMultiSel(new Set(els.filter(el=>el.groupId===h.groupId).map(el=>el.id)));}else{setMultiSel(new Set());}setSelId(h?.id||null);}
       if(h){
-        if(e.detail===2){if(h.type==="text"){setTextEditor({id:h.id,value:h.text||"",canvasX:h.x,canvasY:h.y,fontSize:h.fontSize||24});} else if(h.type==="sticky")setStickyEditor({id:h.id,title:h.title||"",text:h.text||"",stickyColor:h.stickyColor||"#FEF08A"});return;}
+        if(e.detail===2){if(h.type==="text"){setTextEditor({id:h.id,value:h.text||"",canvasX:h.x,canvasY:h.y,fontSize:h.fontSize||24});} else if(h.type==="sticky")setStickyEditor({id:h.id,title:h.title||"",text:h.text||"",stickyColor:h.stickyColor||"#FEF08A"}); else if(h.type==="balloon")setBalloonEditor({id:h.id,title:h.title||"",text:h.text||"",bgColor:h.bgColor||"#1e293b",tailDir:h.tailDir||"bottom-left"});return;}
         setDragSt({x:p.x-h.x,y:p.y-h.y,id:h.id});
-      }return;
+      } else { setMarquee({sx:p.x,sy:p.y,ex:p.x,ey:p.y}); }
+      return;
     }
     if(tool==="eraser"){const h=[...els].reverse().find(el=>hit(el,p.x,p.y));if(h){const n=els.filter(el=>el.id!==h.id);setEls(n);push(n);}return;}
     if(tool==="text"){
@@ -251,6 +275,7 @@ export default function Ideas(){
       return;
     }
     if(tool==="sticky"){const el={id:uid(),type:"sticky",x:p.x,y:p.y,w:220,h:160,title:"Post-it",text:"",stickyColor:stickyC,color:"#000",sw:1,opacity:100,fill:"none"};const n=[...els,el];setEls(n);setStickyEditor({id:el.id,title:"Post-it",text:"",stickyColor:stickyC});return;}
+    if(tool==="balloon"){const el={id:uid(),type:"balloon",x:p.x,y:p.y,w:balloonW,h:balloonH,title:"",text:"",color:color,bgColor:balloonBg,tailDir:balloonTail,fontSize:14,sw:2,opacity:100,fill:"none"};const n=[...els,el];setEls(n);setBalloonEditor({id:el.id,title:"",text:"",bgColor:balloonBg,tailDir:balloonTail});return;}
     if(tool==="marker"){const el={id:uid(),type:"marker",x:p.x,y:p.y,icon:MARKERS[mrkIdx],label:"",color,sw:1,opacity:100,fill:"none"};const n=[...els,el];setEls(n);push(n);return;}
     if(tool==="image"){fileRef.current?.click();return;}
     setDrawing(true);
@@ -284,12 +309,20 @@ export default function Ideas(){
         else if(dir==="nw"){u.x=oel.x+dx;u.w=(oel.w||ob.w)-dx;u.y=oel.y+dy;u.h=(oel.h||ob.h)-dy;}
         if(u.w!==undefined&&u.w<20)u.w=20;
         if(u.h!==undefined&&u.h<20)u.h=20;
+        // Shift = proportional resize
+        if(e.shiftKey&&u.w!==undefined&&u.h!==undefined){const s=Math.max(u.w,u.h);u.w=s;u.h=s;}
         return u;
       }));return;
     }
     if(dragSt){const p=toC(e);const dx=p.x-dragSt.x,dy=p.y-dragSt.y;const dragEl=els.find(el=>el.id===dragSt.id);const moveIds=new Set(multiSel);if(dragEl?.groupId)els.filter(el=>el.groupId===dragEl.groupId).forEach(el=>moveIds.add(el.id));moveIds.add(dragSt.id);if(moveIds.size<=1){setEls(prev=>prev.map(el=>el.id===dragSt.id?{...el,x:dx,y:dy}:el));}else{const origEl=els.find(el=>el.id===dragSt.id);if(origEl){const offX=dx-origEl.x,offY=dy-origEl.y;setEls(prev=>prev.map(el=>moveIds.has(el.id)?{...el,x:el.x+offX,y:el.y+offY}:el));dragSt.x=p.x-dx;dragSt.y=p.y-dy;}}return;}
+    // Marquee selection
+    if(marquee){const p=toC(e);setMarquee(m=>({...m,ex:p.x,ey:p.y}));return;}
     if(!drawing||!drawRef.current)return;const p=toC(e),el=drawRef.current;
-    if(tool==="draw"){el.points=[...(el.points||[]),[p.x,p.y]];}else{el.w=p.x-el.x;el.h=p.y-el.y;}
+    if(tool==="draw"){el.points=[...(el.points||[]),[p.x,p.y]];}else{
+      el.w=p.x-el.x;el.h=p.y-el.y;
+      // Shift = proportional
+      if(e.shiftKey&&tool!=="arrow"&&tool!=="line"){const s=Math.max(Math.abs(el.w),Math.abs(el.h));el.w=el.w<0?-s:s;el.h=el.h<0?-s:s;}
+    }
     setEls(prev=>prev.map(e=>e.id===el.id?{...el}:e));
   };
 
@@ -297,6 +330,13 @@ export default function Ideas(){
     if(panSt){setPanSt(null);return;}
     if(resizing){setResizing(null);push(els);return;}
     if(dragSt){setDragSt(null);push(els);return;}
+    if(marquee){
+      const mx=Math.min(marquee.sx,marquee.ex),my=Math.min(marquee.sy,marquee.ey);
+      const mw=Math.abs(marquee.ex-marquee.sx),mh=Math.abs(marquee.ey-marquee.sy);
+      if(mw>5||mh>5){const inside=els.filter(el=>{const b=bounds(el);return b.x>=mx&&b.y>=my&&b.x+b.w<=mx+mw&&b.y+b.h<=my+mh;});
+        if(inside.length>0){setMultiSel(new Set(inside.map(e=>e.id)));setSelId(inside[0].id);}
+      }setMarquee(null);return;
+    }
     if(drawing){setDrawing(false);drawRef.current=null;push(els);}
   };
   const onWheel=e=>{e.preventDefault();setZoom(p=>Math.max(.1,Math.min(5,p*(e.deltaY>0?.9:1.1))));};
@@ -313,6 +353,7 @@ export default function Ideas(){
     setTextEditor(null);
   };
   const confirmSticky=()=>{if(!stickyEditor)return;setEls(p=>p.map(e=>e.id===stickyEditor.id?{...e,title:stickyEditor.title,text:stickyEditor.text,stickyColor:stickyEditor.stickyColor}:e));push(els);setStickyEditor(null);};
+  const confirmBalloon=()=>{if(!balloonEditor)return;setEls(p=>p.map(e=>e.id===balloonEditor.id?{...e,title:balloonEditor.title,text:balloonEditor.text,bgColor:balloonEditor.bgColor,tailDir:balloonEditor.tailDir}:e));push(els);setBalloonEditor(null);};
   const centerEl=(axis)=>{if(!selId)return;const c=cvs.current;if(!c)return;const cw=c.width/zoom,ch=c.height/zoom;const ox=-pan.x/zoom,oy=-pan.y/zoom;setEls(p=>p.map(e=>{if(e.id!==selId)return e;const b=bounds(e);if(axis==="h")return{...e,x:ox+(cw-b.w)/2};if(axis==="v")return{...e,y:oy+(ch-b.h)/2};return{...e,x:ox+(cw-b.w)/2,y:oy+(ch-b.h)/2};}));push(els);};
   const moveLayer=d=>{if(!selId)return;const idx=els.findIndex(e=>e.id===selId);if(idx<0)return;const n=[...els];if(d==="up"&&idx<n.length-1)[n[idx],n[idx+1]]=[n[idx+1],n[idx]];else if(d==="down"&&idx>0)[n[idx],n[idx-1]]=[n[idx-1],n[idx]];else if(d==="top")n.push(n.splice(idx,1)[0]);else if(d==="bottom")n.unshift(n.splice(idx,1)[0]);setEls(n);push(n);};
   const groupSel=()=>{const ids=new Set(multiSel);if(selId)ids.add(selId);if(ids.size<2){toast?.error("Selecione 2+ elementos (Shift+Click)");return;}const gid="g_"+uid();const n=els.map(e=>ids.has(e.id)?{...e,groupId:gid}:e);setEls(n);push(n);toast?.success(`${ids.size} elementos agrupados`);};
@@ -389,7 +430,7 @@ export default function Ideas(){
       {!zenMode&&<div style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",background:C.bgCard,borderBottom:`1px solid ${C.border}`,zIndex:10,flexWrap:"wrap",minHeight:44}}>
         <Btn vr="ghost" onClick={()=>setShowList(true)} style={{padding:"4px 8px",fontSize:10}}>← Quadros</Btn>
         <div style={{width:1,height:20,background:C.border}}/>
-        {Object.entries(TOOLS).map(([k,v])=><button key={k} onClick={()=>{setTool(k);if(k==="image")fileRef.current?.click();if(k==="arrow")setShowArrowModal(p=>!p);else setShowArrowModal(false);setSelId(null);}} title={v.l} style={{width:30,height:30,borderRadius:6,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:k==="sticky"||k==="marker"||k==="image"?13:14,background:tool===k?`${C.red}22`:"transparent",color:tool===k?C.red:C.muted}}>{v.i}</button>)}
+        {Object.entries(TOOLS).map(([k,v])=><button key={k} onClick={()=>{setTool(k);if(k==="image")fileRef.current?.click();if(k==="arrow"){setShowArrowModal(p=>!p);setShowBalloonModal(false);}else if(k==="balloon"){setShowBalloonModal(p=>!p);setShowArrowModal(false);}else{setShowArrowModal(false);setShowBalloonModal(false);}setSelId(null);}} title={v.l} style={{width:30,height:30,borderRadius:6,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:k==="sticky"||k==="marker"||k==="image"||k==="balloon"?13:14,background:tool===k?`${C.red}22`:"transparent",color:tool===k?C.red:C.muted}}>{v.i}</button>)}
         <div style={{flex:1}}/>
         <div style={{width:1,height:20,background:C.border}}/>
         <Btn vr="ghost" onClick={()=>setShowTemplates(true)} style={{padding:"3px 8px",fontSize:10}}>📋 Templates</Btn>
@@ -444,7 +485,41 @@ export default function Ideas(){
             <button onClick={()=>setShowArrowModal(false)} style={{width:"100%",padding:"8px",borderRadius:8,border:"none",background:C.blue,color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>✓ Pronto — Desenhar Seta</button>
           </div>}
 
-          <canvas ref={cvs} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp} onWheel={onWheel} style={{display:"block",width:"100%",height:"100%",background:canvasBg,pointerEvents:(textEditor||stickyEditor)?"none":"auto"}}/>
+          {/* Balloon Config Modal */}
+          {showBalloonModal&&tool==="balloon"&&<div style={{position:"absolute",top:50,left:"50%",transform:"translateX(-50%)",zIndex:100,background:C.bgCard,borderRadius:14,border:`1px solid ${C.border}`,padding:16,minWidth:340,boxShadow:"0 8px 32px rgba(0,0,0,.5)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><div style={{fontWeight:700,fontSize:13}}>💬 Configurar Balão</div><button onClick={()=>setShowBalloonModal(false)} style={{background:"none",border:"none",color:C.dim,cursor:"pointer",fontSize:16}}>✕</button></div>
+            <div style={{fontSize:10,color:C.dim,marginBottom:6}}>Direção da seta do balão</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:4,marginBottom:10}}>
+              {[["bottom-left","↙ Baixo-E"],["bottom-right","↘ Baixo-D"],["top-left","↖ Cima-E"],["top-right","↗ Cima-D"]].map(([v,l])=><button key={v} onClick={()=>setBalloonTail(v)} style={{padding:"8px 4px",borderRadius:6,border:`1px solid ${balloonTail===v?C.blue:C.border}`,background:balloonTail===v?`${C.blue}15`:"rgba(255,255,255,.03)",color:balloonTail===v?C.blue:C.muted,cursor:"pointer",fontSize:10,fontWeight:600}}>{l}</button>)}
+            </div>
+            <div style={{fontSize:10,color:C.dim,marginBottom:6}}>Tamanho</div>
+            <div style={{display:"flex",gap:4,marginBottom:10}}>
+              {[[180,80,"Pequeno"],[240,100,"Médio"],[320,140,"Grande"],[400,180,"Extra"]].map(([w,h,l])=><button key={l} onClick={()=>{setBalloonW(w);setBalloonH(h);}} style={{flex:1,padding:"8px",borderRadius:6,border:`1px solid ${balloonW===w?C.blue:C.border}`,background:balloonW===w?`${C.blue}15`:"rgba(255,255,255,.03)",color:balloonW===w?C.blue:C.muted,cursor:"pointer",fontSize:10}}>{l}</button>)}
+            </div>
+            <div style={{fontSize:10,color:C.dim,marginBottom:6}}>Fundo do balão</div>
+            <div style={{display:"flex",gap:4,marginBottom:10}}>
+              {[["#1e293b","Escuro"],["#0f172a","Noite"],["#fff","Branco"],["#EF444420","Vermelho"],["#3B82F620","Azul"],["#22C55E20","Verde"],["#F59E0B20","Amarelo"]].map(([c,l])=><button key={c} onClick={()=>setBalloonBg(c)} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${balloonBg===c?C.blue:C.border}`,background:c,color:c==="#fff"?"#000":C.muted,cursor:"pointer",fontSize:9}}>{l}</button>)}
+            </div>
+            <div style={{fontSize:10,color:C.dim,marginBottom:6}}>Cor da borda</div>
+            <div style={{display:"flex",gap:4,marginBottom:12}}>
+              {["#3B82F6","#EF4444","#22C55E","#F59E0B","#A855F7","#EC4899","#fff","#94A3B8"].map(c=><button key={c} onClick={()=>setColor(c)} style={{width:28,height:28,borderRadius:"50%",border:`2px solid ${color===c?"#fff":C.border}`,background:c,cursor:"pointer"}}/>)}
+            </div>
+            <button onClick={()=>setShowBalloonModal(false)} style={{width:"100%",padding:"8px",borderRadius:8,border:"none",background:C.blue,color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>✓ Pronto — Colocar Balão</button>
+          </div>}
+
+          {/* Balloon Editor */}
+          {balloonEditor&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:200,background:C.bgCard,borderRadius:16,border:`1px solid ${C.border}`,padding:20,minWidth:360,boxShadow:"0 12px 40px rgba(0,0,0,.6)"}}>
+            <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>💬 Editar Balão</div>
+            <input value={balloonEditor.title} onChange={e=>setBalloonEditor(p=>({...p,title:e.target.value}))} placeholder="Título (opcional)" style={{width:"100%",padding:"8px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.04)",color:C.text,fontSize:13,outline:"none",marginBottom:8}}/>
+            <textarea value={balloonEditor.text} onChange={e=>setBalloonEditor(p=>({...p,text:e.target.value}))} placeholder="Texto do balão..." rows={4} style={{width:"100%",padding:"8px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.04)",color:C.text,fontSize:13,outline:"none",resize:"vertical",marginBottom:8}}/>
+            <div style={{fontSize:10,color:C.dim,marginBottom:4}}>Direção da seta</div>
+            <div style={{display:"flex",gap:3,marginBottom:10}}>
+              {[["bottom-left","↙"],["bottom-right","↘"],["top-left","↖"],["top-right","↗"]].map(([v,l])=><button key={v} onClick={()=>setBalloonEditor(p=>({...p,tailDir:v}))} style={{flex:1,padding:"6px",borderRadius:4,border:`1px solid ${balloonEditor.tailDir===v?C.blue:C.border}`,background:balloonEditor.tailDir===v?`${C.blue}15`:"transparent",color:balloonEditor.tailDir===v?C.blue:C.dim,cursor:"pointer",fontSize:12}}>{l}</button>)}
+            </div>
+            <div style={{display:"flex",gap:8}}><button onClick={confirmBalloon} style={{flex:1,padding:"8px",borderRadius:8,border:"none",background:C.blue,color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>✓ Salvar</button><button onClick={()=>setBalloonEditor(null)} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,cursor:"pointer",fontSize:12}}>Cancelar</button></div>
+          </div>}
+
+          <canvas ref={cvs} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp} onWheel={onWheel} style={{display:"block",width:"100%",height:"100%",background:canvasBg,pointerEvents:(textEditor||stickyEditor||balloonEditor)?"none":"auto"}}/>
 
           {/* TEXT EDITOR - positioned using screen coordinates */}
           {textEditor&&<div style={{position:"absolute",left:Math.max(10,Math.min((textEditor.canvasX||100)*zoom+pan.x, (box.current?.clientWidth||800)-320)),top:Math.max(10,Math.min((textEditor.canvasY||100)*zoom+pan.y-30, (box.current?.clientHeight||600)-220)),zIndex:40,width:320}}>
@@ -496,9 +571,19 @@ export default function Ideas(){
           {showLibrary&&<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:40}} onClick={()=>setShowLibrary(false)}>
             <div onClick={e=>e.stopPropagation()} style={{background:C.bgCard,borderRadius:16,border:`1px solid ${C.border}`,padding:24,width:600,maxHeight:"80vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.5)"}}>
               <div style={{fontWeight:700,fontSize:18,marginBottom:16}}>📦 Biblioteca de Elementos</div>
-              <div style={{display:"flex",gap:4,marginBottom:16}}>{[["icons","Ícones"],["arrows","Setas"],["shapes","Formas"]].map(([k,l])=><button key={k} onClick={()=>setLibTab(k)} style={{padding:"6px 14px",borderRadius:6,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:libTab===k?`${C.blue}20`:"rgba(255,255,255,.04)",color:libTab===k?C.blue:C.dim}}>{l}</button>)}</div>
+              <div style={{display:"flex",gap:4,marginBottom:16}}>{[["icons","Ícones"],["arrows","Setas"],["balloons","Balões"],["shapes","Formas"]].map(([k,l])=><button key={k} onClick={()=>setLibTab(k)} style={{padding:"6px 14px",borderRadius:6,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:libTab===k?`${C.blue}20`:"rgba(255,255,255,.04)",color:libTab===k?C.blue:C.dim}}>{l}</button>)}</div>
               {libTab==="icons"&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ICONS.map((ic,i)=><button key={i} onClick={()=>addLibItem(ic)} style={{width:44,height:44,borderRadius:8,border:"none",cursor:"pointer",fontSize:22,background:"rgba(255,255,255,.04)",transition:"all .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.04)"}>{ic}</button>)}</div>}
               {libTab==="arrows"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{ARROWS_LIB.map((a,i)=>{const sample=a.make(0,0);return<button key={i} onClick={()=>addLibItem(a)} style={{padding:"10px 12px",borderRadius:8,border:`1px solid ${C.border}`,cursor:"pointer",fontSize:12,textAlign:"left",background:"rgba(255,255,255,.03)",color:C.text,display:"flex",alignItems:"center",gap:8}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.blue} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><div style={{width:30,height:20,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:24,height:sample.sw||2,background:sample.color||"#fff",borderRadius:1,borderStyle:sample.dash?"dashed":"solid"}}/></div><span style={{fontSize:11}}>{a.n}</span></button>})}</div>}
+              {libTab==="balloons"&&<div style={{display:"grid",gridTemplateColumns:"1fr",gap:6}}>
+                {[
+                  {n:"💬 Explicação",make:(x,y)=>({type:"balloon",x,y,w:240,h:100,title:"",text:"Clique 2x pra editar",color:"#3B82F6",bgColor:"#1e293b",tailDir:"bottom-left",fontSize:14,sw:2})},
+                  {n:"💡 Dica",make:(x,y)=>({type:"balloon",x,y,w:200,h:80,title:"Dica",text:"Texto aqui...",color:"#22C55E",bgColor:"#22C55E20",tailDir:"bottom-right",fontSize:13,sw:2})},
+                  {n:"⚠️ Atenção",make:(x,y)=>({type:"balloon",x,y,w:220,h:90,title:"Atenção!",text:"Ponto importante",color:"#F59E0B",bgColor:"#F59E0B20",tailDir:"top-left",fontSize:13,sw:2})},
+                  {n:"❌ Erro",make:(x,y)=>({type:"balloon",x,y,w:200,h:80,title:"Erro",text:"O que evitar",color:"#EF4444",bgColor:"#EF444420",tailDir:"top-right",fontSize:13,sw:2})},
+                  {n:"🎯 CTA",make:(x,y)=>({type:"balloon",x,y,w:260,h:90,title:"Ação!",text:"Inscreva-se agora!",color:"#EC4899",bgColor:"#EC489920",tailDir:"bottom-left",fontSize:14,sw:3})},
+                  {n:"📝 Nota Grande",make:(x,y)=>({type:"balloon",x,y,w:320,h:140,title:"Nota",text:"Espaço pra texto longo\nCom múltiplas linhas",color:"#A855F7",bgColor:"#0f172a",tailDir:"bottom-left",fontSize:14,sw:2})},
+                ].map((b,i)=><button key={i} onClick={()=>addLibItem(b)} style={{padding:"10px 14px",borderRadius:8,border:`1px solid ${C.border}`,cursor:"pointer",fontSize:12,textAlign:"left",background:"rgba(255,255,255,.03)",color:C.text,display:"flex",alignItems:"center",gap:10}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.blue} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><span style={{fontSize:16}}>{b.n.split(" ")[0]}</span><span style={{fontSize:11}}>{b.n.split(" ").slice(1).join(" ")}</span></button>)}
+              </div>}
               {libTab==="shapes"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>{SHAPES_LIB.map((s,i)=><button key={i} onClick={()=>addLibItem(s)} style={{padding:"14px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:12,textAlign:"center",background:"rgba(255,255,255,.04)",color:C.text}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.04)"}>{s.n}</button>)}</div>}
             </div></div>}
 
@@ -579,6 +664,13 @@ Ex: Roteiro de reels sobre produtividade" style={{width:"100%",background:"rgba(
               <div style={{display:"flex",gap:3}}>{[1,2,3,5,8].map(w=><button key={w} onClick={()=>updSel({sw:w})} style={{flex:1,padding:"4px",borderRadius:4,border:`1px solid ${selEl.sw===w?C.blue:C.border}`,background:selEl.sw===w?`${C.blue}15`:"transparent",color:selEl.sw===w?C.blue:C.dim,cursor:"pointer",fontSize:10,fontWeight:700}}>{w}px</button>)}</div>
               <div style={{fontSize:10,color:C.dim,marginTop:6,marginBottom:3}}>Traço</div>
               <div style={{display:"flex",gap:3}}>{[["Sólido",null],["- -",JSON.stringify([8,4])],["· ·",JSON.stringify([3,5])],["- ·",JSON.stringify([10,4,3,4])]].map(([l,v])=><button key={l} onClick={()=>updSel({dash:v?JSON.parse(v):null})} style={{flex:1,padding:"4px",borderRadius:4,border:`1px solid ${JSON.stringify(selEl.dash||null)===v?C.blue:C.border}`,background:JSON.stringify(selEl.dash||null)===v?`${C.blue}15`:"transparent",color:C.dim,cursor:"pointer",fontSize:9}}>{l}</button>)}</div>
+            </div>}
+            {selEl.type==="balloon"&&<div style={{marginBottom:8}}>
+              <div style={{fontSize:10,color:C.dim,marginBottom:4}}>Direção da seta</div>
+              <div style={{display:"flex",gap:3,marginBottom:6}}>{[["bottom-left","↙"],["bottom-right","↘"],["top-left","↖"],["top-right","↗"]].map(([v,l])=><button key={v} onClick={()=>updSel({tailDir:v})} style={{flex:1,padding:"4px",borderRadius:4,border:`1px solid ${selEl.tailDir===v?C.blue:C.border}`,background:selEl.tailDir===v?`${C.blue}15`:"transparent",color:selEl.tailDir===v?C.blue:C.dim,cursor:"pointer",fontSize:12}}>{l}</button>)}</div>
+              <div style={{fontSize:10,color:C.dim,marginBottom:4}}>Fundo</div>
+              <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>{["#1e293b","#0f172a","#fff","#EF444420","#3B82F620","#22C55E20"].map(c=><button key={c} onClick={()=>updSel({bgColor:c})} style={{width:22,height:22,borderRadius:4,border:`1px solid ${selEl.bgColor===c?C.blue:C.border}`,background:c,cursor:"pointer"}}/>)}</div>
+              <Btn vr="ghost" onClick={()=>setBalloonEditor({id:selEl.id,title:selEl.title||"",text:selEl.text||"",bgColor:selEl.bgColor||"#1e293b",tailDir:selEl.tailDir||"bottom-left"})} style={{width:"100%",marginBottom:6,fontSize:11}}>✏️ Editar Texto</Btn>
             </div>}
             {(selEl.type==="text"||selEl.type==="sticky")&&<Btn vr="ghost" onClick={()=>{if(selEl.type==="text"){setTextEditor({id:selEl.id,value:selEl.text||"",canvasX:selEl.x,canvasY:selEl.y,fontSize:selEl.fontSize||24});}else setStickyEditor({id:selEl.id,title:selEl.title,text:selEl.text,stickyColor:selEl.stickyColor});}} style={{width:"100%",marginBottom:6,fontSize:11}}>Editar</Btn>}<Btn vr="ghost" onClick={()=>{const n=els.filter(e=>e.id!==selId);setEls(n);push(n);setSelId(null);}} style={{width:"100%",fontSize:11,color:C.red}}>Deletar</Btn></PS>}
         </div>}
