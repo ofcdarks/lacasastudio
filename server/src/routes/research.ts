@@ -688,37 +688,54 @@ router.post("/channel-mockup", async (req: any, res: Response, next: NextFunctio
   try {
     const aiKey = await getAiKey();
     if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
-    const { channelName, niche, subNiche, style, targetCountry, language, originalChannel } = req.body;
+    const { channelName, niche, subNiche, style, targetCountry, language, originalChannel, analysisData } = req.body;
 
     const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
-        model: await getModel(), temperature: 0.6, max_tokens: 3000,
-        messages: [{ role: "system", content: "Expert em branding de canais YouTube. Crie identidades visuais completas. APENAS JSON." },
-          { role: "user", content: `Crie identidade visual completa para um canal YouTube modelado:
-Canal modelado de: "${originalChannel || "canal de referência"}"
-Nicho: ${niche} > ${subNiche || ""}
-Estilo: ${style || "faceless/2D"}
-País: ${targetCountry || "US"}, Idioma: ${language || "en"}
-Nome sugerido: ${channelName || "gerar"}
+        model: await getModel(), temperature: 0.7, max_tokens: 3500,
+        messages: [{ role: "system", content: `Você é um DIRETOR CRIATIVO de canais YouTube de elite. Sua missão: analisar um canal existente e criar uma versão MUITO SUPERIOR — não uma cópia, mas uma EVOLUÇÃO.
 
-Retorne JSON:
+REGRAS:
+- NÃO copie o canal original. SUPERE ele.
+- Identifique as FRAQUEZAS do original e corrija todas
+- Identifique as FORÇAS e amplifique 10x
+- Nome ORIGINAL e criativo (não parecido com o original)
+- Títulos MAIS impactantes, com hooks MELHORES
+- Thumbnails com conceitos visuais SUPERIORES
+- Nichos e abordagens que o ORIGINAL DEVERIA ter explorado mas não fez
+- Pense como se fosse criar o canal que DESTRUIRIA o original na competição
+- APENAS JSON válido sem markdown` },
+          { role: "user", content: `Analise o canal "${originalChannel || "referência"}" e crie um canal SUPERIOR:
+
+CANAL ORIGINAL: "${originalChannel}"
+Nicho: ${niche} > ${subNiche || ""}
+Estilo: ${style || "faceless"} | País: ${targetCountry || "US"} | Idioma: ${language || "en"}
+${analysisData ? `Dados: ${analysisData.subscribers || ""} subs, ${analysisData.totalViews || ""} views, ${analysisData.videoCount || ""} vídeos, Score: ${analysisData.score || ""}` : ""}
+${analysisData?.topVideos ? `Top vídeos do original: ${analysisData.topVideos.slice(0,5).map(v => v.title).join(" | ")}` : ""}
+
+SUPERE este canal. Crie algo MELHOR em TODOS os aspectos.
+
+JSON:
 {
-  "channelName": "Nome final do canal",
-  "tagline": "Slogan curto",
-  "description": "Descrição completa do canal (sobre)",
-  "logoPrompt": "Prompt DETALHADO para gerar logo no ImageFX: estilo, cores, elementos, formato circular, fundo transparente",
-  "bannerPrompt": "Prompt DETALHADO para gerar banner 2560x1440 no ImageFX: composição, cores, texto, elementos, estilo",
+  "channelName": "Nome ORIGINAL e criativo (NÃO parecido com o original)",
+  "tagline": "Slogan memorável que posiciona como autoridade",
+  "description": "Descrição SEO completa 200 palavras — melhor que a do original",
+  "whatsBetter": "3 frases explicando POR QUE este canal é superior ao original",
+  "weaknessesFixed": ["Fraqueza 1 do original que corrigimos", "Fraqueza 2", "Fraqueza 3"],
+  "logoPrompt": "Prompt DETALHADO ImageFX: logo circular, profissional, cores vibrantes, ícone representativo do nicho, estilo moderno premium, sem texto, fundo transparente",
+  "bannerPrompt": "Prompt DETALHADO ImageFX: banner YouTube 2560x1440, composição cinematográfica, cores da marca, elementos do nicho, profissional, sem texto genérico",
   "videos": [
-    {"title": "Título do vídeo 1", "thumbnailPrompt": "Prompt DETALHADO para thumbnail: composição, cores, texto overlay, elementos visuais, estilo 16:9", "views": "Estimativa", "duration": "10:00"},
-    {"title": "Título do vídeo 2", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
-    {"title": "Título do vídeo 3", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
-    {"title": "Título do vídeo 4", "thumbnailPrompt": "...", "views": "...", "duration": "..."}
+    {"title": "Título viral MELHOR que os do original — com hook poderoso", "thumbnailPrompt": "Prompt DETALHADO: composição cinematográfica, cores contrastantes, elemento emocional forte, 16:9, sem texto, estilo premium", "views": "Estimativa realista", "duration": "MM:SS"},
+    {"title": "Vídeo 2 explorando LACUNA que original ignorou", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
+    {"title": "Vídeo 3 com abordagem INOVADORA", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
+    {"title": "Vídeo 4 que DESTRUIRIA em engajamento", "thumbnailPrompt": "...", "views": "...", "duration": "..."}
   ],
   "colors": {"primary": "#hex", "secondary": "#hex", "accent": "#hex"},
-  "fonts": "Fontes recomendadas",
-  "keywords": ["keyword1","keyword2","keyword3","keyword4","keyword5"]
+  "fonts": "Fontes recomendadas premium",
+  "keywords": ["kw1","kw2","kw3","kw4","kw5"],
+  "strategyEdge": "Por que este canal vai VENCER o original em 6 meses"
 }` }]
       })
     });

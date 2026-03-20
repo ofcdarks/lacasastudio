@@ -38,7 +38,7 @@ function AnalysisPanel({data,onClose,onSave,saved,toast,pg}){
 
   const genImage=async(key,prompt)=>{setGenImg(key);try{const r=await aiApi.generateAsset({prompt});if(r.url)setMockImgs(p=>({...p,[key]:r.url}));else toast?.error("Falha");}catch(e){toast?.error(e.message);}setGenImg(null);};
 
-  const TABS=[["overview","📊","Geral"],["dna","🧬","DNA Viral"],["blueprint","📐","Blueprint"],["money","💰","Receita"],["titles","🎯","Títulos"],["calendar","🗓️","30 Dias"],["mockup","📺","Canal"]];
+  const TABS=[["overview","📊","Geral"],["dna","🧬","DNA Viral"],["blueprint","📐","Blueprint"],["money","💰","Receita"],["titles","🎯","Títulos"],["calendar","🗓️","30 Dias"],["mockup","🚀","Superar"]];
 
   return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",backdropFilter:"blur(12px)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:12}}>
     <div onClick={e=>e.stopPropagation()} style={{width:880,background:C.bgCard,borderRadius:20,border:`1px solid ${C.border}`,maxHeight:"95vh",overflowY:"auto"}}>
@@ -54,7 +54,7 @@ function AnalysisPanel({data,onClose,onSave,saved,toast,pg}){
           if(k==="money")ld(k,money,setMoney,setMoneyL,()=>researchApi.monetization({niche:data.niche,country:data.country,videosPerWeek:data.uploadsPerWeek||3,avgViews:data.avgViews||10000,subscribers:data.subscribers}),"💰 Calculando Monetização");
           if(k==="titles")ld(k,titles,setTitles,setTitlesL,()=>researchApi.generateTitles({channelName:data.name,niche:data.niche,topVideoTitles:data.topVideos?.map(v=>v.title),targetCountry:data.country,language:data.language}).then(r=>r.ideas||[]),"🎯 Gerando Títulos Virais");
           if(k==="calendar")ld(k,cal,setCal,setCalL,()=>researchApi.calendar({niche:data.niche,subNiche:data.subNiche,videosPerWeek:data.uploadsPerWeek||3,style:data.contentType,targetCountry:data.country,language:data.language}).then(r=>r.calendar||[]),"🗓️ Planejando 30 Dias");
-          if(k==="mockup")ld(k,mockup,setMockup,setMockL,()=>researchApi.channelMockup({originalChannel:data.name,niche:data.niche,subNiche:data.subNiche,style:data.contentType,targetCountry:data.country,language:data.language}),"📺 Criando Identidade Visual");
+          if(k==="mockup")ld(k,mockup,setMockup,setMockL,()=>researchApi.channelMockup({originalChannel:data.name,niche:data.niche,subNiche:data.subNiche,style:data.contentType,targetCountry:data.country,language:data.language,analysisData:{subscribers:data.subscribers,totalViews:data.totalViews,videoCount:data.videoCount,score:data.score,topVideos:data.topVideos}}),"🚀 Criando Canal SUPERIOR");
         }} style={{padding:"8px 12px",borderRadius:6,border:"none",cursor:"pointer",fontSize:13,background:sub===k?`${C.red}15`:"transparent",color:sub===k?C.red:C.muted}}>{ic}<span style={{fontSize:9,marginLeft:3}}>{lb}</span></button>)}
       </div>
       <div style={{padding:"14px 20px"}}>
@@ -113,8 +113,8 @@ function AnalysisPanel({data,onClose,onSave,saved,toast,pg}){
         {/* CHANNEL MOCKUP */}
         {sub==="mockup"&&<div>{mockL?<div style={{textAlign:"center",padding:40}}>
           <div style={{width:200,height:6,borderRadius:3,background:"rgba(255,255,255,.06)",margin:"0 auto 12px",overflow:"hidden"}}><div style={{height:"100%",background:`linear-gradient(90deg,${C.red},${C.orange})`,borderRadius:3,animation:"pulse 1.5s ease-in-out infinite",width:"60%"}}/></div>
-          <div style={{color:C.dim,fontSize:13}}>⏳ Criando identidade visual...</div>
-          <div style={{color:C.dim,fontSize:10,marginTop:6}}>Gerando nome, descrição, prompts e 4 vídeos</div>
+          <div style={{color:C.dim,fontSize:13}}>⏳ Criando canal SUPERIOR ao original...</div>
+          <div style={{color:C.dim,fontSize:10,marginTop:6}}>Analisando fraquezas, gerando identidade melhorada, 4 vídeos otimizados</div>
         </div>:mockup?<div>
           {/* === YOUTUBE CHANNEL PAGE MOCKUP === */}
           <div style={{background:"#0f0f0f",borderRadius:16,overflow:"hidden",border:`1px solid ${C.border}`}}>
@@ -171,6 +171,14 @@ function AnalysisPanel({data,onClose,onSave,saved,toast,pg}){
             </div>
           </div>
 
+          {/* Why this channel is BETTER */}
+          {mockup.whatsBetter&&<div style={{background:`linear-gradient(135deg,${C.green}06,${C.blue}06)`,borderRadius:12,border:`1px solid ${C.green}20`,padding:14,marginTop:12}}>
+            <div style={{fontWeight:800,fontSize:14,marginBottom:6,color:C.green}}>🏆 Por que este canal é SUPERIOR ao "{data.name}"</div>
+            <p style={{fontSize:12,color:C.muted,lineHeight:1.7}}>{mockup.whatsBetter}</p>
+            {mockup.weaknessesFixed?.length>0&&<div style={{marginTop:8}}><div style={{fontSize:11,fontWeight:700,color:C.red,marginBottom:4}}>⚡ Fraquezas do original que corrigimos:</div>{mockup.weaknessesFixed.map((w,i)=><div key={i} style={{fontSize:11,color:C.muted,padding:"3px 0"}}>✅ {w}</div>)}</div>}
+            {mockup.strategyEdge&&<div style={{marginTop:8,fontSize:11,color:C.green,fontStyle:"italic"}}>📈 {mockup.strategyEdge}</div>}
+          </div>}
+
           {/* Action buttons */}
           <div style={{display:"flex",gap:6,marginTop:14,flexWrap:"wrap"}}>
             <button onClick={async()=>{setGenImg("all");const keys=["logo","banner",...(mockup.videos||[]).slice(0,4).map((_,i)=>`thumb${i}`)];for(const k of keys){const prompt=k==="logo"?mockup.logoPrompt:k==="banner"?mockup.bannerPrompt:mockup.videos?.[Number(k.replace("thumb",""))]?.thumbnailPrompt;if(prompt&&!mockImgs[k]){try{const r=await aiApi.generateAsset({prompt});if(r.url)setMockImgs(p=>({...p,[k]:r.url}));}catch{}}};setGenImg(null);}} disabled={!!genImg} style={{padding:"10px 20px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${C.red},${C.orange})`,color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>{genImg==="all"?"⏳ Gerando...":"🎨 Gerar Todas as Imagens"}</button>
@@ -194,7 +202,7 @@ function AnalysisPanel({data,onClose,onSave,saved,toast,pg}){
             <button onClick={()=>cp(mockup.description)} style={{marginTop:8,padding:"5px 12px",borderRadius:4,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:10}}>📋 Copiar Descrição</button>
           </Sec>
           {mockup.keywords&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:12}}>{mockup.keywords.map(k=><span key={k} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:`${C.blue}10`,color:C.blue}}>#{k}</span>)}</div>}
-        </div>:<p style={{textAlign:"center",padding:30,color:C.dim}}>Clique pra criar preview do canal</p>}</div>}
+        </div>:<p style={{textAlign:"center",padding:30,color:C.dim}}>Clique pra criar um canal MELHOR que "{data.name}"</p>}</div>}
       </div>
     </div>
   </div>
