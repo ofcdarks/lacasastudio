@@ -83,6 +83,7 @@ model Scene {
   camera   String @default("")
   audio    String @default("")
   color    String @default("#3B82F6")
+  thumbnail String @default("")
   order    Int    @default(0)
   videoId  Int
   video    Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)

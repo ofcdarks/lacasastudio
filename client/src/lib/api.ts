@@ -137,6 +137,7 @@ export const aiApi = {
   seo: (data: { title: string; topic?: string; channelName?: string }) => api.post<any>("/ai/seo", data),
   script: (data: any) => api.post<{ script: string }>("/ai/script", data),
   storyboard: (data: any) => api.post<{ scenes: any[] }>("/ai/storyboard", data),
+  generateAsset: (data: any) => api.post<{ url: string; b64?: string }>("/ai/generate-asset", data),
   titles: (data: { topic: string; channelName?: string }) => api.post<{ titles: string[] }>("/ai/titles", data),
   analyzeIdea: (data: any) => api.post<any>("/ai/analyze-idea", data),
 };

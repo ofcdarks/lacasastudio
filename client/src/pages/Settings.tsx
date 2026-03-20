@@ -27,6 +27,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [promoting, setPromoting] = useState(false);
+  const [ifxCookie, setIfxCookie] = useState("");
   const [testing, setTesting] = useState(false);
 
   useEffect(() => {
@@ -36,13 +37,14 @@ export default function Settings() {
     }).catch(() => {});
     settingsApi.getRaw("laozhang_api_key").then(s => { if (s.value) setLaoKey(s.value); }).catch(() => {});
     settingsApi.getRaw("youtube_api_key").then(s => { if (s.value) setYtKey(s.value); }).catch(() => {});
+    settingsApi.getRaw("imagefx_cookie").then(s => { if (s.value) setIfxCookie(s.value); }).catch(() => {});
   }, []);
 
   const save = async () => {
     setLoading(true);
     setSaved(false);
     try {
-      await settingsApi.save({ laozhang_api_key: laoKey, youtube_api_key: ytKey, ai_model: model });
+      await settingsApi.save({ laozhang_api_key: laoKey, youtube_api_key: ytKey, ai_model: model, imagefx_cookie: ifxCookie });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) { toast?.error(err.message); }
@@ -115,6 +117,26 @@ export default function Settings() {
             </Btn>
           </Card>
 
+          {/* ImageFX Cookie — Geração de Assets */}
+          <Card color="#EC4899">
+            <SecTitle t="ImageFX — Geração de Assets" />
+            <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 14 }}>
+              Gera imagens com <span style={{ color: "#EC4899", fontWeight: 600 }}>Google Imagen 3.5</span> (grátis).
+              Para obter o cookie: abra <span style={{ color: "#EC4899", fontWeight: 600 }}>labs.google/fx</span> → F12 → Console → cole:
+              <code style={{ display: "block", background: "rgba(255,255,255,.04)", padding: "8px 10px", borderRadius: 6, marginTop: 6, fontSize: 10, fontFamily: "var(--mono)", color: "#EC4899", lineHeight: 1.6, wordBreak: "break-all" }}>
+                document.cookie
+              </code>
+              <span style={{ fontSize: 10, color: C.dim, marginTop: 4, display: "block" }}>Copie o resultado inteiro e cole abaixo.</span>
+            </p>
+            <Label t="Cookie do ImageFX" />
+            <textarea value={ifxCookie} onChange={e => setIfxCookie(e.target.value)}
+              placeholder="__Secure-1PSID=...; __Secure-1PSIDTS=...; ..."
+              style={{ width: "100%", fontFamily: "var(--mono)", fontSize: 10, background: "rgba(255,255,255,.04)", border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px", color: C.text, outline: "none", minHeight: 60, resize: "vertical", marginBottom: 12 }} />
+            <Btn onClick={save} disabled={loading} style={{ width: "100%", justifyContent: "center" }}>
+              {saved ? "✓ Salvo!" : "Salvar"}
+            </Btn>
+          </Card>
+
           {/* Model Selection */}
           <Card color={C.purple}>
             <SecTitle t="Modelo de IA" />
@@ -147,6 +169,8 @@ export default function Settings() {
             {[
               { icon: "🤖", title: "LaoZhang (IA)", items: ["Gerador SEO + IA", "Editor de Roteiro", "Storyboard automático", "Análise do canal"] },
               { icon: "📺", title: "YouTube Data API", items: ["Analytics real dos canais", "Dados de vídeos publicados", "Recomendações baseadas em dados"] },
+            },
+            { icon: "🎨", title: "Google ImageFX", items: ["Geração de assets 2D no Storyboard", "Imagen 3.5 (Google) — grátis", "Resolução alta 16:9 landscape"] }
             ].map((sec, i) => (
               <div key={i} style={{ padding: "12px 0", borderBottom: i === 0 ? `1px solid ${C.border}` : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>

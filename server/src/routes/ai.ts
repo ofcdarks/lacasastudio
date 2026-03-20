@@ -1,4 +1,5 @@
 import { Router, Response, NextFunction } from "express";
+import { ImageFX } from "../services/imagefx";
 import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
 import NotifService from "../services/notifications";
@@ -180,4 +181,72 @@ Retorne JSON: {"title":"título principal","points":["ponto 1","ponto 2","ponto 
     res.status(500).json({ error: "IA retornou formato inválido", structure: { title: "Erro", points: ["Tente novamente com outro tema"] } });
   }
 });
+
+
+
+// Generate image asset via ImageFX (Imagen 3.5 — free with Google cookie)
+router.post("/generate-asset", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { prompt, sceneId } = req.body as { prompt: string; sceneId?: number };
+    if (!prompt?.trim()) { res.status(400).json({ error: "Prompt obrigatório" }); return; }
+
+    // Get ImageFX cookie from settings
+    const cookieSetting = await prisma.setting.findUnique({ where: { key: "imagefx_cookie" } });
+    const cookie = cookieSetting?.value || "";
+    
+    if (!cookie) {
+      // Fallback: try LaoZhang DALL-E
+      const apiKey = await getApiKey();
+      if (!apiKey) { res.status(400).json({ error: "Configure o Cookie do ImageFX ou a API Key nas Configurações" }); return; }
+      
+      try {
+        const imgRes = await fetch("https://api.laozhang.ai/v1/images/generations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({ model: "dall-e-3", prompt, n: 1, size: "1792x1024", quality: "standard" }),
+        });
+        if (!imgRes.ok) throw new Error("DALL-E falhou");
+        const data = await imgRes.json() as any;
+        const url = data.data?.[0]?.url || "";
+        const b64 = data.data?.[0]?.b64_json || null;
+        const thumb = url || (b64 ? `data:image/png;base64,${b64}` : "");
+        if (sceneId && thumb) await prisma.scene.update({ where: { id: sceneId }, data: { thumbnail: thumb } });
+        await NotifService.aiGenerated(req.userId, "asset");
+        res.json({ url: thumb });
+        return;
+      } catch { res.status(400).json({ error: "Configure o Cookie do ImageFX nas Configurações" }); return; }
+    }
+
+    // Use ImageFX with cookie
+    const ifx = new ImageFX(cookie);
+    const results = await ifx.generate(prompt, { aspectRatio: "IMAGE_ASPECT_RATIO_LANDSCAPE", numberOfImages: 1 });
+    
+    if (!results?.length || !results[0].base64) {
+      res.status(500).json({ error: "Nenhuma imagem gerada" });
+      return;
+    }
+
+    const b64 = results[0].base64;
+    const url = `data:image/png;base64,${b64}`;
+
+    // Save to scene
+    if (sceneId) {
+      await prisma.scene.update({ where: { id: sceneId }, data: { thumbnail: url } });
+    }
+
+    await NotifService.aiGenerated(req.userId, "asset");
+    res.json({ url });
+  } catch (err: any) {
+    if (err.message?.includes("Cookie") || err.message?.includes("cookie") || err.message?.includes("autenticação")) {
+      res.status(401).json({ error: "Cookie do ImageFX expirado. Atualize nas Configurações." });
+      return;
+    }
+    if (err.message?.includes("bloqueado")) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    next(err);
+  }
+});
+
 export default router;
