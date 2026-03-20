@@ -1065,4 +1065,82 @@ JSON: {"original":"${title}","pieces":[{"type":"short","platform":"YouTube Short
   } catch (err) { next(err); }
 });
 
+
+// 📊 Quick analyze any channel with growth tips
+router.post("/quick-analyze", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const ytKey = await getYtKey();
+    const aiKey = await getAiKey();
+    if (!ytKey) { res.status(400).json({ error: "Configure YouTube API Key" }); return; }
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { query } = req.body;
+    if (!query?.trim()) { res.status(400).json({ error: "Digite nome ou URL do canal" }); return; }
+
+    // Search channel
+    const search = await ytFetch(`search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=1`, ytKey);
+    const chId = search.items?.[0]?.snippet?.channelId || search.items?.[0]?.id?.channelId;
+    if (!chId) { res.status(404).json({ error: "Canal não encontrado" }); return; }
+
+    // Get channel details
+    const details = await ytFetch(`channels?part=snippet,statistics,brandingSettings&id=${chId}`, ytKey);
+    const ch = details.items?.[0];
+    if (!ch) { res.status(404).json({ error: "Canal não encontrado" }); return; }
+
+    const subs = Number(ch.statistics?.subscriberCount || 0);
+    const views = Number(ch.statistics?.viewCount || 0);
+    const vids = Number(ch.statistics?.videoCount || 0);
+
+    // Get recent videos
+    const vSearch = await ytFetch(`search?part=snippet&channelId=${chId}&type=video&order=date&maxResults=5`, ytKey);
+    const vIds = (vSearch.items || []).map((v: any) => v.id?.videoId).filter(Boolean);
+    let recentVids: any[] = [];
+    if (vIds.length) {
+      const vData = await ytFetch(`videos?part=snippet,statistics,contentDetails&id=${vIds.join(",")}`, ytKey);
+      recentVids = (vData.items || []).map((v: any) => ({
+        title: v.snippet?.title, views: Number(v.statistics?.viewCount || 0),
+        likes: Number(v.statistics?.likeCount || 0), publishedAt: v.snippet?.publishedAt
+      }));
+    }
+
+    const avgViews = recentVids.length ? Math.round(recentVids.reduce((a, v) => a + v.views, 0) / recentVids.length) : 0;
+
+    // AI analysis with growth tips
+    const model = await getModel();
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({ model, temperature: 0.5, max_tokens: 2500,
+        messages: [{ role: "system", content: "Consultor de crescimento YouTube de elite. " + LANG_RULE },
+          { role: "user", content: `Analise este canal YouTube e dê dicas CONCRETAS pra crescer e passar a concorrência:
+
+Canal: "${ch.snippet?.title}" (@${ch.snippet?.customUrl || ""})
+Inscritos: ${subs}, Views totais: ${views}, Vídeos: ${vids}
+Views médias recentes: ${avgViews}
+Últimos vídeos: ${recentVids.map(v => `"${v.title}" (${v.views} views)`).join(" | ")}
+Descrição: ${ch.snippet?.description?.slice(0, 200)}
+
+JSON:
+{"health":{"score":85,"status":"Saudável/Em risco/Crítico","diagnosis":"Diagnóstico em 2 frases"},"metrics":{"subsGrowth":"Lento/Normal/Rápido","viewsPerVideo":"Bom/Médio/Fraco","engagement":"Alto/Médio/Baixo","consistency":"Regular/Irregular","seoQuality":"Bom/Fraco"},"strengths":["Ponto forte 1","2","3"],"problems":["Problema 1 que trava o crescimento","2","3"],"quickWins":[{"action":"Ação imediata 1 pra dar um UP","impact":"alto","howTo":"Passo a passo concreto"},{"action":"Ação 2","impact":"alto","howTo":"..."},{"action":"Ação 3","impact":"médio","howTo":"..."}],"beatCompetition":[{"tip":"Como passar concorrente 1","competitor":"Tipo de canal a superar","strategy":"Estratégia detalhada"},{"tip":"2","competitor":"...","strategy":"..."},{"tip":"3","competitor":"...","strategy":"..."}],"contentIdeas":["Ideia de vídeo 1 que VIRALIZARIA nesse canal","Ideia 2","Ideia 3","Ideia 4","Ideia 5"],"growthPlan":{"week1":"Foco semana 1","week2":"Foco semana 2","month1":"Meta mês 1","month3":"Meta mês 3"}}` }]
+      })
+    });
+
+    let aiData = null;
+    if (aiRes.ok) {
+      const d = await aiRes.json() as any;
+      const raw = (d.choices?.[0]?.message?.content || "{}").trim();
+      try { aiData = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()); } catch {}
+    }
+
+    res.json({
+      channel: {
+        id: chId, name: ch.snippet?.title, handle: ch.snippet?.customUrl,
+        thumbnail: ch.snippet?.thumbnails?.medium?.url, subscribers: subs,
+        totalViews: views, videoCount: vids, country: ch.snippet?.country,
+        description: ch.snippet?.description?.slice(0, 300), avgViews
+      },
+      recentVideos: recentVids,
+      analysis: aiData
+    });
+  } catch (err) { next(err); }
+});
+
 export default router;

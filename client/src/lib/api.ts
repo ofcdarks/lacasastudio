@@ -206,6 +206,7 @@ export const researchApi = {
   predictViral: (data: any) => api.post<any>("/research/predict-viral", data),
   monetize360: (data: any) => api.post<any>("/research/monetize-360", data),
   repurpose: (data: any) => api.post<any>("/research/repurpose", data),
+  quickAnalyze: (query: string) => api.post<any>("/research/quick-analyze", { query }),
   updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
 };
 
