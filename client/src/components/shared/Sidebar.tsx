@@ -46,15 +46,18 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
   const loc = useLocation();
   const pending = videos.filter(v => v.status !== "published").length;
   const closeMobile = () => { if (onClose) onClose(); };
+  const [showNewChannel, setShowNewChannel] = useState(false);
+  const [newChName, setNewChName] = useState("");
 
   const addChannel = async () => {
-    const name = prompt("Nome do novo canal:");
-    if (!name) return;
+    if (!newChName.trim()) return;
     const colors = [C.red, C.purple, C.green, C.blue, C.orange, C.pink];
     try {
-      await channelApi.create({ name, color: colors[Math.floor(Math.random() * colors.length)] });
+      await channelApi.create({ name: newChName, color: colors[Math.floor(Math.random() * colors.length)] });
       refreshChannels();
-      toast?.success(`Canal "${name}" criado!`);
+      toast?.success(`Canal "${newChName}" criado!`);
+      setNewChName("");
+      setShowNewChannel(false);
     } catch (err: any) { toast?.error(err.message); }
   };
 
@@ -99,10 +102,29 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
             onClick={() => { setSelChannel(null); nav("/planner"); closeMobile(); }} />
         </div>
         <div style={{ padding: "12px 16px", borderTop: `1px solid ${C.border}` }}>
-          <div onClick={addChannel} style={{ fontSize: 12, color: C.muted, cursor: "pointer", padding: "6px 0" }}>+ Novo canal</div>
+          <div onClick={() => setShowNewChannel(true)} style={{ fontSize: 12, color: C.muted, cursor: "pointer", padding: "6px 0" }}>+ Novo canal</div>
           <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: C.dim, marginTop: 6 }}>© LaCasaStudio V2.3</div>
         </div>
       </aside>
+      {showNewChannel && (
+        <div onClick={() => setShowNewChannel(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: 380, background: C.bgCard, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 20px 60px rgba(0,0,0,.5)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${C.red}, ${C.orange})`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13, color: "#fff" }}>LC</div>
+              <div><div style={{ fontWeight: 700, fontSize: 16 }}>Novo Canal</div><div style={{ fontSize: 11, color: C.dim }}>Crie um canal para organizar seus vídeos</div></div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.muted, textTransform: "uppercase", marginBottom: 6 }}>Nome do Canal</div>
+            <input autoFocus value={newChName} onChange={e => setNewChName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") addChannel(); if (e.key === "Escape") setShowNewChannel(false); }}
+              placeholder="Ex: Canal Dark, Cortes, Vlogs..."
+              style={{ width: "100%", background: "rgba(255,255,255,.06)", border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px", color: C.text, fontSize: 14, outline: "none", marginBottom: 16 }} />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setShowNewChannel(false)} style={{ padding: "8px 18px", borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 13 }}>Cancelar</button>
+              <button onClick={addChannel} style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: C.red, color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Criar Canal</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

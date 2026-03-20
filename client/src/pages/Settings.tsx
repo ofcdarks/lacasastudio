@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { settingsApi } from "../lib/api";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../components/shared/Toast";
 import { Card, Btn, Hdr, Label, Input, Select, SecTitle, C } from "../components/shared/UI";
 
 const MODELS = [
@@ -18,6 +19,7 @@ const MODELS = [
 
 export default function Settings() {
   const { user, refresh } = useAuth();
+  const toast = useToast();
   const [laoKey, setLaoKey] = useState("");
   const [ytKey, setYtKey] = useState("");
   const [model, setModel] = useState("claude-sonnet-4-6");
@@ -43,7 +45,7 @@ export default function Settings() {
       await settingsApi.save({ laozhang_api_key: laoKey, youtube_api_key: ytKey, ai_model: model });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast?.error(err.message); }
     finally { setLoading(false); }
   };
 
@@ -186,9 +188,9 @@ export default function Settings() {
                 try {
                   await api.post("/auth/promote-admin", {});
                   await refresh();
-                  alert("Você agora é admin! O link Admin apareceu no menu lateral.");
+                  toast?.success("Você agora é admin! O link Admin apareceu no menu lateral.");
                 } catch (err) {
-                  alert(err.message || "Já existe um administrador no sistema");
+                  toast?.error(err.message || "Já existe um administrador no sistema");
                 }
                 setPromoting(false);
               }} disabled={promoting} style={{ opacity: promoting ? 0.5 : 1 }}>

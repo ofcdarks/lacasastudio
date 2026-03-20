@@ -40,7 +40,7 @@ export default function Admin() {
   };
 
   const delUser = async (id) => {
-    if (!confirm("Deletar este usuário e TODOS os dados dele?")) return;
+    if (!window.confirm("Deletar este usuário e TODOS os dados dele?")) return;
     await api.del(`/admin/users/${id}`);
     setUsers(p => p.filter(u => u.id !== id));
     toast?.success("Usuário removido");
