@@ -1,6 +1,8 @@
 // @ts-nocheck
 import { useState, useEffect } from "react";
 import { settingsApi } from "../lib/api";
+import api from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 import { Card, Btn, Hdr, Label, Input, Select, SecTitle, C } from "../components/shared/UI";
 
 const MODELS = [
@@ -15,12 +17,14 @@ const MODELS = [
 ];
 
 export default function Settings() {
+  const { user } = useAuth();
   const [laoKey, setLaoKey] = useState("");
   const [ytKey, setYtKey] = useState("");
   const [model, setModel] = useState("claude-sonnet-4-6");
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  const [promoting, setPromoting] = useState(false);
   const [testing, setTesting] = useState(false);
 
   useEffect(() => {
@@ -171,6 +175,34 @@ export default function Settings() {
               {model}
             </div>
           </Card>
+
+          {!user?.isAdmin && (
+            <Card>
+              <SecTitle t="Administração" />
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>Você não é administrador. Se nenhum admin existe no sistema, clique abaixo para se tornar admin.</div>
+              <Btn onClick={async () => {
+                setPromoting(true);
+                try {
+                  await api.post("/auth/promote-admin", {}, true);
+                  alert("Você agora é admin! A página vai recarregar.");
+                  window.location.reload();
+                } catch (err) {
+                  alert(err.message || "Já existe um administrador no sistema");
+                }
+                setPromoting(false);
+              }} disabled={promoting} style={{ opacity: promoting ? 0.5 : 1 }}>
+                {promoting ? "Promovendo..." : "🛡 Tornar-me Administrador"}
+              </Btn>
+            </Card>
+          )}
+
+          {user?.isAdmin && (
+            <Card>
+              <SecTitle t="Administração" />
+              <div style={{ fontSize: 12, color: C.green, marginBottom: 8 }}>✅ Você é administrador</div>
+              <Btn onClick={() => window.location.href = "/admin"}>🛡 Abrir Painel Admin</Btn>
+            </Card>
+          )}
         </div>
       </div>
     </div>

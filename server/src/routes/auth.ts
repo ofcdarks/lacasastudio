@@ -44,6 +44,16 @@ router.post("/login", validate(loginSchema), async (req: any, res: Response, nex
   } catch (err) { next(err); }
 });
 
+// Promote to admin (only if no admin exists in DB)
+router.post("/promote-admin", authenticate, async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const adminExists = await prisma.user.findFirst({ where: { isAdmin: true } });
+    if (adminExists) { res.status(400).json({ error: "Já existe um administrador" }); return; }
+    const user = await prisma.user.update({ where: { id: req.userId }, data: { isAdmin: true } });
+    res.json({ ok: true, user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar, isAdmin: true } });
+  } catch (err) { next(err); }
+});
+
 // Me
 router.get("/me", authenticate, async (req: any, res: Response, next: NextFunction) => {
   try {
