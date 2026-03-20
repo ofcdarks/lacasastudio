@@ -97,13 +97,65 @@ export default function CommandCenter(){
         {aiResult?.layerPrediction&&<div style={{fontSize:12,color:C.muted,marginTop:10}}>🔮 {aiResult.layerPrediction}</div>}
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:8,marginBottom:20}}>
-        {[["Total Views",fmt(v.totalViews||v.views),C.green],["7d Views",fmt(v.views7d||0),C.blue],["Watch Time",`${fmt(v.watchTime)}min`,C.purple],["AVD",`${Math.round(v.avgDuration)}s`,C.orange],["Retenção",`${Math.round(v.avgPct)}%`,v.avgPct>=50?C.green:C.red],["Satisfaction",`${v.satisfaction}%`,v.satisfaction>=90?C.green:C.red]].map(([l,val,c])=>
-          <div key={l} style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"14px 10px",textAlign:"center"}}>
-            <div style={{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:4}}>{l}</div>
-            <div style={{fontSize:20,fontWeight:800,color:c}}>{val}</div>
-          </div>)}
+      {/* Analytics delay warning for recent videos */}
+      {v.isFirst48h&&v.avgDuration===0&&<div style={{background:"#F59E0B08",borderRadius:10,border:"1px solid #F59E0B20",padding:12,marginBottom:12,fontSize:11,color:"#F59E0B"}}>
+        ⏳ YouTube Analytics tem delay de 48-72h. AVD, watch time e retenção serão atualizados automaticamente. Views, likes e comments já são em tempo real via Data API.
+      </div>}
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:12}}>
+        <div style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"14px 10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:4}}>Views Total</div>
+          <div style={{fontSize:22,fontWeight:800,color:C.green}}>{fmt(v.totalViews||v.views)}</div>
+        </div>
+        <div style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"14px 10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:4}}>Likes</div>
+          <div style={{fontSize:22,fontWeight:800,color:C.red}}>{fmt(v.totalLikes||v.likes)}</div>
+        </div>
+        <div style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"14px 10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:4}}>Comments</div>
+          <div style={{fontSize:22,fontWeight:800,color:C.blue}}>{fmt(v.totalComments||v.comments)}</div>
+        </div>
+        <div style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"14px 10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:4}}>Satisfaction</div>
+          <div style={{fontSize:22,fontWeight:800,color:v.satisfaction>=90?C.green:v.satisfaction>0?C.red:C.dim}}>{v.satisfaction>0?`${v.satisfaction}%`:"—"}</div>
+        </div>
       </div>
+
+      {/* Analytics metrics (may be delayed for recent videos) */}
+      {(v.avgDuration>0||v.watchTime>0||v.views7d>0)&&<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:12}}>
+        {v.views7d>0&&<div style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"14px 10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:4}}>7d Views</div>
+          <div style={{fontSize:20,fontWeight:800,color:C.blue}}>{fmt(v.views7d)}</div>
+        </div>}
+        {v.watchTime>0&&<div style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"14px 10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:4}}>Watch Time</div>
+          <div style={{fontSize:20,fontWeight:800,color:C.purple}}>{fmt(v.watchTime)}min</div>
+        </div>}
+        {v.avgDuration>0&&<div style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"14px 10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:4}}>AVD</div>
+          <div style={{fontSize:20,fontWeight:800,color:C.orange}}>{Math.round(v.avgDuration)}s</div>
+        </div>}
+        {v.avgPct>0&&<div style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"14px 10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:4}}>Retenção</div>
+          <div style={{fontSize:20,fontWeight:800,color:v.avgPct>=50?C.green:C.red}}>{Math.round(v.avgPct)}%</div>
+        </div>}
+      </div>}
+
+      {/* Engagement rate calculated from Data API */}
+      {(v.totalViews||v.views)>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:20}}>
+        <div style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.dim}}>Likes/Views</div>
+          <div style={{fontSize:16,fontWeight:800,color:((v.totalLikes||v.likes)/(v.totalViews||v.views)*100)>=3?C.green:"#F59E0B"}}>{((v.totalLikes||v.likes)/(v.totalViews||v.views)*100).toFixed(1)}%</div>
+        </div>
+        <div style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.dim}}>Comments/Views</div>
+          <div style={{fontSize:16,fontWeight:800,color:((v.totalComments||v.comments)/(v.totalViews||v.views)*100)>=0.5?C.green:"#F59E0B"}}>{((v.totalComments||v.comments)/(v.totalViews||v.views)*100).toFixed(2)}%</div>
+        </div>
+        <div style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"10px",textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.dim}}>Engajamento Total</div>
+          <div style={{fontSize:16,fontWeight:800,color:(((v.totalLikes||v.likes)+(v.totalComments||v.comments)+(v.shares||0))/(v.totalViews||v.views)*100)>=5?C.green:"#F59E0B"}}>{(((v.totalLikes||v.likes)+(v.totalComments||v.comments)+(v.shares||0))/(v.totalViews||v.views)*100).toFixed(1)}%</div>
+        </div>
+      </div>}
 
       {r.vsChannel&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
         {[["Views vs Canal",r.vsChannel.viewsVsAvg,fmt(r.vsChannel.avgViews)+" avg"],["AVD vs Canal",r.vsChannel.durationVsAvg,r.vsChannel.avgDuration+"s avg"]].map(([label,pct,avg])=>
@@ -134,15 +186,26 @@ export default function CommandCenter(){
         </div>}
       </div>}
 
-      {aiResult?.whatToPost&&<div style={{background:`${C.green}06`,borderRadius:12,border:`1px solid ${C.green}20`,padding:14,marginBottom:20}}>
+      {aiResult?.whatToPost&&<div style={{background:`${C.green}06`,borderRadius:12,border:`1px solid ${C.green}20`,padding:14,marginBottom:12}}>
         <div style={{fontWeight:700,fontSize:13,color:C.green}}>📢 Postar AGORA</div>
         <div style={{fontSize:12,color:C.muted,marginTop:4,lineHeight:1.6}}>{aiResult.whatToPost}</div>
+      </div>}
+
+      {(aiResult?.seoQuickFix||aiResult?.engagementTip)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+        {aiResult.seoQuickFix&&<div style={{background:`${C.blue}06`,borderRadius:12,border:`1px solid ${C.blue}20`,padding:14}}>
+          <div style={{fontWeight:700,fontSize:12,color:C.blue,marginBottom:4}}>🔍 SEO Quick Fix</div>
+          <div style={{fontSize:11,color:C.muted,lineHeight:1.6}}>{aiResult.seoQuickFix}</div>
+        </div>}
+        {aiResult.engagementTip&&<div style={{background:`${C.purple}06`,borderRadius:12,border:`1px solid ${C.purple}20`,padding:14}}>
+          <div style={{fontWeight:700,fontSize:12,color:C.purple,marginBottom:4}}>💬 Dica de Engajamento</div>
+          <div style={{fontSize:11,color:C.muted,lineHeight:1.6}}>{aiResult.engagementTip}</div>
+        </div>}
       </div>}
 
       {aiResult?.nextCheckIn&&<div style={{textAlign:"center",fontSize:12,color:C.dim,marginBottom:20}}>⏰ Próximo check: {aiResult.nextCheckIn}</div>}
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:20}}>
-        {[["❤️ Likes",fmt(v.likes),C.red],["💬 Comments",fmt(v.comments),C.blue],["🔄 Shares",fmt(v.shares),C.purple],["👥 +Subs",`+${fmt(v.subsGained)}`,C.green]].map(([l,val,c])=>
+        {[["❤️ Likes",fmt(v.totalLikes||v.likes),C.red],["💬 Comments",fmt(v.totalComments||v.comments),C.blue],["🔄 Shares",fmt(v.shares),C.purple],["👥 +Subs",`+${fmt(v.subsGained)}`,C.green]].map(([l,val,c])=>
           <div key={l} style={{background:C.bgCard,borderRadius:10,border:`1px solid ${C.border}`,padding:12,textAlign:"center"}}>
             <div style={{fontSize:16,fontWeight:800,color:c}}>{val}</div>
             <div style={{fontSize:10,color:C.dim}}>{l}</div>

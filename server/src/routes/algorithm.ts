@@ -293,12 +293,50 @@ RETORNE JSON (sem markdown, sem backticks):
 router.post("/command-center/insights", async (req: any, res: Response, next: NextFunction) => {
   try {
     const { video, layer, vsChannel, channelName } = req.body;
-    const result = await fetchAI(
-      "Expert em primeiras 48h pós-publicação YouTube. Analise dados reais e diga o que fazer AGORA. " + LANG_RULE,
-      `Vídeo no canal "${channelName}": Views:${video?.views||0} AVD:${Math.round(video?.avgDuration||0)}s(avg canal:${vsChannel?.avgDuration||0}s) ViewsVsCanal:${vsChannel?.viewsVsAvg||0}% Satisfaction:${video?.satisfaction||0}% Likes:${video?.likes} Comments:${video?.comments} Shares:${video?.shares} Camada:${layer||"testing"}
+    const v = video || {};
+    const totalViews = v.totalViews || v.views || 0;
+    const totalLikes = v.totalLikes || v.likes || 0;
+    const totalComments = v.totalComments || v.comments || 0;
+    const engRate = totalViews > 0 ? ((totalLikes + totalComments + (v.shares||0)) / totalViews * 100).toFixed(1) : "0";
+    const likesRate = totalViews > 0 ? ((totalLikes / totalViews) * 100).toFixed(1) : "0";
+    const isRecent = v.daysSincePublish !== null && v.daysSincePublish <= 7;
 
-JSON: {"status":"🟢/🟡/🔴 + label","diagnosis":"2-3 frases do que está acontecendo","immediateActions":[{"action":"O que fazer AGORA","priority":"urgente","timeNeeded":"5min"},{"action":"Segunda ação","priority":"importante","timeNeeded":"10min"}],"thumbChange":false,"thumbReason":"Motivo","titleChange":false,"titleSuggestion":"","layerPrediction":"Para onde vai e quando","whatToPost":"O que postar agora","nextCheckIn":"Quando checar de novo"}`,
-      2000
+    const result = await fetchAI(
+      `Expert #1 em primeiras 48h-7 dias pós-publicação YouTube. Analise dados REAIS e diga EXATAMENTE o que fazer. NUNCA recomende ferramentas externas — APENAS ferramentas do LaCasaStudio. ` + LANG_RULE,
+      `DADOS REAIS DO VÍDEO "${v.title || ""}":
+Canal: "${channelName}"
+Views totais: ${totalViews} (Data API, tempo real)
+Likes: ${totalLikes} | Comments: ${totalComments} | Shares: ${v.shares||0}
+Taxa de engajamento: ${engRate}% | Likes/views: ${likesRate}%
+AVD: ${Math.round(v.avgDuration||0)}s (avg canal: ${vsChannel?.avgDuration||0}s)
+Views vs Canal: ${vsChannel?.viewsVsAvg||0}%
+Satisfaction: ${v.satisfaction||0}%
+Camada atual: ${layer||"testing"}
+Publicado há: ${v.daysSincePublish !== null ? v.daysSincePublish + " dias" : "desconhecido"}
+Velocidade: ${v.velocity || 0} views/dia
+Tags: ${v.tagCount||0}
+${v.avgDuration === 0 && isRecent ? "NOTA: AVD/WatchTime ainda indisponíveis (Analytics API tem delay de 48-72h para vídeos recentes)" : ""}
+
+Análise COMPLETA com ações PRÁTICAS. JSON:
+{
+  "status": "🟢 Performando bem / 🟡 Precisa ajustes / 🔴 Baixo desempenho + detalhe específico",
+  "diagnosis": "3-4 frases DETALHADAS analisando: CTR implícito (views vs impressões estimadas), engajamento (${engRate}% é bom?), retenção, posição na camada do algoritmo. Referente dados reais.",
+  "immediateActions": [
+    {"action": "Ação específica baseada nos dados reais", "priority": "urgente", "timeNeeded": "5min"},
+    {"action": "Segunda ação prática", "priority": "importante", "timeNeeded": "10min"},
+    {"action": "Terceira ação de médio prazo", "priority": "recomendado", "timeNeeded": "30min"}
+  ],
+  "thumbChange": true/false,
+  "thumbReason": "Motivo baseado nos dados — se views baixo vs canal pode ser CTR, sugerir mudança",
+  "titleChange": true/false,
+  "titleSuggestion": "Novo título otimizado mantendo o MESMO tema",
+  "layerPrediction": "Previsão de quando muda de camada baseado na velocidade atual de ${v.velocity||0}/dia",
+  "whatToPost": "Conteúdo complementar pra postar AGORA (comunidade, shorts, stories) pra impulsionar",
+  "nextCheckIn": "Quando checar (baseado em publicado há ${v.daysSincePublish} dias)",
+  "seoQuickFix": "Se tags/título podem melhorar, sugerir usar SEO Audit ou Catalog Optimizer do LaCasaStudio",
+  "engagementTip": "Como aumentar engajamento de ${engRate}% baseado nos ${totalComments} comentários atuais"
+}`,
+      2500
     );
     res.json(result);
   } catch (err) { next(err); }
