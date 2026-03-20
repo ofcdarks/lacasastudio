@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useToast } from "../components/shared/Toast";
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useConfirm } from "../context/ConfirmContext";
@@ -8,6 +9,7 @@ import { Card, Btn, Hdr, Label, Input, Select, PBar, SecTitle, C } from "../comp
 export default function Metas() {
   const { channels } = useApp();
   const confirm = useConfirm();
+  const toast = useToast();
   const [metas, setMetas] = useState([]);
   const [showF, setShowF] = useState(false);
   const [form, setForm] = useState({ title: "", channelId: "", items: [{ label: "", current: 0, target: 0, unit: "" }] });
@@ -21,7 +23,7 @@ export default function Metas() {
   const createMeta = async () => {
     if (!form.title.trim()) return;
     const validItems = form.items.filter(i => i.label.trim());
-    if (validItems.length === 0) return alert("Adicione pelo menos um item");
+    if (validItems.length === 0) return toast?.error("Adicione pelo menos um item");
     try {
       const meta = await metaApi.create({
         title: form.title,
@@ -31,7 +33,7 @@ export default function Metas() {
       setMetas(p => [...p, meta]);
       setForm({ title: "", channelId: "", items: [{ label: "", current: 0, target: 0, unit: "" }] });
       setShowF(false);
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast?.error(err.message); }
   };
 
   const updateProgress = async (itemId, current) => {

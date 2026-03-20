@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useToast } from "../components/shared/Toast";
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useConfirm } from "../context/ConfirmContext";
@@ -17,6 +18,7 @@ const TYPES = {
 };
 
 function EditModal({ asset, channels, onClose, onSave }) {
+  const toast = useToast();
   const [f, setF] = useState({
     name: asset.name, type: asset.type, format: asset.format || "", size: asset.size || "",
     channelId: asset.channelId || asset.channel?.id || "",
@@ -89,7 +91,7 @@ export default function Ativos() {
       setAssets(p => [asset, ...p]);
       setNa({ name: "", type: "thumbnail", format: "", size: "", channelId: "", tags: "", fileUrl: "", notes: "" });
       setShowF(false);
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast?.error(err.message); }
   };
 
   const saveEdit = async (id, data) => {

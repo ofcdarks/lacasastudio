@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useToast } from "../components/shared/Toast";
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { checklistApi } from "../lib/api";
@@ -6,6 +7,7 @@ import { Card, Btn, Hdr, SecTitle, PBar, Select, Input, C } from "../components/
 
 export default function Checklist() {
   const { videos, channels } = useApp();
+  const toast = useToast();
   const [selV, setSelV] = useState(videos[0]?.id);
   const [items, setItems] = useState([]);
   const [newLabel, setNewLabel] = useState("");
@@ -30,7 +32,7 @@ export default function Checklist() {
       const item = await checklistApi.create({ label: newLabel.trim(), videoId: selV });
       setItems(p => [...p, item]);
       setNewLabel("");
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast?.error(err.message); }
   };
 
   const delItem = async (id) => {

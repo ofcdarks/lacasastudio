@@ -9,10 +9,16 @@ async function getAiKey(): Promise<string> {
   return s?.value || "";
 }
 
+async function getModel(): Promise<string> {
+  const s = await prisma.setting.findUnique({ where: { key: "ai_model" } });
+  return s?.value || "claude-sonnet-4-6";
+}
+
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
   try {
     const aiKey = await getAiKey();
     if (!aiKey) { res.status(400).json({ error: "Configure a API Key" }); return; }
+    const model = await getModel();
     const { messages, context } = req.body as { messages: any[]; context?: string };
 
     const systemPrompt = `Você é o assistente IA do LaCasaStudio — expert em YouTube, produção de vídeos, SEO, nichos virais, modelagem de canais, thumbnails e estratégia de conteúdo.
@@ -23,7 +29,7 @@ Seja direto, prático e acionável. Use dados quando possível. Responda em port
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", temperature: 0.6, max_tokens: 2000,
+        model, temperature: 0.6, max_tokens: 2000,
         messages: [{ role: "system", content: systemPrompt }, ...messages],
       })
     });
@@ -33,18 +39,18 @@ Seja direto, prático e acionável. Use dados quando possível. Responda em port
   } catch (err) { next(err); }
 });
 
-// Shorts generator
 router.post("/shorts", async (req: any, res: Response, next: NextFunction) => {
   try {
     const aiKey = await getAiKey();
     if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const model = await getModel();
     const { script, count, style } = req.body;
 
     const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", temperature: 0.7, max_tokens: 3000,
+        model, temperature: 0.7, max_tokens: 3000,
         messages: [{ role: "system", content: "Expert em Shorts/Reels virais. APENAS JSON." },
           { role: "user", content: `A partir deste roteiro, gere ${count || 5} Shorts/Reels virais (30-60s cada):
 
@@ -60,7 +66,8 @@ Retorne JSON array:
     if (!aiRes.ok) throw new Error("AI error");
     const data = await aiRes.json() as any;
     const raw = data.choices?.[0]?.message?.content || "[]";
-    res.json({ shorts: JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()) });
+    try { res.json({ shorts: JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()) }); }
+    catch { res.json({ shorts: [] }); }
   } catch (err) { next(err); }
 });
 

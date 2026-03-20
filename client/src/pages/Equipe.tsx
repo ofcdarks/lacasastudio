@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useToast } from "../components/shared/Toast";
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useConfirm } from "../context/ConfirmContext";
@@ -11,6 +12,7 @@ const STC = { online: "#22C55E", away: "#F59E0B", offline: "rgba(255,255,255,0.2
 export default function Equipe() {
   const { channels } = useApp();
   const confirm = useConfirm();
+  const toast = useToast();
   const [team, setTeam] = useState([]);
   const [showF, setShowF] = useState(false);
   const [nm, setNm] = useState({ name: "", role: "editor", email: "" });
@@ -25,7 +27,7 @@ export default function Equipe() {
       setTeam(p => [...p, m]);
       setNm({ name: "", role: "editor", email: "" });
       setShowF(false);
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast?.error(err.message); }
   };
 
   const updateStatus = async (id, status) => {

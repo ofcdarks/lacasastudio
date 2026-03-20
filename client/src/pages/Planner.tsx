@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useToast } from "../components/shared/Toast";
 import { useState, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { useConfirm } from "../context/ConfirmContext";
@@ -6,6 +7,7 @@ import { videoApi } from "../lib/api";
 import { Card, Badge, Btn, Hdr, Label, Input, Select, C, ST, STATUS_KEYS } from "../components/shared/UI";
 
 function EditModal({ video, channels, onClose, onSave }) {
+  const toast = useToast();
   const [form, setForm] = useState({
     title: video.title, channelId: video.channelId || video.channel?.id,
     date: video.date, priority: video.priority, duration: video.duration, status: video.status,
@@ -57,7 +59,7 @@ export default function Planner() {
 
   const addVideo = async () => {
     if (!nv.title.trim() || !nv.channelId) return;
-    try { await videoApi.create(nv); refreshVideos(); setNv({ title: "", channelId: "", date: "", priority: "média", duration: "" }); setShowF(false); } catch (err) { alert(err.message); }
+    try { await videoApi.create(nv); refreshVideos(); setNv({ title: "", channelId: "", date: "", priority: "média", duration: "" }); setShowF(false); } catch (err) { toast?.error(err.message); }
   };
 
   const moveStatus = async (id, dir) => {

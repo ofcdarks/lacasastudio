@@ -53,7 +53,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
     const { name, type, format, size, tags, fileUrl, notes, channelId } = req.body as any;
     if (!name) return res.status(400).json({ error: "Nome obrigatório" });
     const asset = await prisma.asset.create({
-      data: { name, type, format, size, tags, fileUrl, notes, userId: req.userId, channelId: channelId ? Number(channelId) : null },
+      data: { name, type: type || "thumbnail", format: format || "", size: size || "", tags: Array.isArray(tags) ? tags.join(",") : (tags || ""), fileUrl: fileUrl || "", notes: notes || "", userId: req.userId, channelId: channelId ? Number(channelId) : null },
     });
     res.status(201).json(asset);
   } catch (err) { next(err); }
@@ -67,7 +67,7 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
     const data: any = {};
     if (name !== undefined) data.name = name;
     if (type !== undefined) data.type = type;
-    if (tags !== undefined) data.tags = tags;
+    if (tags !== undefined) data.tags = Array.isArray(tags) ? tags.join(",") : tags;
     if (notes !== undefined) data.notes = notes;
     if (channelId !== undefined) data.channelId = channelId ? Number(channelId) : null;
     const updated = await prisma.asset.update({ where: { id: asset.id }, data });

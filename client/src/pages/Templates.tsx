@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useToast } from "../components/shared/Toast";
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useConfirm } from "../context/ConfirmContext";
@@ -8,6 +9,7 @@ import { Card, Btn, Hdr, Label, Input, Select, Badge, SecTitle, C } from "../com
 export default function Templates() {
   const { channels } = useApp();
   const confirm = useConfirm();
+  const toast = useToast();
   const [tpls, setTpls] = useState([]);
   const [showF, setShowF] = useState(false);
   const [nt, setNt] = useState({ name: "", desc: "", channelId: "", structure: "" });
@@ -24,7 +26,7 @@ export default function Templates() {
       setTpls(p => [tpl, ...p]);
       setNt({ name: "", desc: "", channelId: "", structure: "" });
       setShowF(false);
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast?.error(err.message); }
   };
 
   const delT = async (id) => {

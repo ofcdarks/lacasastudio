@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useToast } from "../components/shared/Toast";
 import { useState, useEffect, useMemo } from "react";
 import { useConfirm } from "../context/ConfirmContext";
 import { budgetApi } from "../lib/api";
@@ -49,11 +50,17 @@ function EditModal({ item, onClose, onSave }) {
 
 export default function Orcamento() {
   const confirm = useConfirm();
+  const toast = useToast();
   const [items, setItems] = useState([]);
+  const toast = useToast();
   const [showF, setShowF] = useState(false);
+  const toast = useToast();
   const [editItem, setEditItem] = useState(null);
+  const toast = useToast();
   const [viewMode, setViewMode] = useState("month");
+  const toast = useToast();
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const toast = useToast();
   const [form, setForm] = useState({ category: "outros", desc: "", value: "", type: "expense", recurring: false, notes: "" });
 
   useEffect(() => { budgetApi.list().then(setItems).catch(() => {}); }, []);
@@ -65,7 +72,7 @@ export default function Orcamento() {
       setItems(p => [item, ...p]);
       setForm({ category: "outros", desc: "", value: "", type: "expense", recurring: false, notes: "" });
       setShowF(false);
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast?.error(err.message); }
   };
 
   const saveEdit = async (id, data) => {

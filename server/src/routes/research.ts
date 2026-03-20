@@ -14,6 +14,11 @@ async function getAiKey(): Promise<string> {
   return s?.value || "";
 }
 
+async function getModel(): Promise<string> {
+  const s = await prisma.setting.findUnique({ where: { key: "ai_model" } });
+  return s?.value || "claude-sonnet-4-6";
+}
+
 async function ytFetch(path: string, ytKey: string) {
   const sep = path.includes("?") ? "&" : "?";
   const res = await fetch(`https://www.googleapis.com/youtube/v3/${path}${sep}key=${ytKey}`);
@@ -156,7 +161,7 @@ router.post("/analyze", async (req: any, res: Response, next: NextFunction) => {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
           body: JSON.stringify({
-            model: "claude-sonnet-4-6", temperature: 0.3, max_tokens: 1000,
+            model: await getModel(), temperature: 0.3, max_tokens: 1000,
             messages: [
               { role: "system", content: "Analise canais do YouTube. Responda APENAS em JSON válido sem markdown." },
               { role: "user", content: `Analise este canal YouTube e responda em JSON:
@@ -251,7 +256,7 @@ router.post("/dna", async (req: any, res: Response, next: NextFunction) => {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", temperature: 0.4, max_tokens: 3000,
+        model: await getModel(), temperature: 0.4, max_tokens: 3000,
         messages: [
           { role: "system", content: "Você é o maior especialista em análise de vídeos virais do YouTube. Analise padrões e extraia o DNA viral. Responda APENAS JSON válido." },
           { role: "user", content: `Analise o DNA viral deste canal e seus top vídeos:
@@ -280,8 +285,8 @@ Extraia e retorne JSON:
     if (!aiRes.ok) throw new Error("AI API error");
     const aiData = await aiRes.json() as any;
     const raw = aiData.choices?.[0]?.message?.content || "";
-    const parsed = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
-    res.json(parsed);
+    try { const parsed = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
+    res.json(parsed); } catch { res.status(500).json({ error: "IA retornou formato inválido" }); return; }
   } catch (err) { next(err); }
 });
 
@@ -296,7 +301,7 @@ router.post("/blueprint", async (req: any, res: Response, next: NextFunction) =>
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", temperature: 0.3, max_tokens: 4000,
+        model: await getModel(), temperature: 0.3, max_tokens: 4000,
         messages: [
           { role: "system", content: "Você é consultor expert em criação de canais YouTube modelados. Crie blueprints detalhados e acionáveis. Responda APENAS JSON válido." },
           { role: "user", content: `Crie um BLUEPRINT COMPLETO para modelar este canal:
@@ -418,7 +423,7 @@ router.post("/generate-titles", async (req: any, res: Response, next: NextFuncti
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", temperature: 0.7, max_tokens: 3000,
+        model: await getModel(), temperature: 0.7, max_tokens: 3000,
         messages: [
           { role: "system", content: "Expert em títulos virais e thumbnails para YouTube. Gere títulos otimizados para CTR e prompts de thumbnail. APENAS JSON." },
           { role: "user", content: `Baseado neste canal de referência, gere títulos + thumbnails para um canal modelado:
@@ -515,7 +520,7 @@ router.post("/emerging", async (req: any, res: Response, next: NextFunction) => 
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", temperature: 0.4, max_tokens: 2000,
+        model: await getModel(), temperature: 0.4, max_tokens: 2000,
         messages: [{ role: "system", content: "Analise tendências de YouTube cross-country. APENAS JSON." },
           { role: "user", content: `Analise estes vídeos trending de ${regions.length} países e identifique tendências EMERGENTES (temas que estão viralizando em um país mas ainda não chegaram em outros = OPORTUNIDADE):
 ${JSON.stringify(allTrending.slice(0, 60))}
@@ -523,10 +528,11 @@ ${JSON.stringify(allTrending.slice(0, 60))}
 Retorne JSON: [{"trend":"Nome da tendência","description":"Explicação","originCountry":"País de origem","opportunityCountries":["País1","País2"],"urgency":"alta/média/baixa","nicheIdea":"Ideia de canal/nicho para modelar","estimatedViews":"Potencial de views","exampleTitles":["título1","título2"]}]` }]
       })
     });
+    if (!aiRes.ok) { res.json({ trends: [] }); return; }
     const aiData = await aiRes.json() as any;
     const raw = aiData.choices?.[0]?.message?.content || "[]";
-    const trends = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
-    res.json({ trends: Array.isArray(trends) ? trends : [] });
+    try { const trends = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()); res.json({ trends: Array.isArray(trends) ? trends : [] }); }
+    catch { res.json({ trends: [] }); }
   } catch (err) { next(err); }
 });
 
@@ -582,7 +588,7 @@ router.post("/ab-test", async (req: any, res: Response, next: NextFunction) => {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", temperature: 0.3, max_tokens: 2000,
+        model: await getModel(), temperature: 0.3, max_tokens: 2000,
         messages: [{ role: "system", content: "Expert em CTR e psicologia de títulos YouTube. APENAS JSON." },
           { role: "user", content: `Analise estes títulos e dê score de CTR (0-100). Nicho: ${niche}. Público: ${targetAudience || "geral"}.
 Títulos: ${JSON.stringify(titles)}
@@ -609,7 +615,7 @@ router.post("/calendar", async (req: any, res: Response, next: NextFunction) => 
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", temperature: 0.6, max_tokens: 4000,
+        model: await getModel(), temperature: 0.6, max_tokens: 4000,
         messages: [{ role: "system", content: "Expert em estratégia de conteúdo YouTube. Crie calendários editoriais detalhados. APENAS JSON." },
           { role: "user", content: `Crie calendário de 30 dias para canal YouTube modelado:
 Nicho: ${niche} > ${subNiche || "geral"}
@@ -638,7 +644,7 @@ router.post("/channel-mockup", async (req: any, res: Response, next: NextFunctio
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", temperature: 0.6, max_tokens: 3000,
+        model: await getModel(), temperature: 0.6, max_tokens: 3000,
         messages: [{ role: "system", content: "Expert em branding de canais YouTube. Crie identidades visuais completas. APENAS JSON." },
           { role: "user", content: `Crie identidade visual completa para um canal YouTube modelado:
 Canal modelado de: "${originalChannel || "canal de referência"}"
@@ -667,9 +673,11 @@ Retorne JSON:
 }` }]
       })
     });
+    if (!aiRes.ok) { res.status(500).json({ error: "Erro na IA: " + aiRes.status }); return; }
     const aiData = await aiRes.json() as any;
     const raw = aiData.choices?.[0]?.message?.content || "{}";
-    res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
+    try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
+    catch { res.status(500).json({ error: "IA retornou formato inválido. Tente novamente." }); }
   } catch (err) { next(err); }
 });
 
