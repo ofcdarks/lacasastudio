@@ -5,6 +5,7 @@ import { useConfirm } from "../context/ConfirmContext";
 import { sceneApi, aiApi } from "../lib/api";
 import { C, Btn, Hdr, Label, Input, Select } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
+import { useProgress } from "../components/shared/ProgressModal";
 
 const ST = {
   hook:       { l:"GANCHO",     c:"#EF4444", bg:"linear-gradient(135deg,#1a0505,#2d0a0a)", i:"🎯", retention:"Pattern interrupt — quebre expectativa nos primeiros 3s" },
@@ -192,7 +193,7 @@ function AssetModal({scene,onClose}){
 }
 
 export default function Storyboard(){
-  const{videos}=useApp();const confirm=useConfirm();const toast=useToast();
+  const{videos}=useApp();const confirm=useConfirm();const toast=useToast();const pg=useProgress();
   const[selV,setSelV]=useState(null);const[scenes,setScenes]=useState([]);const[editScene,setEditScene]=useState(null);const[assetScene,setAssetScene]=useState(null);
   const[aiLoading,setAiLoading]=useState(false);const[aiTopic,setAiTopic]=useState("");const[aiStyle,setAiStyle]=useState("cinematográfico viral com alta retenção");
   const[showAI,setShowAI]=useState(false);const[showAdd,setShowAdd]=useState(false);const[generating,setGenerating]=useState(null);
@@ -222,9 +223,10 @@ export default function Storyboard(){
   const generateAllAssets=async()=>{
     const empty=scenes.filter(s=>!s.thumbnail);
     if(!empty.length){toast?.info?.("Todas as cenas já têm assets");return;}
-    toast?.success(`Gerando ${empty.length} assets...`);
-    for(const s of empty){
-      setGenerating(s.id);
+    pg?.start("🎨 Gerando Assets",empty.map(s=>s.title?.slice(0,20)));
+    for(let i=0;i<empty.length;i++){
+      const s=empty[i];
+      setGenerating(s.id);pg?.update(i,`Cena ${i+1}/${empty.length}: ${s.title?.slice(0,25)}`);
       try{
         const prompt=buildPrompt(s);
         const result=await aiApi.generateAsset({prompt,sceneId:s.id});
@@ -233,10 +235,60 @@ export default function Storyboard(){
       }catch{}
       setGenerating(null);
     }
-    toast?.success("Todos os assets gerados!");
+    pg?.done();toast?.success("Todos os assets gerados!");
   };
 
-  const generateAI=async()=>{if(!selV){toast?.error("Selecione um vídeo");return;}setAiLoading(true);try{const data=await aiApi.storyboard({title:aiTopic||vid?.title||"Vídeo",duration:vid?.duration||"10:00",style:aiStyle});if(data.error){toast?.error(data.error);setAiLoading(false);return;}const sl=Array.isArray(data.scenes)?data.scenes:[];const ns=[];for(const s of sl){try{const sv=await sceneApi.create({videoId:selV,type:s.type||"content",title:s.title||"Cena",duration:s.duration||"",notes:s.notes||"",camera:s.camera||"",audio:s.audio||"",color:(ST[s.type]||ST.content).c});ns.push(sv);}catch{}}setScenes(p=>[...p,...ns]);toast?.success(`${ns.length} cenas geradas!`);setShowAI(false);setAiTopic("");}catch(e){toast?.error("Erro: "+e.message);}setAiLoading(false);};
+  const generateAI=async()=>{if(!selV){toast?.error("Selecione um vídeo");return;}setAiLoading(true);pg?.start("🎬 Gerando Storyboard Completo",["Estruturando cenas","Escrevendo narração","Câmera e SFX","Finalizando"]);try{const data=await aiApi.storyboard({title:aiTopic||vid?.title||"Vídeo",duration:vid?.duration||"10:00",style:aiStyle});if(data.error){pg?.fail(data.error);toast?.error(data.error);setAiLoading(false);return;}const sl=Array.isArray(data.scenes)?data.scenes:[];const ns=[];for(const s of sl){try{const sv=await sceneApi.create({videoId:selV,type:s.type||"content",title:s.title||"Cena",duration:s.duration||"",notes:s.notes||"",camera:s.camera||"",audio:s.audio||"",color:(ST[s.type]||ST.content).c});ns.push(sv);}catch{}}setScenes(p=>[...p,...ns]);pg?.done();toast?.success(`${ns.length} cenas geradas!`);setShowAI(false);setAiTopic("");}catch(e){pg?.fail(e.message);toast?.error("Erro: "+e.message);}setAiLoading(false);};
+
+  // 🎙️ Export narration only
+  const exportNarration=()=>{
+    const txt=scenes.map((s,i)=>{const m=ST[s.type]||ST.content;return`[CENA ${i+1}] ${m.l} — ${s.title}\n${s.notes||"(sem narração)"}\n`;}).join("\n---\n\n");
+    const ta=document.createElement("textarea");ta.value=`NARRAÇÃO: ${vid?.title}\n${scenes.length} cenas\n\n${txt}`;ta.style.cssText="position:fixed;left:-9999px";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);toast?.success("Narração copiada!");
+  };
+
+  // 📤 Export PDF
+  const exportPDF=()=>{
+    const w=window.open("","_blank");
+    if(!w)return;
+    const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Storyboard - ${vid?.title}</title>
+    <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;background:#0a0a0a;color:#fff;padding:40px}
+    .header{text-align:center;margin-bottom:40px;border-bottom:2px solid #EF4444;padding-bottom:20px}
+    .header h1{font-size:32px;letter-spacing:4px;text-transform:uppercase}
+    .header p{color:#888;font-size:12px;margin-top:8px}
+    .scene{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:30px;page-break-inside:avoid;border:1px solid #222;border-radius:12px;overflow:hidden}
+    .scene-left{padding:24px}
+    .scene-right{background:#111;padding:24px;display:flex;align-items:center;justify-content:center;min-height:200px}
+    .scene-right img{width:100%;border-radius:8px}
+    .scene-num{font-size:48px;font-weight:900;opacity:.15;line-height:1}
+    .scene-type{display:inline-block;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:8px}
+    .scene-title{font-size:20px;font-weight:700;margin-bottom:12px}
+    .narration{font-style:italic;color:#ccc;line-height:1.8;border-left:3px solid #EF4444;padding-left:12px;margin-bottom:12px}
+    .meta{font-size:11px;color:#666;margin-top:8px}
+    .meta b{color:#999}
+    .timeline{display:flex;margin-bottom:30px;border-radius:8px;overflow:hidden}
+    .timeline-seg{padding:8px;text-align:center;font-size:9px;font-weight:700;color:#fff}
+    @media print{body{background:#fff;color:#000}.scene{border-color:#ddd}.narration{color:#333;border-color:#EF4444}.meta{color:#666}.meta b{color:#333}.scene-right{background:#f5f5f5}.header{border-color:#EF4444}}
+    </style></head><body>
+    <div class="header"><h1>${vid?.title||"Storyboard"}</h1><p>LaCasaStudio · ${scenes.length} cenas · ${vid?.duration||""} · Gerado em ${new Date().toLocaleDateString("pt-BR")}</p></div>
+    <div class="timeline">${scenes.map((s,i)=>{const m=ST[s.type]||ST.content;return`<div class="timeline-seg" style="flex:1;background:${m.c}">${m.l}</div>`;}).join("")}</div>
+    ${scenes.map((s,i)=>{const m=ST[s.type]||ST.content;return`
+    <div class="scene">
+      <div class="scene-left">
+        <div class="scene-num">${String(i+1).padStart(2,"0")}</div>
+        <div class="scene-type" style="background:${m.c}">${m.l}</div>
+        <div class="scene-title">${s.title}</div>
+        <div class="narration">"${(s.notes||"").replace(/"/g,"&quot;")}"</div>
+        <div class="meta"><b>CÂMERA:</b> ${s.camera||"—"}</div>
+        <div class="meta"><b>SFX:</b> ${s.audio||"—"}</div>
+        <div class="meta"><b>DURAÇÃO:</b> ${s.duration||"—"}</div>
+        <div class="meta"><b>RETENÇÃO:</b> ${m.retention}</div>
+      </div>
+      <div class="scene-right">${s.thumbnail?`<img src="${s.thumbnail}"/>`:`<div style="color:#444;font-size:14px">🎬 ${s.title}</div>`}</div>
+    </div>`;}).join("")}
+    <div style="text-align:center;padding:30px;color:#444;font-size:12px">— FIM — LaCasaStudio ©</div>
+    <script>setTimeout(()=>window.print(),500)</script></body></html>`;
+    w.document.write(html);w.document.close();
+  };
 
   return(<div className="page-enter" style={{maxWidth:1100,margin:"0 auto"}}>
     <style>{CSS}</style>
@@ -246,6 +298,8 @@ export default function Storyboard(){
     <Hdr title="Storyboard Cinematográfico" sub="Linha de montagem — produção Netflix · Assets com IA" action={<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
       {scenes.length>0&&<Btn vr="ghost" onClick={()=>setView(view==="animated"?"list":"animated")} style={{fontSize:11}}>{view==="animated"?"📋 Lista":"🎬 Cinema"}</Btn>}
       {scenes.length>0&&<Btn vr="ghost" onClick={generateAllAssets} disabled={!!generating} style={{fontSize:11,color:"#EC4899"}}>{generating?"⏳ Gerando...":"🎨 Gerar Todos Assets"}</Btn>}
+      {scenes.length>0&&<Btn vr="ghost" onClick={exportNarration} style={{fontSize:11}}>🎙️ Narração</Btn>}
+      {scenes.length>0&&<Btn vr="ghost" onClick={exportPDF} style={{fontSize:11}}>📤 PDF</Btn>}
       {scenes.length>0&&<Btn vr="ghost" onClick={clearAll} style={{fontSize:11,color:C.red}}>🗑 Limpar</Btn>}
       <Btn vr="ghost" onClick={()=>setShowAI(true)} style={{fontSize:11}}>🤖 IA</Btn><Btn onClick={()=>setShowAdd(true)}>+ Cena</Btn>
     </div>}/>
@@ -256,7 +310,16 @@ export default function Storyboard(){
     </div>
 
     {!selV&&<div style={{textAlign:"center",padding:80,color:C.dim}}><div style={{fontSize:48,marginBottom:12,opacity:.2}}>🎬</div><div style={{fontSize:16,fontWeight:700,color:C.text}}>Selecione um vídeo</div></div>}
-    {selV&&scenes.length===0&&<div style={{textAlign:"center",padding:80}}><div style={{fontSize:48,marginBottom:12,opacity:.2}}>✨</div><div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:20}}>Storyboard vazio</div><div style={{display:"flex",gap:12,justifyContent:"center"}}><Btn onClick={()=>setShowAI(true)}>🤖 Gerar com IA</Btn><Btn vr="ghost" onClick={()=>setShowAdd(true)}>+ Manual</Btn></div></div>}
+    {selV&&scenes.length===0&&<div style={{textAlign:"center",padding:60}}>
+      <div style={{fontSize:48,marginBottom:12,opacity:.2}}>✨</div>
+      <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:8}}>Storyboard vazio</div>
+      <div style={{fontSize:12,color:C.dim,marginBottom:20}}>Gere automaticamente todas as cenas com narração, câmera e SFX</div>
+      <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
+        <Btn onClick={()=>{setAiTopic(vid?.title||"");generateAI();}} disabled={aiLoading} style={{fontSize:13,padding:"12px 24px"}}>{aiLoading?"⏳ Gerando...":"🎬 Gerar Storyboard Completo com IA"}</Btn>
+        <Btn vr="ghost" onClick={()=>setShowAI(true)}>🤖 Personalizar</Btn>
+        <Btn vr="ghost" onClick={()=>setShowAdd(true)}>+ Manual</Btn>
+      </div>
+    </div>}
 
     {selV&&scenes.length>0&&view==="animated"&&<div>
       <div style={{textAlign:"center",marginBottom:28}}>
@@ -265,7 +328,20 @@ export default function Storyboard(){
         <div style={{fontSize:10,color:C.dim,marginTop:8}}>{scenes.length} cenas · {scenes.filter(s=>s.thumbnail).length}/{scenes.length} assets · {vid?.duration||"10:00"}</div>
       </div>
       <div style={{background:C.border,borderRadius:3,height:2,marginBottom:6,overflow:"hidden"}}><div style={{height:"100%",background:"linear-gradient(90deg,#EF4444,#F59E0B,#22C55E,#3B82F6,#A855F7)",width:"100%",animation:"sb-bar 1.5s ease-out"}}/></div>
-      <div style={{fontSize:9,textAlign:"center",color:"#EF4444",marginBottom:24,fontWeight:700,letterSpacing:1.5}}>⚡ CLIQUE EM "GERAR ASSET" PARA CRIAR A IMAGEM DA CENA COM IA</div>
+      <div style={{fontSize:9,textAlign:"center",color:"#EF4444",marginBottom:16,fontWeight:700,letterSpacing:1.5}}>⚡ CLIQUE EM "GERAR ASSET" PARA CRIAR A IMAGEM DA CENA COM IA</div>
+      
+      {/* ⏱️ Timeline Visual */}
+      <div style={{display:"flex",marginBottom:24,borderRadius:8,overflow:"hidden",border:`1px solid ${C.border}`}}>
+        {scenes.map((s,i)=>{const m=ST[s.type]||ST.content;const durStr=s.duration||"";const secs=durStr.includes("m")?parseInt(durStr)*60:durStr.includes("s")?parseInt(durStr):parseInt(durStr)||10;return<div key={s.id} style={{flex:Math.max(1,secs/10),background:`${m.c}20`,borderRight:i<scenes.length-1?`1px solid ${C.border}`:"none",padding:"8px 4px",textAlign:"center",minWidth:30,cursor:"pointer",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.background=`${m.c}40`} onMouseLeave={e=>e.currentTarget.style.background=`${m.c}20`} title={`${s.title} — ${s.duration||"?"}`}>
+          <div style={{fontSize:7,fontWeight:800,color:m.c,letterSpacing:1}}>{m.l}</div>
+          <div style={{fontSize:10,fontWeight:700,color:C.text,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.title?.slice(0,12)}</div>
+          <div style={{fontSize:8,color:C.dim,marginTop:1}}>{s.duration||"~10s"}</div>
+        </div>})}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:20,fontSize:10,color:C.dim}}>
+        <span>0:00</span>
+        <span>Duração total: {scenes.reduce((a,s)=>{const d=s.duration||"";const n=d.includes("m")?parseInt(d)*60:parseInt(d)||10;return a+n;},0)>60?Math.round(scenes.reduce((a,s)=>{const d=s.duration||"";return a+(d.includes("m")?parseInt(d)*60:parseInt(d)||10);},0)/60)+"min":scenes.reduce((a,s)=>{const d=s.duration||"";return a+(d.includes("m")?parseInt(d)*60:parseInt(d)||10);},0)+"s"}</span>
+      </div>
       {scenes.map((s,i)=><SceneCard key={s.id} scene={s} idx={i} total={scenes.length} onEdit={setEditScene} onDel={delScene} onAsset={setAssetScene} onGenerate={generateAsset} generating={generating}/>)}
       <div style={{textAlign:"center",padding:"28px 0",color:C.dim}}><div style={{width:2,height:30,background:C.border,margin:"0 auto 8px"}}/><div style={{width:10,height:10,borderRadius:"50%",background:C.border,margin:"0 auto 8px"}}/><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase"}}>FIM</div></div>
     </div>}
