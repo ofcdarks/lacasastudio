@@ -365,7 +365,7 @@ export default function Research(){
             <div style={{padding:"24px 16px 12px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                 <div><div style={{fontWeight:800,fontSize:14}}>{m.channelName}</div><div style={{fontSize:10,color:C.dim}}>{m.tagline} · Baseado em: {ch.name}</div></div>
-                <div style={{display:"flex",gap:4"}}>
+                <div style={{display:"flex",gap:4}}>
                   {imgs.banner&&<a href={imgs.banner} download="banner.png" style={{padding:"3px 8px",borderRadius:4,background:`${C.blue}08`,color:C.blue,fontSize:9,textDecoration:"none",border:`1px solid ${C.blue}20`}}>📥 Banner</a>}
                   {imgs.logo&&<a href={imgs.logo} download="logo.png" style={{padding:"3px 8px",borderRadius:4,background:`${C.blue}08`,color:C.blue,fontSize:9,textDecoration:"none",border:`1px solid ${C.blue}20`}}>📥 Logo</a>}
                   <button onClick={()=>cp(JSON.stringify({...m,images:imgs},null,2))} style={{padding:"3px 8px",borderRadius:4,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:9}}>📋 JSON</button>

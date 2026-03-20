@@ -908,7 +908,7 @@ router.post("/pipeline", async (req: any, res: Response, next: NextFunction) => 
     
     const prompts: any = {
       identity: `Crie identidade de canal YouTube: Nicho: ${niche}>${subNiche}, Estilo: ${style}, País: ${country}, Idioma: ${language}. JSON: {"channelName":"Nome","tagline":"Slogan","description":"Bio SEO 200 palavras","logoPrompt":"Prompt ImageFX logo circular","bannerPrompt":"Prompt ImageFX banner 2560x1440","colors":{"primary":"#hex","secondary":"#hex"},"keywords":["k1","k2","k3","k4","k5"]}`,
-      scripts: `Crie 10 roteiros para canal "${context?.channelName}" (${niche}>${subNiche}, ${style}). JSON array: [{"number":1,"title":"Título viral","hook":"Hook 5s","outline":["Seção 1: descrição","Seção 2","Seção 3","CTA"],"duration":"12:00","thumbnailPrompt":"Prompt thumb 16:9","tags":["t1","t2","t3"]}]`,
+      scripts: `Crie EXATAMENTE 5 roteiros completos para o canal "${context?.channelName}" no nicho ${niche}>${subNiche}, estilo ${style}. RESPONDA APENAS com JSON array de 5 objetos: [{"number":1,"title":"Título viral com hook","hook":"Frase dos primeiros 5 segundos","outline":["Intro: gancho emocional","Desenvolvimento: conteúdo principal","Clímax: revelação ou virada","CTA: chamada pra ação"],"duration":"10:00","thumbnailPrompt":"Descrição visual detalhada da thumbnail 16:9","tags":["tag1","tag2","tag3"]},{"number":2,"title":"...","hook":"...","outline":["..."],"duration":"...","thumbnailPrompt":"...","tags":["..."]},{"number":3,"title":"...","hook":"...","outline":["..."],"duration":"...","thumbnailPrompt":"...","tags":["..."]},{"number":4,"title":"...","hook":"...","outline":["..."],"duration":"...","thumbnailPrompt":"...","tags":["..."]},{"number":5,"title":"...","hook":"...","outline":["..."],"duration":"...","thumbnailPrompt":"...","tags":["..."]}]`,
       calendar: `Crie calendário 30 dias para "${context?.channelName}" (${niche}, ${style}, ${country}). 3 vídeos/semana. JSON array: [{"day":1,"weekday":"Seg","title":"Título","hook":"Hook","uploadTime":"14:00","thumbnailPrompt":"Prompt"}]`,
     };
     
@@ -920,11 +920,12 @@ router.post("/pipeline", async (req: any, res: Response, next: NextFunction) => 
           { role: "user", content: prompt }]
       })
     });
-    if (!aiRes.ok) { res.status(500).json({ error: "AI error" }); return; }
+    if (!aiRes.ok) { const err = await aiRes.text().catch(()=>""); console.error(`[Pipeline] AI error ${aiRes.status}:`, err.slice(0,300)); res.status(500).json({ error: `AI error ${aiRes.status}` }); return; }
     const data = await aiRes.json() as any;
-    const raw = data.choices?.[0]?.message?.content || "{}";
+    const raw = (data.choices?.[0]?.message?.content || "{}").trim();
+    console.log(`[Pipeline] Step: ${step}, Raw length: ${raw.length}, Preview: ${raw.slice(0,150)}`);
     try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
-    catch { res.status(500).json({ error: "Formato inválido. Tente novamente." }); }
+    catch(e) { console.error("[Pipeline] JSON parse failed:", raw.slice(0,500)); res.status(500).json({ error: "Formato inválido. Tente novamente." }); }
   } catch (err) { next(err); }
 });
 

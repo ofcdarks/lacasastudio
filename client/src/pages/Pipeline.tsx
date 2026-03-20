@@ -5,7 +5,7 @@ import { C, Btn, Hdr, Input, Select, Label } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
 import { useProgress } from "../components/shared/ProgressModal";
 
-const STEPS=[{k:"setup",i:"⚙️",t:"Nicho & Estilo"},{k:"identity",i:"🎨",t:"Identidade"},{k:"scripts",i:"📝",t:"10 Roteiros"},{k:"calendar",i:"📅",t:"Calendário 30d"},{k:"done",i:"🚀",t:"Pronto!"}];
+const STEPS=[{k:"setup",i:"⚙️",t:"Nicho & Estilo"},{k:"identity",i:"🎨",t:"Identidade"},{k:"scripts",i:"📝",t:"5 Roteiros"},{k:"calendar",i:"📅",t:"Calendário"},{k:"done",i:"🚀",t:"Pronto!"}];
 
 export default function Pipeline(){
   const toast=useToast();const pg=useProgress();
@@ -18,14 +18,14 @@ export default function Pipeline(){
 
   const genStep=async(s)=>{
     setLoading(true);
-    const titles={"identity":"🎨 Gerando Identidade","scripts":"📝 Criando 10 Roteiros","calendar":"📅 Planejando 30 Dias"};
+    const titles={"identity":"🎨 Gerando Identidade","scripts":"📝 Criando 5 Roteiros","calendar":"📅 Planejando 30 Dias"};
     pg?.start(titles[s]||"Processando",["Analisando nicho","IA criando","Otimizando","Finalizando"]);
     try{
       const r=await researchApi.pipeline({niche,subNiche,style,country,language,step:s,context:identity?{channelName:identity.channelName}:undefined});
       pg?.done();
       if(s==="identity"){setIdentity(r);setStep(1);}
-      else if(s==="scripts"){setScripts(Array.isArray(r)?r:r.scripts||[r]);setStep(2);}
-      else if(s==="calendar"){setCalendar(Array.isArray(r)?r:r.calendar||[r]);setStep(3);}
+      else if(s==="scripts"){console.log("[Pipeline] Scripts response:", JSON.stringify(r).slice(0,200));const arr=Array.isArray(r)?r:r?.scripts?r.scripts:r?.data?r.data:typeof r==="object"?Object.values(r).find(v=>Array.isArray(v))||[r]:[];setScripts(arr.length?arr:[r]);setStep(2);}
+      else if(s==="calendar"){const arr=Array.isArray(r)?r:r?.calendar?r.calendar:r?.data?r.data:typeof r==="object"?Object.values(r).find(v=>Array.isArray(v))||[r]:[];setCalendar(arr.length?arr:[r]);setStep(3);}
     }catch(e){pg?.fail(e.message);toast?.error(e.message);}
     setLoading(false);
   };
@@ -90,9 +90,9 @@ export default function Pipeline(){
     </div>}
 
     {/* Step 2: Scripts */}
-    {step>=2&&scripts?.length>0&&<div style={{background:C.bgCard,borderRadius:16,border:`1px solid ${C.border}`,padding:24,marginBottom:16}}>
-      <div style={{fontSize:16,fontWeight:800,marginBottom:12}}>📝 {scripts.length} Roteiros</div>
-      <div style={{display:"grid",gap:8}}>
+    {step>=2&&<div style={{background:C.bgCard,borderRadius:16,border:`1px solid ${C.border}`,padding:24,marginBottom:16}}>
+      <div style={{fontSize:16,fontWeight:800,marginBottom:12}}>📝 {scripts?.length||0} Roteiros</div>
+      {scripts?.length>0?<div style={{display:"grid",gap:8}}>
         {scripts.map((s,i)=><div key={i} style={{padding:"12px",background:"rgba(255,255,255,.02)",borderRadius:10,border:`1px solid ${C.border}`}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
             <div style={{flex:1}}>
@@ -104,7 +104,7 @@ export default function Pipeline(){
             <div style={{textAlign:"right",flexShrink:0}}><div style={{fontSize:10,color:C.dim}}>{s.duration}</div><button onClick={()=>cp(`${s.title}\n\nHook: ${s.hook}\n\n${s.outline?.map((o,i)=>`${i+1}. ${o}`).join("\n")}\n\nTags: ${s.tags?.join(", ")}`)} style={{marginTop:4,padding:"3px 8px",borderRadius:4,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:9}}>📋</button></div>
           </div>
         </div>)}
-      </div>
+      </div>:<div style={{textAlign:"center",padding:20,color:C.dim}}>⏳ Gerando roteiros...</div>}
       {step===2&&<div style={{display:"flex",gap:8,marginTop:12}}><Btn onClick={()=>{setScripts(null);genStep("scripts");}} disabled={loading} style={{fontSize:11}}>🔄 Regenerar</Btn><Btn onClick={()=>genStep("calendar")} disabled={loading}>📅 Próximo: Calendário →</Btn></div>}
     </div>}
 
