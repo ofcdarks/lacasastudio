@@ -59,7 +59,7 @@ router.delete("/users/:id", async (req: any, res: Response, next: NextFunction) 
       prisma.notification.deleteMany({ where: { userId: id } }),
       prisma.seoResult.deleteMany({ where: { video: { userId: id } } }),
       prisma.script.deleteMany({ where: { video: { userId: id } } }),
-      prisma.checklistItem.deleteMany({ where: { video: { userId: id } } }),
+      prisma.checklist.deleteMany({ where: { video: { userId: id } } }),
       prisma.scene.deleteMany({ where: { video: { userId: id } } }),
       prisma.video.deleteMany({ where: { userId: id } }),
       prisma.channel.deleteMany({ where: { userId: id } }),
@@ -67,9 +67,7 @@ router.delete("/users/:id", async (req: any, res: Response, next: NextFunction) 
       prisma.asset.deleteMany({ where: { userId: id } }),
       prisma.budgetItem.deleteMany({ where: { userId: id } }),
       prisma.meta.deleteMany({ where: { userId: id } }),
-      prisma.teamMember.deleteMany({ where: { userId: id } }),
       prisma.template.deleteMany({ where: { userId: id } }),
-      prisma.setting.deleteMany({ where: { userId: id } }),
       prisma.user.delete({ where: { id } }),
     ]);
     res.json({ ok: true });
