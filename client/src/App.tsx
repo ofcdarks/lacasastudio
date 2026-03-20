@@ -58,6 +58,7 @@ export default function App() {
       <Route path="/ativos" element={<Layout><Ativos /></Layout>} />
       <Route path="/equipe" element={<Layout><Equipe /></Layout>} />
       <Route path="/settings" element={<Layout><Settings /></Layout>} />
+            <Route path="/admin" element={<Layout><Admin /></Layout>} />
       <Route path="/ideas" element={<Layout><Ideas /></Layout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

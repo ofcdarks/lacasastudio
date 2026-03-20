@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { channelApi } from "../../lib/api";
@@ -39,6 +40,7 @@ function ChDot({ ch, active, onClick }: { ch: { name: string; color: string; _co
 
 export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { channels, videos, selChannel, setSelChannel, refreshChannels } = useApp();
+  const { user } = useAuth();
   const toast = useToast();
   const nav = useNavigate();
   const loc = useLocation();
@@ -87,6 +89,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
           <SItem icon="◉" label="Banco de Ativos" path="/ativos" onClick={closeMobile} />
           <SItem icon="◑" label="Equipe" path="/equipe" onClick={closeMobile} />
           <SItem icon="⚙" label="Configurações" path="/settings" onClick={closeMobile} />
+          {user?.isAdmin && <SItem icon="🛡" label="Admin" path="/admin" onClick={closeMobile} />}
           <Sec title="Canais" />
           {channels.map((ch: any) => (
             <ChDot key={ch.id} ch={ch} active={selChannel === ch.id && loc.pathname === "/planner"}

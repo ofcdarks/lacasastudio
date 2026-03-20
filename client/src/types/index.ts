@@ -4,6 +4,7 @@ export interface User {
   email: string;
   avatar: string;
   role?: string;
+  isAdmin?: boolean;
 }
 
 export interface Channel {
@@ -143,6 +144,7 @@ export interface TeamMember {
   id: number;
   name: string;
   role: string;
+  isAdmin?: boolean;
   email: string;
   avatar: string;
   status: string;

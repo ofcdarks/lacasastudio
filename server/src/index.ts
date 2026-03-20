@@ -26,6 +26,7 @@ import seoResultRoutes from "./routes/seo-results";
 import ideaRoutes from "./routes/ideas";
 import searchRoutes from "./routes/search";
 import exportRoutes from "./routes/export";
+import adminRoutes from "./routes/admin";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -73,6 +74,7 @@ app.use("/api/seo-results", seoResultRoutes);
 app.use("/api/ideas", ideaRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/export", exportRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/api/health", (_: Request, res: Response) => {
   res.json({ status: "ok", version: "2.2.0", uptime: process.uptime() });
