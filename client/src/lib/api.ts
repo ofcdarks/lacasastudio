@@ -198,3 +198,8 @@ export const researchApi = {
   channelMockup: (data: any) => api.post<any>("/research/channel-mockup", data),
   updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
 };
+
+export const chatApi = {
+  send: (messages: any[], context?: string) => api.post<{ reply: string }>("/chat", { messages, context }),
+  shorts: (data: any) => api.post<{ shorts: any[] }>("/chat/shorts", data),
+};

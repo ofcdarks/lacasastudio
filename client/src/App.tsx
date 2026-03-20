@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { Spinner, C } from "./components/shared/UI";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
+import AiChat from "./components/shared/AiChat";
 import Sidebar from "./components/shared/Sidebar";
 import TopBar from "./components/shared/TopBar";
 import LoginPage from "./pages/Login";
@@ -17,6 +18,8 @@ import Templates from "./pages/Templates";
 import Calendario from "./pages/Calendario";
 import Analytics from "./pages/Analytics";
 import Research from "./pages/Research";
+import Shorts from "./pages/Shorts";
+import ThumbEditor from "./pages/ThumbEditor";
 import Orcamento from "./pages/Orcamento";
 import Ativos from "./pages/Ativos";
 import Equipe from "./pages/Equipe";
@@ -35,6 +38,7 @@ function Layout({ children }: { children: ReactNode }) {
           <ErrorBoundary>{children}</ErrorBoundary>
         </div>
       </main>
+      <AiChat />
     </div>
   );
 }
@@ -57,6 +61,8 @@ export default function App() {
       <Route path="/calendario" element={<Layout><Calendario /></Layout>} />
       <Route path="/analytics" element={<Layout><Analytics /></Layout>} />
       <Route path="/research" element={<Layout><Research /></Layout>} />
+      <Route path="/shorts" element={<Layout><Shorts /></Layout>} />
+      <Route path="/thumbs" element={<Layout><ThumbEditor /></Layout>} />
       <Route path="/orcamento" element={<Layout><Orcamento /></Layout>} />
       <Route path="/ativos" element={<Layout><Ativos /></Layout>} />
       <Route path="/equipe" element={<Layout><Equipe /></Layout>} />

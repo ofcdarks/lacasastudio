@@ -674,3 +674,6 @@ Retorne JSON:
 });
 
 export default router;
+
+// Comparador side-by-side (reuse spy but structured for comparison)
+// Already handled by /spy endpoint - frontend will format as comparison

@@ -157,7 +157,8 @@ export default function Research(){
   const[trending,setTrending]=useState([]);const[tPeriod,setTPeriod]=useState("week");const[tRegion,setTRegion]=useState("US");const[tLoad,setTLoad]=useState(false);
   const[emerging,setEmerging]=useState(null);const[eLoad,setELoad]=useState(false);
   const[spyData,setSpyData]=useState(null);const[spyLoad,setSpyLoad]=useState(false);
-  const[abTitles,setAbTitles]=useState("");const[abNiche,setAbNiche]=useState("");const[abResults,setAbResults]=useState(null);const[abLoad,setAbLoad]=useState(false);
+  const[abTitles,setAbTitles]=useState("");
+  const[compIds,setCompIds]=useState([]);const[compData,setCompData]=useState(null);const[compLoad,setCompLoad]=useState(false);const[abNiche,setAbNiche]=useState("");const[abResults,setAbResults]=useState(null);const[abLoad,setAbLoad]=useState(false);
 
   useEffect(()=>{researchApi.listSaved().then(setSaved).catch(()=>{});},[]);
 
@@ -176,7 +177,7 @@ export default function Research(){
     {analysis&&<AnalysisPanel data={analysis} onClose={()=>setAnalysis(null)} onSave={saveC} saved={isSaved(analysis.ytChannelId)} toast={toast}/>}
     <Hdr title="Inteligência de Mercado" sub="DNA · Blueprint · Monetização · Títulos · Calendário · Preview de Canal"/>
     <div style={{display:"flex",gap:2,marginBottom:20,borderBottom:`1px solid ${C.border}`,overflowX:"auto",flexShrink:0}}>
-      {[["search","🔍 Buscar"],["trending","📈 Hype"],["emerging","🔮 Tendências"],["viral","🔥 Nichos"],["spy","🕵️ Spy"],["abtest","🧪 A/B Test"],["saved","💾 ("+saved.length+")"]].map(([k,l])=><button key={k} onClick={()=>{setTab(k);if(k==="trending"&&!trending.length)loadTrend();if(k==="emerging"&&!emerging)loadEmerging();if(k==="spy"&&!spyData)loadSpy();}} style={{padding:"10px 14px",border:"none",cursor:"pointer",fontSize:11,fontWeight:600,background:"transparent",color:tab===k?C.red:C.muted,borderBottom:tab===k?`2px solid ${C.red}`:"2px solid transparent",whiteSpace:"nowrap"}}>{l}</button>)}
+      {[["search","🔍 Buscar"],["trending","📈 Hype"],["emerging","🔮 Tendências"],["viral","🔥 Nichos"],["spy","🕵️ Spy"],["abtest","🧪 A/B Test"],["saved","💾 ("+saved.length+")"],["compare","📊 Comparar"]].map(([k,l])=><button key={k} onClick={()=>{setTab(k);if(k==="trending"&&!trending.length)loadTrend();if(k==="emerging"&&!emerging)loadEmerging();if(k==="spy"&&!spyData)loadSpy();}} style={{padding:"10px 14px",border:"none",cursor:"pointer",fontSize:11,fontWeight:600,background:"transparent",color:tab===k?C.red:C.muted,borderBottom:tab===k?`2px solid ${C.red}`:"2px solid transparent",whiteSpace:"nowrap"}}>{l}</button>)}
     </div>
 
     {/* SEARCH */}
@@ -262,6 +263,24 @@ export default function Research(){
         <a href={`https://youtube.com/channel/${ch.ytChannelId}`} target="_blank" style={{padding:"4px 8px",borderRadius:5,border:`1px solid ${C.blue}30`,background:`${C.blue}08`,color:C.blue,fontSize:9,textDecoration:"none"}}>🔗</a>
         <button onClick={()=>delS(ch.id)} style={{padding:"4px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"transparent",color:"#EF4444",cursor:"pointer",fontSize:9}}>🗑</button>
       </div>})}</div>:<p style={{textAlign:"center",padding:50,color:C.dim}}>Nenhum salvo</p>}
+    </div>}
+
+    {/* COMPARE */}
+    {tab==="compare"&&<div>
+      {saved.length<2?<p style={{textAlign:"center",padding:50,color:C.dim}}>Salve pelo menos 2 canais para comparar</p>:<div>
+        <div style={{fontSize:12,color:C.muted,marginBottom:12}}>Selecione 2-3 canais para comparar:</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>{saved.map(ch=>{const sel=compIds.includes(ch.ytChannelId);return<button key={ch.id} onClick={()=>setCompIds(p=>sel?p.filter(x=>x!==ch.ytChannelId):p.length>=3?p:[...p,ch.ytChannelId])} style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${sel?C.red:C.border}`,background:sel?`${C.red}15`:"transparent",color:sel?C.red:C.muted,cursor:"pointer",fontSize:11,fontWeight:sel?700:400}}>{ch.name}</button>})}</div>
+        {compIds.length>=2&&<Btn onClick={async()=>{setCompLoad(true);try{setCompData(await researchApi.spy(compIds));}catch(e){toast?.error(e.message);}setCompLoad(false);}} disabled={compLoad}>{compLoad?"⏳":"📊 Comparar"}</Btn>}
+        {compData?.channels?.length>=2&&<div style={{marginTop:16,display:"grid",gridTemplateColumns:`repeat(${compData.channels.length},1fr)`,gap:12}}>
+          {compData.channels.map(ch=><div key={ch.ytChannelId} style={{background:C.bgCard,borderRadius:14,border:`1px solid ${C.border}`,padding:16,textAlign:"center"}}>
+            {ch.thumbnail&&<img src={ch.thumbnail} style={{width:56,height:56,borderRadius:"50%",margin:"0 auto 8px"}}/>}
+            <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>{ch.name}</div>
+            <div style={{fontSize:10,color:C.dim,marginBottom:12}}>{fmt(ch.subscribers)} subs</div>
+            {[["Views Total",fmt(ch.totalViews),C.green],["Vídeos",ch.videoCount,C.blue],["Inscritos",fmt(ch.subscribers),C.purple]].map(([l,v,c])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${C.border}`}}><span style={{fontSize:11,color:C.dim}}>{l}</span><span style={{fontSize:11,fontWeight:700,color:c}}>{v}</span></div>)}
+            {ch.recentVideos?.length>0&&<div style={{marginTop:10}}><div style={{fontSize:10,fontWeight:700,color:C.red,marginBottom:6}}>Últimos vídeos:</div>{ch.recentVideos.slice(0,3).map(v=><div key={v.id} style={{fontSize:10,color:C.muted,padding:"3px 0",borderBottom:`1px solid ${C.border}`,textAlign:"left"}}>{v.title?.slice(0,40)}... <span style={{color:C.green}}>{fmt(v.views)}</span></div>)}</div>}
+          </div>)}
+        </div>}
+      </div>}
     </div>}
   </div>
 }
