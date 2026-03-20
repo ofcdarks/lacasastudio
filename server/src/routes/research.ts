@@ -1232,4 +1232,140 @@ router.post("/export-channel", async (req: any, res: Response, next: NextFunctio
   } catch (err) { next(err); }
 });
 
+
+// 🔔 Spy Alerts - check new videos from saved channels
+router.post("/spy-alerts", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const ytKey = await getYtKey();
+    if (!ytKey) { res.status(400).json({ error: "Configure YouTube API Key" }); return; }
+    const saved = await prisma.savedChannel.findMany({ where: { userId: req.userId } });
+    if (!saved.length) { res.json({ alerts: [], message: "Salve canais primeiro" }); return; }
+
+    const alerts: any[] = [];
+    const since = new Date(Date.now() - 48 * 3600000).toISOString(); // last 48h
+
+    for (const ch of saved.slice(0, 10)) {
+      try {
+        const search = await ytFetch(`search?part=snippet&channelId=${ch.ytChannelId}&type=video&order=date&publishedAfter=${since}&maxResults=3`, ytKey);
+        for (const v of (search.items || [])) {
+          const vId = v.id?.videoId;
+          if (!vId) continue;
+          const vData = await ytFetch(`videos?part=statistics,snippet&id=${vId}`, ytKey);
+          const video = vData.items?.[0];
+          if (!video) continue;
+          const views = Number(video.statistics?.viewCount || 0);
+          const hours = Math.max(1, Math.round((Date.now() - new Date(video.snippet?.publishedAt).getTime()) / 3600000));
+          const velocity = Math.round(views / hours);
+          alerts.push({
+            channelName: ch.name, channelThumb: ch.thumbnail,
+            title: video.snippet?.title, videoId: vId,
+            thumbnail: video.snippet?.thumbnails?.medium?.url,
+            views, likes: Number(video.statistics?.likeCount || 0),
+            publishedAt: video.snippet?.publishedAt,
+            hoursAgo: hours, velocity,
+            isViral: velocity > 1000,
+            isTrending: velocity > 500,
+          });
+        }
+      } catch {}
+    }
+
+    alerts.sort((a, b) => b.velocity - a.velocity);
+    res.json({ alerts, checkedAt: new Date().toISOString(), channelsChecked: saved.length });
+  } catch (err) { next(err); }
+});
+
+// ⏰ Best upload time by niche/country
+router.post("/best-time", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { niche, country, targetAudience, frequency } = req.body;
+    const model = await getModel();
+    const parsed = await fetchAI(aiKey, model,
+      "Expert em algoritmo YouTube e dados de audiência. " + LANG_RULE,
+      `RESPONDA EM PORTUGUÊS BR. Melhor horário pra postar no YouTube.
+Nicho: ${niche || "geral"}, País: ${country || "BR"}, Público: ${targetAudience || "18-35"}, Frequência: ${frequency || "3x/semana"}
+
+JSON: {"bestDays":[{"day":"Segunda","score":85,"reason":"Por que funciona"},{"day":"Terça","score":90,"reason":"..."},{"day":"Quarta","score":75,"reason":"..."},{"day":"Quinta","score":88,"reason":"..."},{"day":"Sexta","score":70,"reason":"..."},{"day":"Sábado","score":92,"reason":"..."},{"day":"Domingo","score":80,"reason":"..."}],"bestHours":[{"hour":"14:00","score":95,"reason":"Pico de atividade"},{"hour":"10:00","score":85,"reason":"..."},{"hour":"18:00","score":80,"reason":"..."}],"recommendation":"Recomendação final com dias e horários exatos","schedule":[{"day":"Terça","hour":"14:00","type":"Vídeo principal"},{"day":"Quinta","hour":"10:00","type":"Vídeo secundário"},{"day":"Sábado","hour":"18:00","type":"Short/Reel"}],"avoid":"Horários e dias a EVITAR e por quê","algorithmTips":["Dica 1 sobre timing pro algoritmo","Dica 2","Dica 3"],"firstHourStrategy":"O que fazer na primeira hora depois de publicar pra maximizar alcance"}`, 1500);
+    res.json(parsed);
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+// 📈 Trend Detector - what's going viral RIGHT NOW
+router.post("/trend-detector", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const ytKey = await getYtKey();
+    const aiKey = await getAiKey();
+    if (!ytKey) { res.status(400).json({ error: "Configure YouTube API Key" }); return; }
+    const { niche, country } = req.body;
+
+    // Get trending videos
+    const trending = await ytFetch(`videos?part=snippet,statistics&chart=mostPopular&regionCode=${country || "BR"}&maxResults=20${niche ? `&videoCategoryId=0` : ""}`, ytKey);
+
+    // Also search for recent viral in niche
+    let nicheVirals: any[] = [];
+    if (niche) {
+      const since = new Date(Date.now() - 72 * 3600000).toISOString();
+      const search = await ytFetch(`search?part=snippet&q=${encodeURIComponent(niche)}&type=video&order=viewCount&publishedAfter=${since}&maxResults=10`, ytKey);
+      const vIds = (search.items || []).map((v: any) => v.id?.videoId).filter(Boolean);
+      if (vIds.length) {
+        const vData = await ytFetch(`videos?part=statistics,snippet&id=${vIds.join(",")}`, ytKey);
+        nicheVirals = (vData.items || []).map((v: any) => ({
+          title: v.snippet?.title, videoId: v.id,
+          channelTitle: v.snippet?.channelTitle,
+          views: Number(v.statistics?.viewCount || 0),
+          likes: Number(v.statistics?.likeCount || 0),
+          thumbnail: v.snippet?.thumbnails?.medium?.url,
+          publishedAt: v.snippet?.publishedAt,
+        })).sort((a: any, b: any) => b.views - a.views);
+      }
+    }
+
+    const trendingList = (trending.items || []).map((v: any) => ({
+      title: v.snippet?.title, videoId: v.id,
+      channelTitle: v.snippet?.channelTitle,
+      views: Number(v.statistics?.viewCount || 0),
+      likes: Number(v.statistics?.likeCount || 0),
+      thumbnail: v.snippet?.thumbnails?.medium?.url,
+      publishedAt: v.snippet?.publishedAt,
+    }));
+
+    // AI analysis of trends
+    let aiInsights = null;
+    if (aiKey) {
+      try {
+        const titles = [...trendingList, ...nicheVirals].slice(0, 15).map(v => v.title).join(" | ");
+        aiInsights = await fetchAI(aiKey, await getModel(),
+          "Expert em trends YouTube. " + LANG_RULE,
+          `RESPONDA EM PORTUGUÊS BR. Analise estas tendências e dê oportunidades:
+Trending agora: ${titles}
+Nicho: ${niche || "geral"}, País: ${country || "BR"}
+
+JSON: {"patterns":["Padrão 1 que está viralizando","Padrão 2","Padrão 3"],"opportunities":[{"topic":"Tópico pra criar AGORA","why":"Por que vai viralizar","titleSuggestion":"Título pronto pra usar","urgency":"alta/média"},{"topic":"2","why":"...","titleSuggestion":"...","urgency":"..."},{"topic":"3","why":"...","titleSuggestion":"...","urgency":"..."},{"topic":"4","why":"...","titleSuggestion":"...","urgency":"..."},{"topic":"5","why":"...","titleSuggestion":"...","urgency":"..."}],"avoidTopics":["Tópico saturado 1","2"],"prediction":"Previsão do que vai viralizar nos próximos 7 dias"}`, 1500);
+      } catch {}
+    }
+
+    res.json({ trending: trendingList, nicheVirals, insights: aiInsights, checkedAt: new Date().toISOString() });
+  } catch (err) { next(err); }
+});
+
+// 💬 Engagement Generator
+router.post("/engagement-gen", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { title, niche, description, targetAction } = req.body;
+    const model = await getModel();
+    const parsed = await fetchAI(aiKey, model,
+      "Expert em engajamento YouTube e psicologia de audiência. " + LANG_RULE,
+      `RESPONDA EM PORTUGUÊS BR. Gere conteúdo de ENGAJAMENTO pra este vídeo:
+Título: "${title}", Nicho: ${niche || "geral"}, Descrição: ${description || ""}
+A�ão alvo: ${targetAction || "comentários e likes"}
+
+JSON: {"pinnedComment":"Comentário fixado que gera discussão (pergunta provocativa)","firstComment":"Primeiro comentário do canal pra iniciar conversa","replyTemplates":["Resposta 1 pra comentário positivo","Resposta 2 pra dúvida","Resposta 3 pra crítica construtiva","Resposta 4 pra comentário engraçado"],"ctaInVideo":["CTA verbal 1 pro meio do vídeo (não pedir like/sub genérico)","CTA 2 pro final","CTA 3 pra cards/end screen"],"questions":["Pergunta 1 pra colocar na descrição que gera comentários","Pergunta 2","Pergunta 3"],"communityPost":"Post pra aba Comunidade pra promover o vídeo","hashtagStrategy":["#hash1","#hash2","#hash3","#hash4","#hash5"],"endScreenScript":"Texto exato pra falar no end screen que faz clicar no próximo vídeo","polemic":"Opinião levemente polêmica (segura) que gera debate nos comentários","callbackHook":"Frase pra usar em TODOS os vídeos que cria identidade (catchphrase)"}`, 1500);
+    res.json(parsed);
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
 export default router;

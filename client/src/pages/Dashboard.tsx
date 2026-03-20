@@ -63,6 +63,10 @@ export default function Dashboard(){
       <QuickAction icon="♻️" label="Repurpose" desc="1 vídeo → 10+ peças de conteúdo multiplataforma" path="/repurpose" color={C.blue}/>
     </div>
 
+    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:28}}>
+      <QuickAction icon="⚡" label="Armas do Algoritmo" desc="Spy alerts, tendências, melhor horário, engajamento" path="/algoritmo" color={C.red}/>
+    </div>
+
     {/* Recent identities */}
     {identities.length>0&&<div style={{marginBottom:24}}>
       <div style={{fontWeight:800,fontSize:16,marginBottom:12}}>🚀 Identidades Recentes</div>

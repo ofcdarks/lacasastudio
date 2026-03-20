@@ -218,6 +218,10 @@ export const researchApi = {
   saveScriptVersion: (data: any) => api.post<any>("/research/save-script-version", data),
   getScriptVersions: (videoId: number) => api.get<any>(`/research/script-versions/${videoId}`),
   exportChannel: (channelId: number) => api.post<any>("/research/export-channel", { channelId }),
+  spyAlerts: () => api.post<any>("/research/spy-alerts", {}),
+  bestTime: (data: any) => api.post<any>("/research/best-time", data),
+  trendDetector: (data: any) => api.post<any>("/research/trend-detector", data),
+  engagementGen: (data: any) => api.post<any>("/research/engagement-gen", data),
   updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
 };
 

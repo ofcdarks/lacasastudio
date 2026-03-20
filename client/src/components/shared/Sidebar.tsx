@@ -95,6 +95,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
           <SItem icon="📸" label="Analisador" path="/analyzer" onClick={closeMobile} />
           <SItem icon="🔮" label="Preditor Viral" path="/preditor" onClick={closeMobile} />
           <SItem icon="🧠" label="Hooks Virais" path="/hooks" onClick={closeMobile} />
+          <SItem icon="⚡" label="Armas do Algoritmo" path="/algoritmo" onClick={closeMobile} />
 
         {/* OTIMIZAÇÃO */}
         <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>OTIMIZAÇÃO</div></div>

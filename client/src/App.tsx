@@ -28,6 +28,7 @@ const FullScript = lazy(() => import("./pages/FullScript"));
 const ViralPredict = lazy(() => import("./pages/ViralPredict"));
 const Monetize360 = lazy(() => import("./pages/Monetize360"));
 const Repurpose = lazy(() => import("./pages/Repurpose"));
+const AlgoTools = lazy(() => import("./pages/AlgoTools"));
 const Orcamento = lazy(() => import("./pages/Orcamento"));
 const Ativos = lazy(() => import("./pages/Ativos"));
 const Equipe = lazy(() => import("./pages/Equipe"));
@@ -75,6 +76,7 @@ export default function App() {
       <Route path="/preditor" element={<Layout><ViralPredict /></Layout>} />
       <Route path="/monetizar" element={<Layout><Monetize360 /></Layout>} />
       <Route path="/repurpose" element={<Layout><Repurpose /></Layout>} />
+      <Route path="/algoritmo" element={<Layout><AlgoTools /></Layout>} />
       <Route path="/orcamento" element={<Layout><Orcamento /></Layout>} />
       <Route path="/ativos" element={<Layout><Ativos /></Layout>} />
       <Route path="/equipe" element={<Layout><Equipe /></Layout>} />
