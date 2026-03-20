@@ -261,3 +261,14 @@ model SavedChannel {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+model ScriptVersion {
+  id        Int      @id @default(autoincrement())
+  videoId   Int
+  version   Int      @default(1)
+  title     String   @default("")
+  content   String   @default("")
+  sections  String   @default("[]")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+}

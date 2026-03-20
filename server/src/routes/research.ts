@@ -959,24 +959,58 @@ router.post("/pipeline", async (req: any, res: Response, next: NextFunction) => 
 
 // 🔥 Dynamic trending niches
 router.post("/trending-niches", async (req: any, res: Response, next: NextFunction) => {
+  // Hardcoded fallback niches (always works, even if AI fails)
+  const FALLBACK = {
+    trending:[
+      {name:"Faceless Dark History",emoji:"🏛️",query:"dark history faceless",growth:"alta",description:"Canais de história sombria sem aparecer na câmera. Alto CPM e engajamento.",tip:"Use IA pra gerar imagens cinematográficas"},
+      {name:"AI Tools Review",emoji:"🤖",query:"AI tools review 2025",growth:"alta",description:"Reviews de ferramentas IA novas que surgem toda semana.",tip:"Faça comparativos lado a lado"},
+      {name:"True Crime Documentário",emoji:"🔍",query:"true crime documentary",growth:"alta",description:"Documentários sobre crimes reais com narração envolvente.",tip:"Use fontes públicas e construa tensão"},
+      {name:"Satisfying Factory Process",emoji:"🏭",query:"factory process satisfying",growth:"alta",description:"Vídeos satisfatórios de processos industriais. Viral orgânico.",tip:"Compile clips royalty-free + adicione ASMR"},
+      {name:"Finance for GenZ",emoji:"💰",query:"finance investing genz",growth:"alta",description:"Educação financeira com linguagem jovem e memes.",tip:"Use analogias com jogos e cultura pop"},
+      {name:"Storytelling Animated",emoji:"📖",query:"storytelling animated channel",growth:"alta",description:"Histórias animadas com IA. Custo baixo, views altos.",tip:"Use Midjourney + narração emocional"},
+      {name:"Shorts Compilation",emoji:"📱",query:"shorts compilation millions views",growth:"alta",description:"Compilações de shorts virais. Fácil de produzir.",tip:"Foco em hooks de 1 segundo"},
+      {name:"Tech Unboxing Faceless",emoji:"📦",query:"tech unboxing faceless",growth:"alta",description:"Unboxing de tech sem mostrar o rosto. Só mãos e produto.",tip:"Invista em iluminação e close-ups"}
+    ],
+    emerging:[
+      {name:"AI Music Generation",emoji:"🎵",query:"AI music generation tutorial",growth:"explosiva",description:"Tutoriais de como criar música com IA. Suno, Udio.",tip:"Ensine leigos a criar hits"},
+      {name:"Longevity & Biohacking",emoji:"🧬",query:"longevity biohacking science",growth:"explosiva",description:"Ciência de longevidade e biohacking acessível.",tip:"Traduza papers científicos em linguagem simples"},
+      {name:"Prompt Engineering",emoji:"⚡",query:"prompt engineering AI tutorials",growth:"explosiva",description:"Como escrever prompts eficientes pra IA.",tip:"Mostre antes/depois com resultados reais"},
+      {name:"Geo Politics Explained",emoji:"🌍",query:"geopolitics explained simple",growth:"explosiva",description:"Geopolítica explicada de forma simples com mapas.",tip:"Use animações de mapas e dados visuais"},
+      {name:"Retro Gaming Revival",emoji:"🕹️",query:"retro gaming nostalgia",growth:"explosiva",description:"Nostalgia de jogos antigos voltando com força.",tip:"Combine gameplay + storytelling pessoal"},
+      {name:"Solo Travel Budget",emoji:"✈️",query:"solo travel budget tips",growth:"explosiva",description:"Viagem solo com orçamento baixo. Público enorme.",tip:"Documente experiências reais com custos"}
+    ],
+    microNiches:[
+      {name:"Receitas Históricas Antigas",emoji:"🍖",query:"ancient historical recipes cooking",competition:"baixa",description:"Recriar receitas de civilizações antigas (Roma, Egito, Maia). Pouquíssima concorrência.",howToStart:"Pesquise receitas em livros históricos, grave cozinhando",contentIdeas:["Como os Romanos faziam pão","Cerveja do Egito Antigo","Banquete Viking"]},
+      {name:"ASMR de Profissões Raras",emoji:"🔧",query:"ASMR unusual jobs rare professions",competition:"baixa",description:"Sons de profissões incomuns: relojoeiro, encadernador, ferreiro.",howToStart:"Visite artesãos locais e grave os sons",contentIdeas:["ASMR Relojoeiro","Sons de Encadernação","Ferreiro Medieval"]},
+      {name:"Exercícios pra Quem Trabalha Sentado",emoji:"🪑",query:"exercises desk workers stretching",competition:"baixa",description:"Alongamentos e exercícios pra programadores e office workers.",howToStart:"Grave rotinas de 5-10 min no escritório",contentIdeas:["5min Desk Stretch","Postura pra Devs","Yoga na Cadeira"]},
+      {name:"Mapas e Fronteiras Bizarras",emoji:"🗺️",query:"weird borders maps geography",competition:"baixa",description:"Fronteiras estranhas, enclaves, mapas bizarros. Público curioso.",howToStart:"Use Google Earth + dados de Wikipedia",contentIdeas:["País Dentro de País","Fronteira Mais Estranha","Cidades Divididas"]},
+      {name:"Matemática Visual com Animação",emoji:"📐",query:"math visual animation explained",competition:"baixa",description:"Conceitos matemáticos complexos explicados visualmente.",howToStart:"Use Manim ou After Effects pra animações",contentIdeas:["Fractais Explicados","Infinito Visual","Fibonacci na Natureza"]},
+      {name:"Abandonados do Mundo",emoji:"🏚️",query:"abandoned places exploration world",competition:"baixa",description:"Documentar lugares abandonados com história por trás.",howToStart:"Pesquise locais + conte a história do abandono",contentIdeas:["Hospital Abandonado","Parque Fantasma","Cidade Nuclear"]},
+      {name:"Psicologia dos Vilões de Filmes",emoji:"🎭",query:"psychology movie villains analysis",competition:"baixa",description:"Análise psicológica de vilões icônicos do cinema.",howToStart:"Combine cenas do filme + teoria psicológica",contentIdeas:["Joker: Diagnóstico Real","Thanos Era Racional?","Psicopatia em Hannibal"]},
+      {name:"Bugs e Glitches Explicados",emoji:"🐛",query:"game bugs glitches explained how",competition:"baixa",description:"Como bugs famosos de jogos acontecem tecnicamente.",howToStart:"Pesquise o código-fonte e explique visualmente",contentIdeas:["MissingNo Explicado","Glitch do Minecraft","Bug que Virou Feature"]}
+    ]
+  };
+
   try {
     const aiKey = await getAiKey();
-    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    if (!aiKey) { res.json(FALLBACK); return; }
     const model = await getModel();
     const ck = "niches:" + new Date().toISOString().slice(0, 13);
     const c = cached(ck, 3600000);
     if (c) { res.json(c); return; }
 
-    const parsed = await fetchAI(aiKey, model, "Expert em nichos YouTube. " + LANG_RULE,
-      `Nichos YouTube 2025/2026 com MICRO-NICHOS de pouca concorrência.
-
-JSON: {"trending":[{"name":"N","emoji":"e","query":"q","growth":"alta","description":"2 frases","tip":"Dica"}],"emerging":[{"name":"N","emoji":"e","query":"q","growth":"explosiva","description":"2 frases","tip":"Dica"}],"microNiches":[{"name":"Micro-nicho ultra-específico","emoji":"e","query":"q","competition":"baixa","monthlySearches":"estimativa","description":"Por que é oportunidade","howToStart":"Como começar do zero","contentIdeas":["Vídeo 1","Vídeo 2","Vídeo 3"]}]}
-
-8 trending + 6 emerging + 8 micro-nichos. MICRO-NICHOS = ultra-específicos com POUCA concorrência. Não "culinária" mas "receitas japonesas em air fryer". Não "fitness" mas "alongamento pra devs". Não "história" mas "civilizações esquecidas da África".`, 2500);
-    setCache(ck, parsed, 3600000);
-    res.json(parsed);
+    try {
+      const parsed = await fetchAI(aiKey, model, "Expert em nichos YouTube. " + LANG_RULE,
+        `8 nichos em alta + 6 emergentes + 8 micro-nichos (ultra-específicos, pouca concorrência).
+JSON: {"trending":[{"name":"N","emoji":"e","query":"q","growth":"alta","description":"curto","tip":"Dica"}],"emerging":[{"name":"N","emoji":"e","query":"q","growth":"explosiva","description":"curto","tip":"Dica"}],"microNiches":[{"name":"Micro ultra-específico","emoji":"e","query":"q","competition":"baixa","description":"curto","howToStart":"Como começar","contentIdeas":["V1","V2","V3"]}]}`, 2000);
+      setCache(ck, parsed, 3600000);
+      res.json(parsed);
+    } catch {
+      // AI failed? Return hardcoded fallback
+      res.json(FALLBACK);
+    }
   } catch (err: any) {
-    res.status(500).json({ error: err.message || "Erro" });
+    res.json(FALLBACK); // Always return something
   }
 });
 
@@ -1156,6 +1190,39 @@ JSON:
       recentVideos: recentVids,
       analysis: aiData
     });
+  } catch (err) { next(err); }
+});
+
+
+// 📝 Script versioning
+router.post("/save-script-version", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { videoId, title, content, sections, notes } = req.body;
+    const last = await prisma.scriptVersion.findFirst({ where: { videoId }, orderBy: { version: "desc" } });
+    const version = (last?.version || 0) + 1;
+    const sv = await prisma.scriptVersion.create({ data: { videoId, version, title: title || "", content: content || "", sections: JSON.stringify(sections || []), notes: notes || "" } });
+    res.json(sv);
+  } catch (err) { next(err); }
+});
+
+router.get("/script-versions/:videoId", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const versions = await prisma.scriptVersion.findMany({ where: { videoId: Number(req.params.videoId) }, orderBy: { version: "desc" } });
+    res.json(versions);
+  } catch (err) { next(err); }
+});
+
+// 📤 Export full channel PDF data
+router.post("/export-channel", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { channelId } = req.body;
+    const ch = await prisma.savedChannel.findFirst({ where: { id: Number(channelId), userId: req.userId } });
+    if (!ch) { res.status(404).json({ error: "Canal não encontrado" }); return; }
+    let mockData = null;
+    try { mockData = JSON.parse(ch.notes || "{}"); } catch {}
+    let analysis = null;
+    try { analysis = JSON.parse(ch.analysisJson || "{}"); } catch {}
+    res.json({ channel: ch, identity: mockData?.mockup || null, images: mockData?.mockImgs || null, analysis });
   } catch (err) { next(err); }
 });
 

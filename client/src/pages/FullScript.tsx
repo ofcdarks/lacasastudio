@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState } from "react";
-import { researchApi } from "../lib/api";
+import { researchApi, aiApi } from "../lib/api";
 import { C, Btn, Hdr, Input, Select, Label } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
 import { useProgress } from "../components/shared/ProgressModal";
@@ -42,6 +42,7 @@ export default function FullScript(){
       <div style={{display:"flex",gap:6,marginBottom:16}}>
         <Btn onClick={copyFull} style={{fontSize:11}}>📋 Copiar TUDO</Btn>
         <Btn onClick={copyNarration} style={{fontSize:11,background:"transparent",border:`1px solid ${C.border}`,color:C.muted}}>🎙️ Só Narração</Btn>
+        <Btn onClick={async()=>{try{await researchApi.saveScriptVersion({videoId:0,title:result.title||title,content:result.sections?.map(s=>s.narration).join("\n\n"),sections:result.sections,notes:result.retentionTips?.join("\n")});toast?.success("Versão salva!");}catch(e){toast?.error(e.message);}}} style={{fontSize:11,background:`${C.green}15`,color:C.green,border:`1px solid ${C.green}30`}}>💾 Salvar Versão</Btn>
         <span style={{fontSize:11,color:C.dim,display:"flex",alignItems:"center",gap:4}}>📊 ~{result.wordCount||"1500"} palavras · {result.sections.length} seções</span>
       </div>
 

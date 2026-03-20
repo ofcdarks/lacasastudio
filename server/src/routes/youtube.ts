@@ -110,3 +110,42 @@ router.post("/analyze", async (req: any, res: Response, next: NextFunction) => {
 });
 
 export default router;
+
+// YouTube Analytics OAuth foundation (requires Google Cloud Console setup)
+// Step 1: User goes to /api/youtube/auth-url -> redirects to Google
+// Step 2: Google redirects back with code -> /api/youtube/callback
+// Step 3: Token saved -> can fetch real analytics
+
+router.get("/auth-status", async (req: any, res) => {
+  try {
+    const s = await prisma.setting.findUnique({ where: { key: "youtube_oauth_token" } });
+    res.json({ connected: !!s?.value, expiresAt: s?.value ? JSON.parse(s.value).expiry_date : null });
+  } catch { res.json({ connected: false }); }
+});
+
+router.get("/auth-url", async (req: any, res) => {
+  const clientId = await prisma.setting.findUnique({ where: { key: "google_client_id" } });
+  const redirectUri = await prisma.setting.findUnique({ where: { key: "google_redirect_uri" } });
+  if (!clientId?.value) { res.status(400).json({ error: "Configure Google Client ID nas Configurações" }); return; }
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId.value}&redirect_uri=${encodeURIComponent(redirectUri?.value || "http://localhost:3000/api/youtube/callback")}&response_type=code&scope=https://www.googleapis.com/auth/yt-analytics.readonly https://www.googleapis.com/auth/youtube.readonly&access_type=offline&prompt=consent`;
+  res.json({ url });
+});
+
+router.get("/callback", async (req: any, res) => {
+  const { code } = req.query;
+  if (!code) { res.status(400).send("Código não recebido"); return; }
+  try {
+    const clientId = await prisma.setting.findUnique({ where: { key: "google_client_id" } });
+    const clientSecret = await prisma.setting.findUnique({ where: { key: "google_client_secret" } });
+    const redirectUri = await prisma.setting.findUnique({ where: { key: "google_redirect_uri" } });
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `code=${code}&client_id=${clientId?.value}&client_secret=${clientSecret?.value}&redirect_uri=${encodeURIComponent(redirectUri?.value || "")}&grant_type=authorization_code`
+    });
+    const token = await tokenRes.json() as any;
+    if (token.access_token) {
+      await prisma.setting.upsert({ where: { key: "youtube_oauth_token" }, create: { key: "youtube_oauth_token", value: JSON.stringify(token) }, update: { value: JSON.stringify(token) } });
+      res.redirect("/?youtube=connected");
+    } else { res.status(400).json({ error: "Token inválido" }); }
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});

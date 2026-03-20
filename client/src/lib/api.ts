@@ -207,6 +207,9 @@ export const researchApi = {
   monetize360: (data: any) => api.post<any>("/research/monetize-360", data),
   repurpose: (data: any) => api.post<any>("/research/repurpose", data),
   quickAnalyze: (query: string) => api.post<any>("/research/quick-analyze", { query }),
+  saveScriptVersion: (data: any) => api.post<any>("/research/save-script-version", data),
+  getScriptVersions: (videoId: number) => api.get<any>(`/research/script-versions/${videoId}`),
+  exportChannel: (channelId: number) => api.post<any>("/research/export-channel", { channelId }),
   updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
 };
 
