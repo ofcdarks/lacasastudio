@@ -169,8 +169,7 @@ export default function Settings() {
             {[
               { icon: "🤖", title: "LaoZhang (IA)", items: ["Gerador SEO + IA", "Editor de Roteiro", "Storyboard automático", "Análise do canal"] },
               { icon: "📺", title: "YouTube Data API", items: ["Analytics real dos canais", "Dados de vídeos publicados", "Recomendações baseadas em dados"] },
-            },
-            { icon: "🎨", title: "Google ImageFX", items: ["Geração de assets 2D no Storyboard", "Imagen 3.5 (Google) — grátis", "Resolução alta 16:9 landscape"] }
+              { icon: "🎨", title: "Google ImageFX", items: ["Geração de assets 2D no Storyboard", "Imagen 3.5 (Google) — grátis", "Resolução alta 16:9 landscape"] }
             ].map((sec, i) => (
               <div key={i} style={{ padding: "12px 0", borderBottom: i === 0 ? `1px solid ${C.border}` : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
