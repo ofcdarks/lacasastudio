@@ -17,7 +17,7 @@ export class Account {
 
   async refreshSession() {
     if (!this.token || !this.tokenExpiry || this.tokenExpiry <= new Date(Date.now() + 30000)) {
-      const session = await this.fetchSession();
+      const session: any = await this.fetchSession();
       if (!session?.access_token || !session?.expires) throw new ImageFXError("Sessão inválida. Atualize o cookie.");
       this.user = session.user; this.token = session.access_token; this.tokenExpiry = new Date(session.expires);
     }
