@@ -18,10 +18,13 @@ export default function Analyzer(){
   const[genThumb,setGenThumb]=useState({});
   const[genningKey,setGenningKey]=useState(null);
 
+  const compressImage=(file,maxW=800)=>new Promise(resolve=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const c=document.createElement("canvas");const r=Math.min(1,maxW/img.width);c.width=img.width*r;c.height=img.height*r;c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);resolve(c.toDataURL("image/jpeg",0.7));};img.src=url;});
+
   const addImages=async(files)=>{
-    for(const f of files){
+    if(images.length>=4){toast?.error("Máximo 4 prints");return;}
+    for(const f of Array.from(files).slice(0,4-images.length)){
       if(!f.type.startsWith("image/"))continue;
-      const b64=await new Promise(r=>{const rd=new FileReader();rd.onload=()=>r(rd.result);rd.readAsDataURL(f);});
+      const b64=await compressImage(f);
       setImages(p=>[...p,{id:Date.now()+Math.random(),src:b64,name:f.name}]);
     }
   };
@@ -57,7 +60,7 @@ export default function Analyzer(){
       <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={e=>addImages(e.target.files)}/>
       <div style={{fontSize:40,marginBottom:8,opacity:.3}}>📸</div>
       <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>Arraste prints aqui ou clique para selecionar</div>
-      <div style={{fontSize:11,color:C.dim}}>Prints de páginas de canais, resultados de busca, thumbnails, etc. (max 6)</div>
+      <div style={{fontSize:11,color:C.dim}}>Prints de canais, resultados de busca, thumbnails (máx 4, comprimidas automaticamente). Usa GPT-4o Vision.</div>
     </div>
 
     {/* Image previews */}

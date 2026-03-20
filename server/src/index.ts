@@ -43,7 +43,7 @@ app.use(cors({
   origin: ALLOWED_ORIGINS.length > 0 && ALLOWED_ORIGINS[0] !== "*" ? ALLOWED_ORIGINS : true,
   credentials: true,
 }));
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "50mb" }));
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHeaders: true, legacyHeaders: false });

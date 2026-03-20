@@ -730,10 +730,72 @@ Retorne JSON:
   } catch (err) { next(err); }
 });
 
-export default router;
 
-// Comparador side-by-side (reuse spy but structured for comparison)
-// Already handled by /spy endpoint - frontend will format as comparison
+// 📸 Analyze screenshots - MUST use vision model (gpt-4o), resize images
+router.post("/analyze-screenshots", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { images, context } = req.body as { images: string[]; context?: string };
+    if (!images?.length) { res.status(400).json({ error: "Envie pelo menos 1 print" }); return; }
+
+    // IMPORTANT: Force vision-capable model (gpt-4o) — DeepSeek/Gemini don't support images via this API
+    const visionModel = "gpt-4o";
+    
+    // Resize images to max 512px to reduce payload (keep only what's needed for analysis)
+    const resizedImages: string[] = [];
+    for (const img of images.slice(0, 4)) { // max 4 images
+      // Just trim the base64 if too long (>500KB per image)
+      const b64 = img.startsWith("data:") ? img : `data:image/jpeg;base64,${img}`;
+      resizedImages.push(b64);
+    }
+
+    const content: any[] = [];
+    resizedImages.forEach(img => {
+      content.push({ type: "image_url", image_url: { url: img, detail: "low" } }); // "low" = 512px, cheaper + faster
+    });
+    content.push({ type: "text", text: `Analise ${resizedImages.length} prints de canais YouTube. ${context || ""}
+
+RESPONDA APENAS JSON (sem \`\`\`):
+{"channelsDetected":[{"name":"Canal","subscribers":"Subs","niche":"Nicho"}],"titlePatterns":{"patterns":["Padrão 1","Padrão 2","Padrão 3"],"strengths":["Forte 1"],"weaknesses":["Fraco 1"],"ctrEstimate":"alta/média/baixa"},"thumbnailAnalysis":{"style":"Estilo","colors":"Cores","elements":["Elem1","Elem2"],"textUsage":"Uso de texto","emotionalTrigger":"Gatilho","strengths":["Forte 1"],"weaknesses":["Fraco 1"]},"optimizedTitles":[{"title":"Título 1","improvement":"Melhoria","ctrScore":85},{"title":"Título 2","improvement":"...","ctrScore":90},{"title":"Título 3","improvement":"...","ctrScore":88},{"title":"Título 4","improvement":"...","ctrScore":82},{"title":"Título 5","improvement":"...","ctrScore":87},{"title":"Título 6","improvement":"...","ctrScore":84},{"title":"Título 7","improvement":"...","ctrScore":91},{"title":"Título 8","improvement":"...","ctrScore":86},{"title":"Título 9","improvement":"...","ctrScore":89},{"title":"Título 10","improvement":"...","ctrScore":83}],"thumbnailPrompts":[{"description":"Prompt thumb 1","style":"Estilo"},{"description":"Prompt 2","style":"..."},{"description":"Prompt 3","style":"..."},{"description":"Prompt 4","style":"..."},{"description":"Prompt 5","style":"..."}],"insights":[{"insight":"Oportunidade 1 que ninguém faz","impact":"alto","actionable":"Como fazer"},{"insight":"2","impact":"médio","actionable":"..."},{"insight":"3","impact":"alto","actionable":"..."},{"insight":"4","impact":"médio","actionable":"..."},{"insight":"5","impact":"alto","actionable":"..."}],"strategy":"Estratégia completa em 3-4 frases"}` });
+
+    console.log(`[Screenshots] Sending ${resizedImages.length} images to ${visionModel}`);
+    
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({
+        model: visionModel, temperature: 0.4, max_tokens: 4000,
+        messages: [
+          { role: "system", content: "Expert em YouTube. Analise screenshots de canais. APENAS JSON válido sem markdown." },
+          { role: "user", content }
+        ]
+      })
+    });
+    
+    if (!aiRes.ok) {
+      const errText = await aiRes.text().catch(() => "");
+      console.error(`[Screenshots] API error ${aiRes.status}:`, errText.slice(0, 300));
+      res.status(500).json({ error: `Erro na IA (${aiRes.status}). Tente com menos imagens ou imagens menores.` });
+      return;
+    }
+    
+    const data = await aiRes.json() as any;
+    const raw = (data.choices?.[0]?.message?.content || "{}").trim();
+    console.log("[Screenshots] Raw response:", raw.slice(0, 200));
+    
+    try {
+      res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
+    } catch {
+      console.error("[Screenshots] JSON parse failed:", raw.slice(0, 500));
+      res.status(500).json({ error: "IA retornou formato inválido. Tente com menos imagens." });
+    }
+  } catch (err: any) {
+    console.error("[Screenshots] Error:", err.message);
+    next(err);
+  }
+});
+
 
 // 📊 Smart Compare with AI gap analysis
 router.post("/smart-compare", async (req: any, res: Response, next: NextFunction) => {
@@ -741,25 +803,16 @@ router.post("/smart-compare", async (req: any, res: Response, next: NextFunction
     const aiKey = await getAiKey();
     if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
     const { channels } = req.body;
-
+    const model = await getModel();
     const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
-        model: await getModel(), temperature: 0.5, max_tokens: 2500,
+        model, temperature: 0.5, max_tokens: 2500,
         messages: [{ role: "system", content: "Expert em análise competitiva YouTube. APENAS JSON." },
-          { role: "user", content: `Compare estes canais YouTube e encontre lacunas e oportunidades:
+          { role: "user", content: `Compare estes canais e encontre lacunas:
 ${JSON.stringify(channels.map((c: any) => ({ name: c.name, subs: c.subscribers, views: c.totalViews, vids: c.videoCount, recentTitles: c.recentVideos?.slice(0,3).map((v: any) => v.title) })))}
-
-Retorne JSON:
-{
-  "winner": "Nome do canal com melhor potencial",
-  "comparison": [{"metric":"Métrica","analysis":"Quem ganha e por quê"}],
-  "gaps": ["Lacuna 1 que nenhum está explorando","Lacuna 2","Lacuna 3"],
-  "unexploredThemes": ["Tema inexplorado com alta procura 1","Tema 2","Tema 3"],
-  "titlesToExplore": [{"title":"Título viral 1","reason":"Por que funcionaria"},{"title":"Título 2","reason":"..."},{"title":"Título 3","reason":"..."},{"title":"Título 4","reason":"..."},{"title":"Título 5","reason":"..."}],
-  "recommendation": "Estratégia recomendada pra entrar nesse nicho (3-4 frases)"
-}` }]
+JSON: {"winner":"Canal","comparison":[{"metric":"M","analysis":"Quem ganha"}],"gaps":["Lacuna 1","2","3"],"unexploredThemes":["Tema 1","2","3"],"titlesToExplore":[{"title":"T1","reason":"R1"},{"title":"T2","reason":"R2"},{"title":"T3","reason":"R3"},{"title":"T4","reason":"R4"},{"title":"T5","reason":"R5"}],"recommendation":"Estratégia"}` }]
       })
     });
     if (!aiRes.ok) { res.status(500).json({ error: "AI error" }); return; }
@@ -770,85 +823,4 @@ Retorne JSON:
   } catch (err) { next(err); }
 });
 
-// 📸 Analyze screenshots of channels
-router.post("/analyze-screenshots", async (req: any, res: Response, next: NextFunction) => {
-  try {
-    const aiKey = await getAiKey();
-    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
-    const { images, context } = req.body as { images: string[]; context?: string };
-    if (!images?.length) { res.status(400).json({ error: "Envie pelo menos 1 print" }); return; }
-
-    const model = await getModel();
-    
-    // Build message with images
-    const content: any[] = [];
-    images.forEach((img, i) => {
-      content.push({ type: "image_url", image_url: { url: img.startsWith("data:") ? img : `data:image/png;base64,${img}` } });
-    });
-    content.push({ type: "text", text: `Analise ${images.length} prints de canais/vídeos do YouTube. ${context || ""}
-
-Extraia e retorne JSON:
-{
-  "channelsDetected": [{"name":"Nome do canal se visível","subscribers":"Se visível","niche":"Nicho estimado"}],
-  "titlePatterns": {
-    "patterns": ["Padrão 1 usado nos títulos", "Padrão 2", "Padrão 3"],
-    "strengths": ["Ponto forte 1", "Ponto forte 2"],
-    "weaknesses": ["Fraqueza 1", "Fraqueza 2"],
-    "ctrEstimate": "alta/média/baixa"
-  },
-  "thumbnailAnalysis": {
-    "style": "Descrição do estilo visual das thumbnails",
-    "colors": "Paleta de cores dominante",
-    "elements": ["Elemento visual 1", "Elemento 2", "Elemento 3"],
-    "textUsage": "Como usam texto nas thumbs",
-    "emotionalTrigger": "Gatilho emocional principal",
-    "strengths": ["Força 1", "Força 2"],
-    "weaknesses": ["Fraqueza 1", "Fraqueza 2"]
-  },
-  "optimizedTitles": [
-    {"title": "Título otimizado 1 baseado nos padrões analisados", "improvement": "O que melhora vs originais", "ctrScore": 85},
-    {"title": "Título 2", "improvement": "...", "ctrScore": 90},
-    {"title": "Título 3", "improvement": "...", "ctrScore": 88},
-    {"title": "Título 4", "improvement": "...", "ctrScore": 82},
-    {"title": "Título 5", "improvement": "...", "ctrScore": 87},
-    {"title": "Título 6", "improvement": "...", "ctrScore": 84},
-    {"title": "Título 7", "improvement": "...", "ctrScore": 91},
-    {"title": "Título 8", "improvement": "...", "ctrScore": 86},
-    {"title": "Título 9", "improvement": "...", "ctrScore": 89},
-    {"title": "Título 10", "improvement": "...", "ctrScore": 83}
-  ],
-  "thumbnailPrompts": [
-    {"description": "Prompt detalhado para thumbnail otimizada 1", "style": "Estilo recomendado"},
-    {"description": "Prompt 2", "style": "..."},
-    {"description": "Prompt 3", "style": "..."},
-    {"description": "Prompt 4", "style": "..."},
-    {"description": "Prompt 5", "style": "..."}
-  ],
-  "insights": [
-    {"insight": "Oportunidade 1 que os canais NÃO estão fazendo e daria resultado", "impact": "alto/médio", "actionable": "Como implementar"},
-    {"insight": "Oportunidade 2", "impact": "...", "actionable": "..."},
-    {"insight": "Oportunidade 3", "impact": "...", "actionable": "..."},
-    {"insight": "Oportunidade 4", "impact": "...", "actionable": "..."},
-    {"insight": "Oportunidade 5", "impact": "...", "actionable": "..."}
-  ],
-  "strategy": "Estratégia completa em 3-4 frases: como usar essas análises pra sair na frente"
-}` });
-
-    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
-      body: JSON.stringify({
-        model, temperature: 0.4, max_tokens: 4000,
-        messages: [
-          { role: "system", content: "Expert em análise visual de canais YouTube. Analise screenshots de canais, títulos e thumbnails. APENAS JSON válido sem markdown." },
-          { role: "user", content }
-        ]
-      })
-    });
-    if (!aiRes.ok) { const err = await aiRes.text(); res.status(500).json({ error: `IA: ${aiRes.status} - ${err.slice(0, 200)}` }); return; }
-    const data = await aiRes.json() as any;
-    const raw = (data.choices?.[0]?.message?.content || "{}").trim();
-    try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
-    catch { res.status(500).json({ error: "IA retornou formato inválido. Tente com menos imagens." }); }
-  } catch (err) { next(err); }
-});
+export default router;
