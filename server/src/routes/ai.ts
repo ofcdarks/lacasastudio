@@ -68,7 +68,7 @@ router.post("/seo", async (req: any, res: Response, next: NextFunction) => {
     const { title, topic, channelName, language, competitors } = req.body as any;
 
     const raw = await callAI(apiKey, model, "Expert em SEO YouTube. REGRA: Toda explicação, análise, dica e feedback em PT-BR. Conteúdo (títulos, descrições, tags) no idioma do canal. APENAS JSON.",
-      `Crie SEO COMPLETO e SUPERIOR pra este vídeo YouTube. Canal: "${channelName}". Vídeo: "${title}". Tópico: "${topic || title}". Idioma principal: ${language || "pt"}.
+      `RESPONDA EM PORTUGUÊS BR. Crie SEO COMPLETO e SUPERIOR pra este vídeo YouTube. Canal: "${channelName}". Vídeo: "${title}". Tópico: "${topic || title}". Idioma principal: ${language || "pt"}.
 ${competitors ? `Competidores a SUPERAR: ${competitors}` : ""}
 
 JSON:

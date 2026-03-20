@@ -332,7 +332,7 @@ router.post("/dna", async (req: any, res: Response, next: NextFunction) => {
         model: await getModel(), temperature: 0.4, max_tokens: 3000,
         messages: [
           { role: "system", content: "Especialista em DNA viral de canais YouTube. " + LANG_RULE },
-          { role: "user", content: `Analise o DNA viral deste canal e seus top vídeos:
+          { role: "user", content: `RESPONDA EM PORTUGUÊS BR. Analise o DNA viral deste canal e seus top vídeos:
 Canal: "${channelName}" (${subscribers} subs, nicho: ${niche})
 Duração média: ${avgDuration}
 Top vídeos: ${JSON.stringify(topVideos)}
@@ -377,7 +377,7 @@ router.post("/blueprint", async (req: any, res: Response, next: NextFunction) =>
         model: await getModel(), temperature: 0.3, max_tokens: 4000,
         messages: [
           { role: "system", content: "Consultor expert em blueprints de canais YouTube. " + LANG_RULE },
-          { role: "user", content: `Crie um BLUEPRINT COMPLETO para modelar este canal:
+          { role: "user", content: `RESPONDA EM PORTUGUÊS BR. Crie um BLUEPRINT COMPLETO para modelar este canal:
 Canal original: "${channelName}" (${subscribers} subs, ${totalViews} views, ${videoCount} vídeos)
 Nicho: ${niche} > ${subNiche} > ${microNiche}
 Tipo: ${contentType}, País: ${country}
@@ -499,7 +499,7 @@ router.post("/generate-titles", async (req: any, res: Response, next: NextFuncti
         model: await getModel(), temperature: 0.7, max_tokens: 3000,
         messages: [
           { role: "system", content: "Expert em títulos virais e thumbnails YouTube. " + LANG_RULE },
-          { role: "user", content: `Baseado neste canal de referência, gere títulos + thumbnails para um canal modelado:
+          { role: "user", content: `RESPONDA EM PORTUGUÊS BR. Baseado neste canal, gere títulos + thumbnails para um canal modelado:
 Canal original: "${channelName}" | Nicho: ${niche} | País alvo: ${targetCountry} | Idioma: ${language || "pt-BR"}
 Títulos originais que funcionam: ${topVideoTitles?.join(" | ")}
 
@@ -666,7 +666,7 @@ router.post("/ab-test", async (req: any, res: Response, next: NextFunction) => {
       body: JSON.stringify({
         model: await getModel(), temperature: 0.3, max_tokens: 2000,
         messages: [{ role: "system", content: "Expert em CTR e psicologia de títulos YouTube. " + LANG_RULE },
-          { role: "user", content: `Analise estes títulos e dê score de CTR (0-100). Nicho: ${niche}. Público: ${targetAudience || "geral"}.
+          { role: "user", content: `RESPONDA EM PORTUGUÊS BR. Analise estes títulos e dê score de CTR (0-100). Nicho: ${niche}. Público: ${targetAudience || "geral"}.
 Títulos: ${JSON.stringify(titles)}
 
 Para CADA título retorne JSON array:
@@ -693,7 +693,7 @@ router.post("/calendar", async (req: any, res: Response, next: NextFunction) => 
       body: JSON.stringify({
         model: await getModel(), temperature: 0.6, max_tokens: 4000,
         messages: [{ role: "system", content: "Expert em estratégia de conteúdo YouTube. " + LANG_RULE },
-          { role: "user", content: `Crie calendário de 30 dias para canal YouTube modelado:
+          { role: "user", content: `RESPONDA EM PORTUGUÊS BR. Crie calendário de 30 dias para canal YouTube modelado:
 Nicho: ${niche} > ${subNiche || "geral"}
 Vídeos/semana: ${videosPerWeek || 3}
 Estilo: ${style || "faceless"}
@@ -721,7 +721,12 @@ router.post("/channel-mockup", async (req: any, res: Response, next: NextFunctio
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
         model: await getModel(), temperature: 0.7, max_tokens: 3500,
-        messages: [{ role: "system", content: `Você é um DIRETOR CRIATIVO de canais YouTube de elite. Sua missão: analisar um canal existente e criar uma versão MUITO SUPERIOR — não uma cópia, mas uma EVOLUÇÃO.
+        messages: [{ role: "system", content: `Você é um DIRETOR CRIATIVO de canais YouTube de elite. Sua missão: analisar um canal existente e criar uma versão MUITO SUPERIOR.
+
+REGRA CRÍTICA DE IDIOMA:
+- Os campos "whatsBetter", "weaknessesFixed", "strategyEdge", "tagline" e "description" DEVEM ser escritos em PORTUGUÊS DO BRASIL (PT-BR), pois o USUÁRIO é brasileiro.
+- Os campos "title" dos vídeos, "channelName" e "keywords" devem ser no idioma do canal alvo.
+- NUNCA escreva explicações em inglês. O usuário NÃO fala inglês.
 
 REGRAS:
 - NÃO copie o canal original. SUPERE ele.
@@ -730,39 +735,39 @@ REGRAS:
 - Nome ORIGINAL e criativo (não parecido com o original)
 - Títulos MAIS impactantes, com hooks MELHORES
 - Thumbnails com conceitos visuais SUPERIORES
-- Nichos e abordagens que o ORIGINAL DEVERIA ter explorado mas não fez
-- Pense como se fosse criar o canal que DESTRUIRIA o original na competição
-- APENAS JSON válido sem markdown
-- REGRA DE IDIOMA: Toda explicação, análise e estratégia em PT-BR. Conteúdo do canal (nome, títulos, descrições, tags) no idioma alvo do canal.` },
+- APENAS JSON válido sem markdown` },
           { role: "user", content: `Analise o canal "${originalChannel || "referência"}" e crie um canal SUPERIOR:
 
 CANAL ORIGINAL: "${originalChannel}"
 Nicho: ${niche} > ${subNiche || ""}
-Estilo: ${style || "faceless"} | País: ${targetCountry || "US"} | Idioma: ${language || "en"}
+Estilo: ${style || "faceless"} | País: ${targetCountry || "US"} | Idioma conteúdo: ${language || "en"}
 ${analysisData ? `Dados: ${analysisData.subscribers || ""} subs, ${analysisData.totalViews || ""} views, ${analysisData.videoCount || ""} vídeos, Score: ${analysisData.score || ""}` : ""}
 ${analysisData?.topVideos ? `Top vídeos do original: ${analysisData.topVideos.slice(0,5).map(v => v.title).join(" | ")}` : ""}
 
 SUPERE este canal. Crie algo MELHOR em TODOS os aspectos.
 
+IMPORTANTE: Os campos whatsBetter, weaknessesFixed, strategyEdge, tagline e description OBRIGATORIAMENTE em PORTUGUÊS BR.
+Os títulos dos vídeos e channelName no idioma: ${language || "en"}.
+
 JSON:
 {
-  "channelName": "Nome ORIGINAL e criativo (NÃO parecido com o original)",
-  "tagline": "Slogan memorável que posiciona como autoridade",
-  "description": "Descrição SEO completa 200 palavras — melhor que a do original",
-  "whatsBetter": "3 frases explicando POR QUE este canal é superior ao original",
-  "weaknessesFixed": ["Fraqueza 1 do original que corrigimos", "Fraqueza 2", "Fraqueza 3"],
-  "logoPrompt": "Prompt DETALHADO ImageFX: logo circular, profissional, cores vibrantes, ícone representativo do nicho, estilo moderno premium, sem texto, fundo transparente",
-  "bannerPrompt": "Prompt DETALHADO ImageFX: banner YouTube 2560x1440, composição cinematográfica, cores da marca, elementos do nicho, profissional, sem texto genérico",
+  "channelName": "Nome criativo no idioma ${language || "en"}",
+  "tagline": "Slogan em PORTUGUÊS BR",
+  "description": "Descrição em PORTUGUÊS BR explicando o canal (200 palavras)",
+  "whatsBetter": "3 frases em PORTUGUÊS BR explicando POR QUE este canal é superior",
+  "weaknessesFixed": ["Fraqueza do original corrigida em PT-BR", "Fraqueza 2 em PT-BR", "Fraqueza 3 em PT-BR"],
+  "logoPrompt": "Prompt ImageFX em inglês: circular logo, professional...",
+  "bannerPrompt": "Prompt ImageFX em inglês: YouTube banner 2560x1440...",
   "videos": [
-    {"title": "Título viral MELHOR que os do original — com hook poderoso", "thumbnailPrompt": "Prompt DETALHADO: composição cinematográfica, cores contrastantes, elemento emocional forte, 16:9, sem texto, estilo premium", "views": "Estimativa realista", "duration": "MM:SS"},
-    {"title": "Vídeo 2 explorando LACUNA que original ignorou", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
-    {"title": "Vídeo 3 com abordagem INOVADORA", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
-    {"title": "Vídeo 4 que DESTRUIRIA em engajamento", "thumbnailPrompt": "...", "views": "...", "duration": "..."}
+    {"title": "Título no idioma ${language || "en"}", "thumbnailPrompt": "Prompt em inglês", "views": "Estimativa", "duration": "MM:SS"},
+    {"title": "Vídeo 2", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
+    {"title": "Vídeo 3", "thumbnailPrompt": "...", "views": "...", "duration": "..."},
+    {"title": "Vídeo 4", "thumbnailPrompt": "...", "views": "...", "duration": "..."}
   ],
   "colors": {"primary": "#hex", "secondary": "#hex", "accent": "#hex"},
-  "fonts": "Fontes recomendadas premium",
-  "keywords": ["kw1","kw2","kw3","kw4","kw5"],
-  "strategyEdge": "Por que este canal vai VENCER o original em 6 meses"
+  "fonts": "Fontes recomendadas",
+  "keywords": ["kw no idioma ${language || "en"}"],
+  "strategyEdge": "Em PORTUGUÊS BR: Por que este canal vai VENCER o original em 6 meses"
 }` }]
       })
     });
@@ -798,7 +803,7 @@ router.post("/analyze-screenshots", async (req: any, res: Response, next: NextFu
     resizedImages.forEach(img => {
       content.push({ type: "image_url", image_url: { url: img, detail: "low" } }); // "low" = 512px, cheaper + faster
     });
-    content.push({ type: "text", text: `Analise ${resizedImages.length} prints de canais YouTube. ${context || ""}
+    content.push({ type: "text", text: `RESPONDA TUDO EM PORTUGUÊS DO BRASIL. Analise ${resizedImages.length} prints de canais YouTube. ${context || ""}
 
 RESPONDA APENAS JSON (sem \`\`\`):
 {"channelsDetected":[{"name":"Canal","subscribers":"Subs","niche":"Nicho"}],"titlePatterns":{"patterns":["Padrão 1","Padrão 2","Padrão 3"],"strengths":["Forte 1"],"weaknesses":["Fraco 1"],"ctrEstimate":"alta/média/baixa"},"thumbnailAnalysis":{"style":"Estilo","colors":"Cores","elements":["Elem1","Elem2"],"textUsage":"Uso de texto","emotionalTrigger":"Gatilho","strengths":["Forte 1"],"weaknesses":["Fraco 1"]},"optimizedTitles":[{"title":"Título 1","improvement":"Melhoria","ctrScore":85},{"title":"Título 2","improvement":"...","ctrScore":90},{"title":"Título 3","improvement":"...","ctrScore":88},{"title":"Título 4","improvement":"...","ctrScore":82},{"title":"Título 5","improvement":"...","ctrScore":87},{"title":"Título 6","improvement":"...","ctrScore":84},{"title":"Título 7","improvement":"...","ctrScore":91},{"title":"Título 8","improvement":"...","ctrScore":86},{"title":"Título 9","improvement":"...","ctrScore":89},{"title":"Título 10","improvement":"...","ctrScore":83}],"thumbnailPrompts":[{"description":"Prompt thumb 1","style":"Estilo"},{"description":"Prompt 2","style":"..."},{"description":"Prompt 3","style":"..."},{"description":"Prompt 4","style":"..."},{"description":"Prompt 5","style":"..."}],"insights":[{"insight":"Oportunidade ESPECÍFICA que ninguém faz","impact":"alto","actionable":"Passo a passo CONCRETO: 1) fazer X, 2) usar Y, 3) publicar Z","examples":["Título de vídeo REAL exemplo 1 que funcionaria HOJE","Título exemplo 2 pronto pra usar","Título exemplo 3 viral"]},{"insight":"2","impact":"alto","actionable":"Passo concreto","examples":["Título real 1","Título real 2","Título real 3"]},{"insight":"3","impact":"alto","actionable":"...","examples":["ex1","ex2","ex3"]},{"insight":"4","impact":"médio","actionable":"...","examples":["ex1","ex2","ex3"]},{"insight":"5","impact":"alto","actionable":"...","examples":["ex1","ex2","ex3"]}],"strategy":"Estratégia completa em 3-4 frases"}` });
@@ -854,7 +859,7 @@ router.post("/smart-compare", async (req: any, res: Response, next: NextFunction
       body: JSON.stringify({
         model, temperature: 0.5, max_tokens: 2500,
         messages: [{ role: "system", content: "Expert em análise competitiva YouTube. " + LANG_RULE },
-          { role: "user", content: `Compare estes canais e encontre lacunas:
+          { role: "user", content: `RESPONDA EM PORTUGUÊS BR. Compare estes canais e encontre lacunas:
 ${JSON.stringify(channels.map((c: any) => ({ name: c.name, subs: c.subscribers, views: c.totalViews, vids: c.videoCount, recentTitles: c.recentVideos?.slice(0,3).map((v: any) => v.title) })))}
 JSON: {"winner":"Canal","comparison":[{"metric":"M","analysis":"Quem ganha"}],"gaps":["Lacuna 1","2","3"],"unexploredThemes":["Tema 1","2","3"],"titlesToExplore":[{"title":"T1","reason":"R1"},{"title":"T2","reason":"R2"},{"title":"T3","reason":"R3"},{"title":"T4","reason":"R4"},{"title":"T5","reason":"R5"}],"recommendation":"Estratégia"}` }]
       })
@@ -879,7 +884,7 @@ router.post("/pre-publish-score", async (req: any, res: Response, next: NextFunc
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.3, max_tokens: 1500,
         messages: [{ role: "system", content: "Expert em SEO YouTube. Pontue vídeos antes de publicar. " + LANG_RULE },
-          { role: "user", content: `Analise este vídeo ANTES de publicar. Nicho: ${niche||"geral"}
+          { role: "user", content: `RESPONDA EM PORTUGUÊS BR. Analise este vídeo ANTES de publicar. Nicho: ${niche||"geral"}
 Título: "${title}"
 Descrição: "${description||""}"
 Tags: ${tags||""}
@@ -1025,7 +1030,7 @@ router.post("/full-script", async (req: any, res: Response, next: NextFunction) 
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.7, max_tokens: 4000,
         messages: [{ role: "system", content: "Roteirista profissional de YouTube. " + LANG_RULE },
-          { role: "user", content: `Roteiro COMPLETO palavra-por-palavra para: "${title}"
+          { role: "user", content: `RESPONDA EM PORTUGUÊS BR. Roteiro COMPLETO palavra-por-palavra para: "${title}"
 Nicho: ${niche||"geral"}, Duração: ${duration||"10:00"}, Estilo: ${style||"educativo"}, Idioma: ${language||"pt"}
 ${hook ? `Hook sugerido: ${hook}` : ""}
 
@@ -1051,7 +1056,7 @@ router.post("/predict-viral", async (req: any, res: Response, next: NextFunction
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.3, max_tokens: 1500,
         messages: [{ role: "system", content: "Analista de dados YouTube. Preveja performance de vídeos. " + LANG_RULE },
-          { role: "user", content: `Preveja a performance deste vídeo ANTES de publicar:
+          { role: "user", content: `RESPONDA EM PORTUGUÊS BR. Preveja a performance deste vídeo ANTES de publicar:
 Título: "${title}", Thumb: "${thumbnailConcept||""}", Nicho: ${niche||"geral"}
 Horário: ${uploadTime||"não definido"}, Tags: ${tags||""}, Inscritos: ${subscribers||"novo canal"}
 
@@ -1076,7 +1081,7 @@ router.post("/monetize-360", async (req: any, res: Response, next: NextFunction)
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.5, max_tokens: 3000,
         messages: [{ role: "system", content: "Consultor de monetização YouTube expert. " + LANG_RULE },
-          { role: "user", content: `Estratégia COMPLETA de monetização para canal YouTube:
+          { role: "user", content: `RESPONDA EM PORTUGUÊS BR. Estratégia COMPLETA de monetização para canal YouTube:
 Nicho: ${niche}, Inscritos: ${subscribers||"1K"}, Views médias: ${avgViews||"10K"}, País: ${country||"BR"}, Estilo: ${style||"faceless"}
 
 JSON: {"totalPotential":"R$X-Y/mês","streams":[{"name":"AdSense","icon":"💰","monthlyMin":100,"monthlyMax":500,"difficulty":"fácil","timeToStart":"imediato","howTo":"Passo a passo","tips":["Dica 1","2"]},{"name":"Marketing de Afiliados","icon":"🔗","monthlyMin":200,"monthlyMax":2000,"difficulty":"médio","timeToStart":"1 mês","howTo":"...","tips":["..."],"platforms":["Hotmart","Amazon","Eduzz"]},{"name":"Produtos Digitais (Cursos/Ebooks)","icon":"📚","monthlyMin":500,"monthlyMax":5000,"difficulty":"médio","timeToStart":"2 meses","howTo":"...","tips":["..."]},{"name":"Patrocínios","icon":"🤝","monthlyMin":300,"monthlyMax":3000,"difficulty":"médio","timeToStart":"3 meses","howTo":"...","tips":["..."],"emailTemplate":"Template de email pra marcas"},{"name":"Membership/Canal Exclusivo","icon":"⭐","monthlyMin":100,"monthlyMax":1000,"difficulty":"fácil","timeToStart":"1 mês","howTo":"...","tips":["..."]},{"name":"Merchandise","icon":"👕","monthlyMin":50,"monthlyMax":500,"difficulty":"difícil","timeToStart":"6 meses","howTo":"...","tips":["..."]}],"timeline":[{"month":"Mês 1-3","focus":"Foco","revenue":"R$X","actions":["Ação 1","2"]},{"month":"Mês 4-6","focus":"...","revenue":"...","actions":["..."]},{"month":"Mês 7-12","focus":"...","revenue":"...","actions":["..."]}],"quickWins":["Ação rápida pra monetizar HOJE 1","2","3"]}` }]
@@ -1100,7 +1105,7 @@ router.post("/repurpose", async (req: any, res: Response, next: NextFunction) =>
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.6, max_tokens: 3500,
         messages: [{ role: "system", content: "Expert em repurpose de conteúdo multiplataforma. " + LANG_RULE },
-          { role: "user", content: `Transforme este vídeo YouTube em 10+ peças de conteúdo:
+          { role: "user", content: `RESPONDA EM PORTUGUÊS BR. Transforme este vídeo YouTube em 10+ peças de conteúdo:
 Título: "${title}", Nicho: ${niche||"geral"}, Idioma: ${language||"pt"}
 ${script ? `Roteiro/resumo: ${script.slice(0,500)}` : ""}
 
@@ -1159,8 +1164,9 @@ router.post("/quick-analyze", async (req: any, res: Response, next: NextFunction
     const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.5, max_tokens: 2500,
-        messages: [{ role: "system", content: "Consultor de crescimento YouTube de elite. " + LANG_RULE },
-          { role: "user", content: `Analise este canal YouTube e dê dicas CONCRETAS pra crescer e passar a concorrência:
+        messages: [{ role: "system", content: "Consultor de crescimento YouTube de elite. TODAS as respostas DEVEM ser em PORTUGUÊS DO BRASIL, incluindo diagnóstico, dicas, estratégias e plano de crescimento. " + LANG_RULE },
+          { role: "user", content: `Analise este canal YouTube e dê dicas CONCRETAS pra crescer e passar a concorrência.
+RESPONDA TUDO EM PORTUGUÊS DO BRASIL. Todos os campos do JSON devem estar em PT-BR.
 
 Canal: "${ch.snippet?.title}" (@${ch.snippet?.customUrl || ""})
 Inscritos: ${subs}, Views totais: ${views}, Vídeos: ${vids}
