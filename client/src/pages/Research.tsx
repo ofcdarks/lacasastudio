@@ -59,12 +59,12 @@ function AnalysisPanel({data,onClose,onSave,saved,toast}){
         {/* OVERVIEW */}
         {sub==="overview"&&<div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6,marginBottom:14}}><Stat l="Inscritos" v={fmt(data.subscribers)} c={C.blue}/><Stat l="Views" v={fmt(data.totalViews)} c={C.green}/><Stat l="Vídeos" v={data.videoCount} c={C.purple}/><Stat l="Score" v={data.score} c={t.c}/><Stat l="Engaj." v={(data.engRate||0)+"%"} c={C.red}/></div>
-          <Sec t="Nicho" i="🎯"><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>{[["Nicho",data.niche],["Sub",data.subNiche],["Micro",data.microNiche]].map(([l,v])=><div key={l}><div style={{fontSize:9,color:C.dim}}>{l}</div><div style={{fontSize:12,fontWeight:600}}>{v||"N/A"}</div></div>)}</div>
+          <Sec t="Nicho" i="🎯">{!data.niche&&!data.subNiche?<div style={{fontSize:11,color:C.dim,padding:"8px 0"}}>⚠️ Análise de IA não disponível. Verifique a API Key e modelo nas Configurações.</div>:<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>{[["Nicho",data.niche],["Sub",data.subNiche],["Micro",data.microNiche]].map(([l,v])=><div key={l}><div style={{fontSize:9,color:C.dim}}>{l}</div><div style={{fontSize:12,fontWeight:600}}>{v||"N/A"}</div></div>)}</div>}
             {data.contentType&&<div style={{fontSize:11}}><b style={{color:C.blue}}>Tipo:</b> {data.contentType}</div>}
             {data.recommendation&&<div style={{fontSize:11,color:C.muted,lineHeight:1.6,fontStyle:"italic",marginTop:6,borderLeft:`2px solid ${t.c}`,paddingLeft:10}}>{data.recommendation}</div>}
           </Sec>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            <Sec t="Produção" i="📊">{[["Uploads/sem",data.uploadsPerWeek],["Dia",data.bestDay],["Hora",data.bestHour],["Duração",data.avgDuration]].map(([l,v])=><Row key={l} l={l} v={v||"N/A"}/>)}</Sec>
+            <Sec t="Produção" i="📊">{[["Uploads/sem",data.uploadsPerWeek||"~"+Math.round((data.videoCount||0)/Math.max(1,(data.channelAge||1)*4.3)*10)/10],["Dia",data.bestDay],["Hora",data.bestHour],["Duração",data.avgDuration],["Views médias",fmt(data.avgViews||0)]].map(([l,v])=><Row key={l} l={l} v={v||"N/A"}/>)}</Sec>
             <Sec t="Modelagem" i="🌍"><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><span>{data.modelable?"✅":"❌"}</span><span style={{fontWeight:700,fontSize:12,color:data.modelable?C.green:C.red}}>{data.modelable?"Modelável":"Não recomendado"}</span></div>
               {data.modelableCountries?.length>0&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{data.modelableCountries.map(c=><span key={c} style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:`${C.blue}15`,color:C.blue}}>{c}</span>)}</div>}</Sec>
           </div>

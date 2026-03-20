@@ -89,111 +89,131 @@ router.post("/analyze", async (req: any, res: Response, next: NextFunction) => {
     const aiKey = await getAiKey();
     if (!ytKey) { res.status(400).json({ error: "Configure a YouTube API Key" }); return; }
     const { channelId } = req.body as { channelId: string };
+    if (!channelId) { res.status(400).json({ error: "channelId obrigatório" }); return; }
 
     // Get channel details
     const chData = await ytFetch(`channels?part=snippet,statistics,brandingSettings,topicDetails,contentDetails&id=${channelId}`, ytKey);
     const ch = chData.items?.[0];
     if (!ch) { res.status(404).json({ error: "Canal não encontrado" }); return; }
 
-    const uploadsPlaylist = ch.contentDetails?.relatedPlaylists?.uploads;
-    let recentVideos: any[] = [];
-    if (uploadsPlaylist) {
-      const pl = await ytFetch(`playlistItems?part=snippet,contentDetails&playlistId=${uploadsPlaylist}&maxResults=30`, ytKey);
-      const videoIds = (pl.items || []).map((i: any) => i.contentDetails?.videoId).filter(Boolean);
-      if (videoIds.length) {
-        const vids = await ytFetch(`videos?part=snippet,statistics,contentDetails&id=${videoIds.join(",")}`, ytKey);
-        recentVideos = (vids.items || []).map((v: any) => {
-          const dur = v.contentDetails?.duration || "PT0S";
-          const match = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-          const secs = (Number(match?.[1]||0)*3600) + (Number(match?.[2]||0)*60) + Number(match?.[3]||0);
-          return {
-            id: v.id, title: v.snippet?.title, publishedAt: v.snippet?.publishedAt,
-            views: Number(v.statistics?.viewCount || 0), likes: Number(v.statistics?.likeCount || 0),
-            comments: Number(v.statistics?.commentCount || 0), durationSecs: secs,
-            tags: v.snippet?.tags?.slice(0, 10) || [],
-          };
-        });
-      }
-    }
-
-    // Calculate analytics
     const subs = Number(ch.statistics?.subscriberCount || 0);
     const views = Number(ch.statistics?.viewCount || 0);
     const vids = Number(ch.statistics?.videoCount || 0);
     const score = calcScore(subs, views, vids);
-    const topics = ch.topicDetails?.topicCategories?.map((t: string) => t.split("/").pop()) || [];
-
-    // Upload frequency
-    const dates = recentVideos.map(v => new Date(v.publishedAt)).sort((a, b) => b.getTime() - a.getTime());
-    let uploadsPerWeek = 0;
-    let bestDay = "N/A";
-    let bestHour = "N/A";
-    if (dates.length >= 2) {
-      const span = (dates[0].getTime() - dates[dates.length - 1].getTime()) / (1000 * 60 * 60 * 24 * 7);
-      uploadsPerWeek = span > 0 ? Math.round((dates.length / span) * 10) / 10 : 0;
-      const dayCounts: any = {}; const hourCounts: any = {};
-      const dayNames = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-      dates.forEach(d => { dayCounts[dayNames[d.getUTCDay()]] = (dayCounts[dayNames[d.getUTCDay()]] || 0) + 1; hourCounts[d.getUTCHours()] = (hourCounts[d.getUTCHours()] || 0) + 1; });
-      bestDay = Object.entries(dayCounts).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] || "N/A";
-      bestHour = Object.entries(hourCounts).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] + ":00 UTC" || "N/A";
-    }
-
-    // Avg duration
-    const avgSecs = recentVideos.length ? Math.round(recentVideos.reduce((s, v) => s + v.durationSecs, 0) / recentVideos.length) : 0;
-    const avgMin = Math.floor(avgSecs / 60);
-    const avgDuration = `${avgMin}:${String(avgSecs % 60).padStart(2, "0")}`;
-
-    // Top videos
-    const topVideos = [...recentVideos].sort((a, b) => b.views - a.views).slice(0, 5);
-    const avgViews = recentVideos.length ? Math.round(recentVideos.reduce((s, v) => s + v.views, 0) / recentVideos.length) : 0;
-    const avgLikes = recentVideos.length ? Math.round(recentVideos.reduce((s, v) => s + v.likes, 0) / recentVideos.length) : 0;
-    const engRate = avgViews > 0 ? Math.round((avgLikes / avgViews) * 10000) / 100 : 0;
-
-    // Modelable countries (based on language/niche — simplified)
     const country = ch.snippet?.country || "N/A";
     const lang = ch.snippet?.defaultLanguage || ch.brandingSettings?.channel?.defaultLanguage || "en";
+    const topics = ch.topicDetails?.topicCategories?.map((t: string) => t.split("/").pop()) || [];
+    const channelAge = ch.snippet?.publishedAt ? Math.floor((Date.now() - new Date(ch.snippet.publishedAt).getTime()) / (86400000 * 30)) : 0;
 
-    // AI analysis for niche/subNiche/microNiche
-    let aiAnalysis: any = { niche: "", subNiche: "", microNiche: "", modelable: false, modelableCountries: [], recommendation: "" };
+    // Fetch recent videos
+    let recentVideos: any[] = [];
+    const uploadsPlaylist = ch.contentDetails?.relatedPlaylists?.uploads;
+    if (uploadsPlaylist) {
+      try {
+        const pl = await ytFetch(`playlistItems?part=snippet,contentDetails&playlistId=${uploadsPlaylist}&maxResults=30`, ytKey);
+        const videoIds = (pl.items || []).map((i: any) => i.contentDetails?.videoId).filter(Boolean);
+        if (videoIds.length) {
+          const vData = await ytFetch(`videos?part=snippet,statistics,contentDetails&id=${videoIds.join(",")}`, ytKey);
+          recentVideos = (vData.items || []).map((v: any) => {
+            const dur = v.contentDetails?.duration || "PT0S";
+            const m = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+            const secs = (Number(m?.[1]||0)*3600) + (Number(m?.[2]||0)*60) + Number(m?.[3]||0);
+            return { id: v.id, title: v.snippet?.title, publishedAt: v.snippet?.publishedAt,
+              views: Number(v.statistics?.viewCount||0), likes: Number(v.statistics?.likeCount||0),
+              comments: Number(v.statistics?.commentCount||0), durationSecs: secs,
+              tags: v.snippet?.tags?.slice(0,10) || [],
+              thumbnail: v.snippet?.thumbnails?.medium?.url || "" };
+          });
+        }
+      } catch (e: any) { console.error("[Analyze] Video fetch error:", e.message); }
+    }
+
+    // Calculate production data
+    const dates = recentVideos.map(v => new Date(v.publishedAt)).filter(d => !isNaN(d.getTime())).sort((a,b) => b.getTime()-a.getTime());
+    let uploadsPerWeek = 0, bestDay = "N/A", bestHour = "N/A";
+    if (dates.length >= 2) {
+      const span = (dates[0].getTime()-dates[dates.length-1].getTime()) / (1000*60*60*24*7);
+      uploadsPerWeek = span > 0 ? Math.round((dates.length/span)*10)/10 : dates.length;
+      const dc: any = {}, hc: any = {};
+      const dn = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+      dates.forEach(d => { dc[dn[d.getUTCDay()]] = (dc[dn[d.getUTCDay()]]||0)+1; hc[d.getUTCHours()] = (hc[d.getUTCHours()]||0)+1; });
+      bestDay = Object.entries(dc).sort((a:any,b:any)=>b[1]-a[1])[0]?.[0] || "N/A";
+      const bh = Object.entries(hc).sort((a:any,b:any)=>b[1]-a[1])[0]?.[0];
+      bestHour = bh ? bh + ":00 UTC" : "N/A";
+    } else if (dates.length === 1) {
+      const dn = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+      bestDay = dn[dates[0].getUTCDay()];
+      bestHour = dates[0].getUTCHours() + ":00 UTC";
+      uploadsPerWeek = vids > 0 && channelAge > 0 ? Math.round((vids / (channelAge * 4.3)) * 10) / 10 : 1;
+    }
+
+    const avgSecs = recentVideos.length ? Math.round(recentVideos.reduce((s,v)=>s+v.durationSecs,0)/recentVideos.length) : 0;
+    const avgDuration = avgSecs > 0 ? `${Math.floor(avgSecs/60)}:${String(avgSecs%60).padStart(2,"0")}` : "N/A";
+    const topVideos = [...recentVideos].sort((a,b)=>b.views-a.views).slice(0,5);
+    const avgViews = recentVideos.length ? Math.round(recentVideos.reduce((s,v)=>s+v.views,0)/recentVideos.length) : (vids > 0 ? Math.round(views/vids) : 0);
+    const avgLikes = recentVideos.length ? Math.round(recentVideos.reduce((s,v)=>s+v.likes,0)/recentVideos.length) : 0;
+    const engRate = avgViews > 0 ? Math.round((avgLikes/avgViews)*10000)/100 : 0;
+
+    // Base result without AI
+    const result: any = {
+      ytChannelId: ch.id, name: ch.snippet?.title, handle: ch.snippet?.customUrl || "",
+      thumbnail: ch.snippet?.thumbnails?.medium?.url || "", description: ch.snippet?.description || "",
+      subscribers: subs, totalViews: views, videoCount: vids, country, language: lang,
+      publishedAt: ch.snippet?.publishedAt, channelAge, score, tier: getTier(score), topics,
+      uploadsPerWeek, bestDay, bestHour, avgDuration, avgViews, avgLikes, engRate,
+      topVideos, recentVideos: recentVideos.slice(0, 10),
+      // AI defaults
+      niche: "", subNiche: "", microNiche: "", modelable: false, modelableCountries: [],
+      recommendation: "", contentType: "", monetization: "", growthPotential: "", competitionLevel: "",
+    };
+
+    // AI analysis (non-blocking — if it fails, we still return data)
     if (aiKey) {
       try {
+        const model = await getModel();
+        console.log(`[Analyze AI] Model: ${model}, Channel: ${ch.snippet?.title}`);
         const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
           body: JSON.stringify({
-            model: await getModel(), temperature: 0.3, max_tokens: 1000,
+            model, temperature: 0.3, max_tokens: 1000,
             messages: [
-              { role: "system", content: "Analise canais do YouTube. Responda APENAS em JSON válido sem markdown." },
-              { role: "user", content: `Analise este canal YouTube e responda em JSON:
-Canal: "${ch.snippet?.title}" (${subs} inscritos, ${vids} vídeos, ${views} views)
+              { role: "system", content: "Analise canais do YouTube. Responda APENAS em JSON válido sem markdown, sem ```." },
+              { role: "user", content: `Analise este canal YouTube. Responda SOMENTE JSON puro (sem \`\`\`json):
+Canal: "${ch.snippet?.title}" (${subs} inscritos, ${vids} vídeos, ${views} views total)
 País: ${country}, Idioma: ${lang}
-Tópicos: ${topics.join(", ")}
-Descrição: ${ch.snippet?.description?.slice(0, 300)}
-Top vídeos: ${topVideos.map(v => v.title).join(" | ")}
-Tags frequentes: ${topVideos.flatMap(v => v.tags).slice(0, 20).join(", ")}
+Descrição: ${(ch.snippet?.description || "").slice(0, 300)}
+Tópicos YouTube: ${topics.join(", ") || "não definido"}
+Últimos vídeos: ${topVideos.map(v => v.title).join(" | ") || "sem dados"}
+Idade do canal: ${channelAge} meses
+Views médias: ${avgViews}
+Uploads/semana: ${uploadsPerWeek}
 
-JSON formato:
-{"niche":"Nicho principal","subNiche":"Sub-nicho","microNiche":"Micro-nicho específico","modelable":true/false,"modelableCountries":["País1","País2"],"recommendation":"Análise de 2-3 frases se vale modelar, pontos fortes/fracos, oportunidade","contentType":"Tipo de conteúdo (faceless, talking head, tutorial, etc)","monetization":"Estimativa de monetização","growthPotential":"alto/médio/baixo","competitionLevel":"alta/média/baixa"}` }
+Formato JSON:
+{"niche":"Nicho","subNiche":"Sub-nicho","microNiche":"Micro-nicho","modelable":true,"modelableCountries":["Brasil","EUA"],"recommendation":"Análise 2-3 frases","contentType":"faceless/talking head/etc","monetization":"estimativa","growthPotential":"alto/médio/baixo","competitionLevel":"alta/média/baixa"}` }
             ]
           })
         });
         if (aiRes.ok) {
           const aiData = await aiRes.json() as any;
-          const raw = aiData.choices?.[0]?.message?.content || "";
-          try { aiAnalysis = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()); } catch {}
+          const raw = (aiData.choices?.[0]?.message?.content || "").trim();
+          console.log("[Analyze AI] Raw response:", raw.slice(0, 200));
+          try {
+            const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+            const parsed = JSON.parse(cleaned);
+            Object.assign(result, parsed);
+          } catch (parseErr: any) {
+            console.error("[Analyze AI] JSON parse failed:", parseErr.message, "Raw:", raw.slice(0, 300));
+          }
+        } else {
+          console.error("[Analyze AI] HTTP error:", aiRes.status, await aiRes.text().catch(() => ""));
         }
-      } catch {}
+      } catch (aiErr: any) {
+        console.error("[Analyze AI] Error:", aiErr.message);
+      }
+    } else {
+      console.log("[Analyze] No AI key, skipping AI analysis");
     }
-
-    const result = {
-      ytChannelId: ch.id, name: ch.snippet?.title, handle: ch.snippet?.customUrl || "",
-      thumbnail: ch.snippet?.thumbnails?.medium?.url || "", description: ch.snippet?.description || "",
-      subscribers: subs, totalViews: views, videoCount: vids, country, language: lang,
-      publishedAt: ch.snippet?.publishedAt, score, tier: getTier(score), topics,
-      uploadsPerWeek, bestDay, bestHour, avgDuration, avgViews, avgLikes, engRate,
-      topVideos, recentVideos: recentVideos.slice(0, 10),
-      ...aiAnalysis,
-    };
 
     res.json(result);
   } catch (err) { next(err); }
