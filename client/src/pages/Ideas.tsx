@@ -147,6 +147,7 @@ export default function Ideas(){
   const[boards,setBoards]=useState([]);const[curBoard,setCurBoard]=useState(null);const[boardName,setBoardName]=useState("");const[showList,setShowList]=useState(true);
   const[els,setEls]=useState([]);const[tool,setTool]=useState("select");const[color,setColor]=useState("#ffffff");const[swV,setSwV]=useState(2);const[fillV,setFillV]=useState("none");
   const[fontIdx,setFontIdx]=useState(0);const[sizeKey,setSizeKey]=useState("M");const[alignV,setAlignV]=useState("left");const[opV,setOpV]=useState(100);const[selId,setSelId]=useState(null);
+  const[multiSel,setMultiSel]=useState(new Set());
   const[stickyC,setStickyC]=useState("#FEF08A");const[mrkIdx,setMrkIdx]=useState(0);const[boldV,setBoldV]=useState(false);const[italicV,setItalicV]=useState(false);
   // Prefs
   const[showPrefs,setShowPrefs]=useState(false);const[showGrid,setShowGrid]=useState(true);const[zenMode,setZenMode]=useState(false);const[viewMode,setViewMode]=useState(false);const[canvasBg,setCanvasBg]=useState("#0B0C14");
@@ -185,7 +186,7 @@ export default function Ideas(){
   const updSel=props=>{if(!selId)return;setEls(p=>p.map(e=>e.id===selId?{...e,...props}:e));};
 
   // Canvas render
-  useEffect(()=>{const c=cvs.current,b=box.current;if(!c||!b)return;const ctx=c.getContext("2d");const r=b.getBoundingClientRect();c.width=r.width;c.height=r.height;ctx.fillStyle=canvasBg;ctx.fillRect(0,0,c.width,c.height);if(showGrid)gridFn(ctx,c.width,c.height,pan.x,pan.y,zoom);ctx.save();ctx.translate(pan.x,pan.y);ctx.scale(zoom,zoom);els.forEach(el=>render(ctx,el,el.id===selId));ctx.restore();},[els,selId,pan,zoom,showGrid,canvasBg]);
+  useEffect(()=>{const c=cvs.current,b=box.current;if(!c||!b)return;const ctx=c.getContext("2d");const r=b.getBoundingClientRect();c.width=r.width;c.height=r.height;ctx.fillStyle=canvasBg;ctx.fillRect(0,0,c.width,c.height);if(showGrid)gridFn(ctx,c.width,c.height,pan.x,pan.y,zoom);ctx.save();ctx.translate(pan.x,pan.y);ctx.scale(zoom,zoom);els.forEach(el=>render(ctx,el,el.id===selId||multiSel.has(el.id)));ctx.restore();},[els,selId,multiSel,pan,zoom,showGrid,canvasBg]);
   useEffect(()=>{const r=()=>{if(cvs.current&&box.current){cvs.current.width=box.current.clientWidth;cvs.current.height=box.current.clientHeight;}};window.addEventListener("resize",r);r();return()=>window.removeEventListener("resize",r);},[]);
 
   // Keys
@@ -197,7 +198,9 @@ export default function Ideas(){
       if((e.ctrlKey||e.metaKey)&&e.key==="y"){e.preventDefault();redo();return;}
       if((e.ctrlKey||e.metaKey)&&e.key==="c"&&selId){const el=els.find(e=>e.id===selId);if(el)localStorage.setItem("lc_clip",JSON.stringify(el));return;}
       if((e.ctrlKey||e.metaKey)&&e.key==="v"){const cl=localStorage.getItem("lc_clip");if(cl){try{const el=JSON.parse(cl);el.id=uid();el.x+=20;el.y+=20;const n=[...els,el];setEls(n);push(n);}catch{}}return;}
-      if((e.key==="Delete"||e.key==="Backspace")&&selId){e.preventDefault();const n=els.filter(e=>e.id!==selId);setEls(n);push(n);setSelId(null);return;}
+      if((e.key==="Delete"||e.key==="Backspace")&&selId){e.preventDefault();const idsToDelete=multiSel.size>0?multiSel:new Set([selId]);const n=els.filter(e=>!idsToDelete.has(e.id));setEls(n);push(n);setSelId(null);setMultiSel(new Set());return;}
+      if((e.ctrlKey||e.metaKey)&&e.key==="g"&&!e.shiftKey){e.preventDefault();const ids=multiSel.size>1?multiSel:selId?new Set(els.filter(el=>el.id===selId||multiSel.has(el.id)).map(el=>el.id)):null;if(ids&&ids.size>1){const gid="g_"+Date.now();setEls(p=>p.map(el=>ids.has(el.id)?{...el,groupId:gid}:el));push(els);toast?.success(`${ids.size} elementos agrupados`);}return;}
+      if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==="G"){e.preventDefault();if(selId){const el=els.find(e=>e.id===selId);if(el?.groupId){const gid=el.groupId;setEls(p=>p.map(e=>e.groupId===gid?{...e,groupId:undefined}:e));push(els);toast?.success("Grupo desfeito");}}return;}
       if(e.altKey&&e.key==="z"){e.preventDefault();setZenMode(p=>!p);return;}
       if(e.altKey&&e.key==="r"){e.preventDefault();setViewMode(p=>!p);return;}
       if(e.key==="F5"){e.preventDefault();setPresenting(true);return;}
@@ -208,7 +211,7 @@ export default function Ideas(){
     const ku=e=>{if(e.key===" ")setIsPan(false);};
     window.addEventListener("keydown",kd);window.addEventListener("keyup",ku);
     return()=>{window.removeEventListener("keydown",kd);window.removeEventListener("keyup",ku);};
-  },[selId,els,textEditor,stickyEditor,undo,redo,push]);
+  },[selId,els,textEditor,stickyEditor,undo,redo,push,multiSel]);
 
   // Paste
   useEffect(()=>{
@@ -232,10 +235,10 @@ export default function Ideas(){
     const p=toC(e);
 
     if(tool==="select"){
-      // Check resize handles first
       if(selId){const selEl=els.find(el=>el.id===selId);if(selEl){const dir=hitHandle(selEl,p.x,p.y);if(dir){const b=bounds(selEl);setResizing({id:selId,dir,sx:p.x,sy:p.y,ob:{...b},oel:{...selEl}});return;}}}
       const h=[...els].reverse().find(el=>hit(el,p.x,p.y));
-      setSelId(h?.id||null);
+      if(e.shiftKey&&h){setMultiSel(p=>{const n=new Set(p);if(n.has(h.id))n.delete(h.id);else n.add(h.id);if(selId)n.add(selId);return n;});setSelId(h.id);}
+      else{if(h&&h.groupId){setMultiSel(new Set(els.filter(el=>el.groupId===h.groupId).map(el=>el.id)));}else{setMultiSel(new Set());}setSelId(h?.id||null);}
       if(h){
         if(e.detail===2){if(h.type==="text"){setTextEditor({id:h.id,value:h.text||"",canvasX:h.x,canvasY:h.y,fontSize:h.fontSize||24});} else if(h.type==="sticky")setStickyEditor({id:h.id,title:h.title||"",text:h.text||"",stickyColor:h.stickyColor||"#FEF08A"});return;}
         setDragSt({x:p.x-h.x,y:p.y-h.y,id:h.id});
@@ -283,7 +286,7 @@ export default function Ideas(){
         return u;
       }));return;
     }
-    if(dragSt){const p=toC(e);setEls(prev=>prev.map(el=>el.id===dragSt.id?{...el,x:p.x-dragSt.x,y:p.y-dragSt.y}:el));return;}
+    if(dragSt){const p=toC(e);const dx=p.x-dragSt.x,dy=p.y-dragSt.y;const dragEl=els.find(el=>el.id===dragSt.id);const moveIds=new Set(multiSel);if(dragEl?.groupId)els.filter(el=>el.groupId===dragEl.groupId).forEach(el=>moveIds.add(el.id));moveIds.add(dragSt.id);if(moveIds.size<=1){setEls(prev=>prev.map(el=>el.id===dragSt.id?{...el,x:dx,y:dy}:el));}else{const origEl=els.find(el=>el.id===dragSt.id);if(origEl){const offX=dx-origEl.x,offY=dy-origEl.y;setEls(prev=>prev.map(el=>moveIds.has(el.id)?{...el,x:el.x+offX,y:el.y+offY}:el));dragSt.x=p.x-dx;dragSt.y=p.y-dy;}}return;}
     if(!drawing||!drawRef.current)return;const p=toC(e),el=drawRef.current;
     if(tool==="draw"){el.points=[...(el.points||[]),[p.x,p.y]];}else{el.w=p.x-el.x;el.h=p.y-el.y;}
     setEls(prev=>prev.map(e=>e.id===el.id?{...el}:e));
@@ -311,6 +314,9 @@ export default function Ideas(){
   const confirmSticky=()=>{if(!stickyEditor)return;setEls(p=>p.map(e=>e.id===stickyEditor.id?{...e,title:stickyEditor.title,text:stickyEditor.text,stickyColor:stickyEditor.stickyColor}:e));push(els);setStickyEditor(null);};
   const centerEl=(axis)=>{if(!selId)return;const c=cvs.current;if(!c)return;const cw=c.width/zoom,ch=c.height/zoom;const ox=-pan.x/zoom,oy=-pan.y/zoom;setEls(p=>p.map(e=>{if(e.id!==selId)return e;const b=bounds(e);if(axis==="h")return{...e,x:ox+(cw-b.w)/2};if(axis==="v")return{...e,y:oy+(ch-b.h)/2};return{...e,x:ox+(cw-b.w)/2,y:oy+(ch-b.h)/2};}));push(els);};
   const moveLayer=d=>{if(!selId)return;const idx=els.findIndex(e=>e.id===selId);if(idx<0)return;const n=[...els];if(d==="up"&&idx<n.length-1)[n[idx],n[idx+1]]=[n[idx+1],n[idx]];else if(d==="down"&&idx>0)[n[idx],n[idx-1]]=[n[idx-1],n[idx]];else if(d==="top")n.push(n.splice(idx,1)[0]);else if(d==="bottom")n.unshift(n.splice(idx,1)[0]);setEls(n);push(n);};
+  const groupSel=()=>{const ids=new Set(multiSel);if(selId)ids.add(selId);if(ids.size<2){toast?.error("Selecione 2+ elementos (Shift+Click)");return;}const gid="g_"+uid();const n=els.map(e=>ids.has(e.id)?{...e,groupId:gid}:e);setEls(n);push(n);toast?.success(`${ids.size} elementos agrupados`);};
+  const ungroupSel=()=>{const el=els.find(e=>e.id===selId);if(!el?.groupId){toast?.error("Selecione um grupo");return;}const gid=el.groupId;const n=els.map(e=>e.groupId===gid?{...e,groupId:undefined}:e);setEls(n);push(n);setMultiSel(new Set());toast?.success("Desagrupado");};
+  const selCount=multiSel.size+(selId&&!multiSel.has(selId)?1:0);
 
   // Board ops
   const exportAs=async(format,size)=>{
@@ -532,7 +538,13 @@ Ex: Roteiro de reels sobre produtividade" style={{width:"100%",background:"rgba(
           <PS label="Modo de desenho"><div style={{display:"flex",gap:3}}><button onClick={()=>setDrawMode("clean")} style={{flex:1,padding:"5px 0",borderRadius:6,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,background:drawMode==="clean"?`${C.blue}20`:"rgba(255,255,255,.04)",color:drawMode==="clean"?C.blue:C.dim}}>▬ Limpo</button><button onClick={()=>setDrawMode("hand")} style={{flex:1,padding:"5px 0",borderRadius:6,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,background:drawMode==="hand"?`${C.purple}20`:"rgba(255,255,255,.04)",color:drawMode==="hand"?C.purple:C.dim}}>✎ Rabisco</button></div></PS>
           {tool==="marker"&&<PS label="Marcadores"><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{MARKERS.map((m,i)=><button key={i} onClick={()=>setMrkIdx(i)} style={{width:32,height:32,borderRadius:6,border:"none",cursor:"pointer",fontSize:16,background:mrkIdx===i?`${C.blue}20`:"rgba(255,255,255,.04)"}}>{m}</button>)}</div></PS>}
           {tool==="sticky"&&<PS label="Cor do Post-it"><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{STICKY_C.map(sc=><div key={sc} onClick={()=>setStickyC(sc)} style={{width:28,height:28,borderRadius:6,cursor:"pointer",background:sc,border:stickyC===sc?"2px solid #fff":`1px solid ${C.border}`}}/>)}</div></PS>}
-          {selEl&&<PS label="Selecionado"><div style={{fontSize:11,color:C.muted,marginBottom:8}}>{selEl.type==="arrow"?"Seta":selEl.type}</div>
+          {selEl&&<PS label="Selecionado"><div style={{fontSize:11,color:C.muted,marginBottom:8}}>{selEl.type==="arrow"?"Seta":selEl.type}{selEl.groupId&&<span style={{fontSize:9,color:C.blue,marginLeft:6,background:`${C.blue}15`,padding:"1px 6px",borderRadius:3}}>📦 Grupo</span>}</div>
+            {/* Group/Ungroup */}
+            <div style={{display:"flex",gap:4,marginBottom:8}}>
+              {multiSel.size>1&&<button onClick={()=>{const ids=multiSel;const gid="g_"+Date.now();setEls(p=>p.map(el=>ids.has(el.id)?{...el,groupId:gid}:el));push(els);toast?.success(`${ids.size} agrupados`);}} style={{flex:1,padding:"5px",borderRadius:6,border:`1px solid ${C.blue}30`,background:`${C.blue}08`,color:C.blue,cursor:"pointer",fontSize:10,fontWeight:600}}>📦 Agrupar (Ctrl+G)</button>}
+              {selEl.groupId&&<button onClick={()=>{const gid=selEl.groupId;setEls(p=>p.map(e=>e.groupId===gid?{...e,groupId:undefined}:e));push(els);toast?.success("Desagrupado");}} style={{flex:1,padding:"5px",borderRadius:6,border:`1px solid ${C.red}30`,background:`${C.red}08`,color:C.red,cursor:"pointer",fontSize:10,fontWeight:600}}>🔓 Desagrupar</button>}
+              {!multiSel.size&&!selEl.groupId&&<div style={{fontSize:9,color:C.dim}}>Shift+clique pra selecionar vários → Ctrl+G agrupa</div>}
+            </div>
             {selEl.type==="arrow"&&<div style={{marginBottom:8}}>
               <div style={{fontSize:10,color:C.dim,marginBottom:4}}>Tipo de Seta</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:3}}>{[["straight","→ Reta"],["curved","⤴ Curva"],["curveUp","↗ Cima"],["curveDown","↘ Baixo"],["double","↔ Dupla"],["filled","▶ Cheia"],["elbow","↳ L"]].map(([v,l])=><button key={v} onClick={()=>updSel({arrowType:v})} style={{padding:"4px",borderRadius:4,border:`1px solid ${selEl.arrowType===v?C.blue:C.border}`,background:selEl.arrowType===v?`${C.blue}15`:"transparent",color:selEl.arrowType===v?C.blue:C.dim,cursor:"pointer",fontSize:8,fontWeight:600}}>{l}</button>)}</div>

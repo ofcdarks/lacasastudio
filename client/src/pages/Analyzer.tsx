@@ -149,6 +149,10 @@ export default function Analyzer(){
               <span style={{fontSize:9,fontWeight:800,color:ins.impact==="alto"?C.green:C.blue,background:ins.impact==="alto"?`${C.green}15`:`${C.blue}15`,padding:"2px 8px",borderRadius:4}}>●{ins.impact}</span>
             </div>
             <div style={{fontSize:11,color:C.muted,lineHeight:1.6,marginLeft:26}}>📋 {ins.actionable}</div>
+            {ins.examples?.length>0&&<div style={{marginLeft:26,marginTop:8,background:"rgba(255,255,255,.03)",borderRadius:8,padding:"8px 10px",border:`1px solid ${C.border}`}}>
+              <div style={{fontSize:9,fontWeight:700,color:C.green,marginBottom:4}}>📌 Exemplos prontos pra usar:</div>
+              {ins.examples.map((ex,j)=><div key={j} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 0",borderBottom:`1px solid rgba(255,255,255,.04)`}}><span style={{color:C.green,fontSize:12}}>▸</span><span style={{color:C.text,fontWeight:600,fontSize:12,flex:1}}>{ex}</span><button onClick={()=>cp(ex)} style={{padding:"2px 8px",borderRadius:4,border:`1px solid ${C.blue}30`,background:`${C.blue}08`,color:C.blue,cursor:"pointer",fontSize:9,flexShrink:0}}>📋</button></div>)}
+            </div>}
           </div>)}
         </div>
       </Sec>}
