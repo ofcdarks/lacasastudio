@@ -396,7 +396,8 @@ router.get("/my-channel/overview", async (req: any, res: Response, next: NextFun
     ]);
 
     // Parse channel stats (subscribers, total views)
-    const chStats = channelStats.status === "fulfilled" ? channelStats.value?.items?.[0] : null;
+    const chStatsRaw = channelStats.status === "fulfilled" ? (channelStats.value as any) : null;
+    const chStats = chStatsRaw?.items?.[0];
     const channelInfo = {
       subscribers: Number(chStats?.statistics?.subscriberCount || 0),
       totalViews: Number(chStats?.statistics?.viewCount || 0),

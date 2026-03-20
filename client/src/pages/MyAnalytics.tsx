@@ -202,7 +202,7 @@ export default function MyAnalytics() {
         {/* Urgent Actions */}
         {insights.urgentActions?.length > 0 && <div style={{ background: `${C.red}06`, borderRadius: 14, border: `1px solid ${C.red}20`, padding: 20, marginBottom: 20 }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: C.red, marginBottom: 12 }}>🚨 Ações Urgentes — Faça AGORA</div>
-          {insights.urgentActions.map((a, i) => { const imp = IMP[a.impact] || IMP.medio; return <div key={i} style={{ padding: 14, marginBottom: 8, background: "rgba(255,255,255,.02)", borderRadius: 12, border: `1px solid ${C.border}`, borderLeft: `4px solid ${imp.c}`, borderRadius: 0 }}>
+          {insights.urgentActions.map((a, i) => { const imp = IMP[a.impact] || IMP.medio; return <div key={i} style={{ padding: 14, marginBottom: 8, background: "rgba(255,255,255,.02)", border: `1px solid ${C.border}`, borderLeft: `4px solid ${imp.c}`, borderRadius: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
               <div style={{ fontWeight: 700, fontSize: 14 }}>🎯 {a.action}</div>
               <span style={{ fontSize: 9, fontWeight: 700, color: imp.c, background: imp.bg, padding: "3px 10px", borderRadius: 6 }}>{a.impact} impacto</span>

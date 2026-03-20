@@ -108,7 +108,7 @@ export default function Monetize360(){
       {r.timeline&&<div style={{background:C.bgCard,borderRadius:14,border:`1px solid ${C.border}`,padding:20,marginBottom:16}}>
         <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>📅 Timeline de Monetização</div>
         <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(r.timeline.length,4)},1fr)`,gap:12}}>
-          {r.timeline.map((t,i)=><div key={i} style={{padding:12,borderRadius:10,background:"rgba(255,255,255,.02)",borderLeft:`3px solid ${i===0?C.red:i===1?"#F59E0B":C.green}`,borderRadius:0}}>
+          {r.timeline.map((t,i)=><div key={i} style={{padding:12,background:"rgba(255,255,255,.02)",borderLeft:`3px solid ${i===0?C.red:i===1?"#F59E0B":C.green}`,borderRadius:0}}>
             <div style={{fontWeight:700,fontSize:13,marginBottom:4}}>{t.month}</div>
             <div style={{fontSize:11,color:C.blue,fontWeight:700,marginBottom:4}}>{t.focus}</div>
             <div style={{fontSize:14,fontWeight:800,color:C.green,marginBottom:6}}>{t.revenue}</div>
