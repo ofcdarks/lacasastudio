@@ -47,8 +47,21 @@ router.post("/login", validate(loginSchema), async (req: any, res: Response, nex
 // Promote to admin (only if no admin exists in DB)
 router.post("/promote-admin", authenticate, async (req: any, res: Response, next: NextFunction) => {
   try {
-    const adminExists = await prisma.user.findFirst({ where: { isAdmin: true } });
-    if (adminExists) { res.status(400).json({ error: "Já existe um administrador" }); return; }
+    // Check if current user is already admin
+    const me = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (me?.isAdmin) { res.json({ ok: true, message: "Você já é admin" }); return; }
+    
+    // Allow promote if: no real admin exists OR user is the first registered user
+    const firstUser = await prisma.user.findFirst({ orderBy: { id: "asc" } });
+    const adminCount = await prisma.user.count({ where: { isAdmin: true } });
+    
+    const totalUsers = await prisma.user.count();
+    if (adminCount > 0 && totalUsers > 1 && firstUser?.id !== req.userId) {
+      res.status(400).json({ error: "Já existe um administrador. Peça ao admin atual para te promover." }); 
+      return; 
+    }
+    
+    // Promote
     const user = await prisma.user.update({ where: { id: req.userId }, data: { isAdmin: true } });
     res.json({ ok: true, user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar, isAdmin: true } });
   } catch (err) { next(err); }

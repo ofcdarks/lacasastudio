@@ -6,18 +6,24 @@ import { useToast } from "../components/shared/Toast";
 import api from "../lib/api";
 
 export default function Admin() {
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const toast = useToast();
   const [tab, setTab] = useState("dashboard");
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [config, setConfig] = useState({});
   const [resetPw, setResetPw] = useState(null);
+  const [accessOk, setAccessOk] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    api.get("/admin/stats").then(setStats).catch(() => {});
-    api.get("/admin/users").then(setUsers).catch(() => {});
-    api.get("/admin/config").then(setConfig).catch(() => {});
+    // Always refresh user + try loading admin data to confirm access
+    refresh();
+    Promise.all([
+      api.get("/admin/stats").then(s => { setStats(s); setAccessOk(true); }),
+      api.get("/admin/users").then(setUsers),
+      api.get("/admin/config").then(setConfig),
+    ]).catch(() => { setAccessOk(false); }).finally(() => setChecking(false));
   }, []);
 
   const toggleBlock = async () => {
@@ -47,22 +53,35 @@ export default function Admin() {
     toast?.success("Senha redefinida");
   };
 
-  if (!user?.isAdmin) return <div style={{ padding: 40, textAlign: "center" }}><h2>Acesso Negado</h2><p style={{ color: C.muted }}>Apenas administradores</p></div>;
+  if (checking) return <div style={{ padding: 40, textAlign: "center", color: C.dim }}>Verificando acesso...</div>;
+
+  if (!accessOk && !user?.isAdmin) return (
+    <div style={{ padding: 40, textAlign: "center" }}>
+      <h2>Acesso Negado</h2>
+      <p style={{ color: C.muted, marginBottom: 16 }}>Apenas administradores podem acessar este painel.</p>
+      <Btn onClick={async () => {
+        try {
+          await api.post("/auth/promote-admin", {});
+          await refresh();
+          window.location.reload();
+        } catch (err) {
+          toast?.error(err.message || "Já existe um administrador");
+        }
+      }}>🛡 Tornar-me Admin (se nenhum existe)</Btn>
+    </div>
+  );
 
   const blocked = config.block_registration === "true";
 
   return (
     <div className="page-enter" style={{ maxWidth: 1000, margin: "0 auto" }}>
       <Hdr title="Painel Admin" sub="Gerenciamento do sistema" />
-
-      {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
         {[["dashboard", "Dashboard"], ["users", "Usuários"], ["config", "Configurações"]].map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} style={{ padding: "10px 20px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, background: "transparent", color: tab === k ? C.red : C.muted, borderBottom: tab === k ? `2px solid ${C.red}` : "2px solid transparent", transition: "all .2s" }}>{l}</button>
+          <button key={k} onClick={() => setTab(k)} style={{ padding: "10px 20px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, background: "transparent", color: tab === k ? C.red : C.muted, borderBottom: tab === k ? `2px solid ${C.red}` : "2px solid transparent" }}>{l}</button>
         ))}
       </div>
 
-      {/* Dashboard */}
       {tab === "dashboard" && stats && (
         <div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
@@ -89,7 +108,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* Users */}
       {tab === "users" && (
         <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, overflow: "hidden" }}>
           <div style={{ padding: "12px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -100,47 +118,43 @@ export default function Admin() {
           </div>
           {users.map(u => (
             <div key={u.id} style={{ display: "flex", alignItems: "center", padding: "12px 20px", borderBottom: `1px solid ${C.border}`, gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: `${C.red}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: C.red }}>{u.name[0]}</div>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: `${C.red}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: C.red }}>{u.name?.[0] || "?"}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: 13 }}>{u.name} {u.isAdmin && <span style={{ fontSize: 9, background: `${C.red}20`, color: C.red, padding: "1px 6px", borderRadius: 3, fontWeight: 700, marginLeft: 6 }}>ADMIN</span>}</div>
                 <div style={{ fontSize: 11, color: C.dim }}>{u.email} · {u._count?.videos || 0} vídeos · {u._count?.ideas || 0} ideias</div>
               </div>
-              <div style={{ display: "flex", gap: 4 }}>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                 <Btn vr="ghost" onClick={() => toggleAdmin(u.id, u.isAdmin)} style={{ fontSize: 10, padding: "4px 8px" }}>{u.isAdmin ? "Remover Admin" : "Tornar Admin"}</Btn>
                 <Btn vr="ghost" onClick={() => setResetPw({ id: u.id, name: u.name, password: "" })} style={{ fontSize: 10, padding: "4px 8px" }}>Resetar Senha</Btn>
-                {u.id !== user.id && <Btn vr="ghost" onClick={() => delUser(u.id)} style={{ fontSize: 10, padding: "4px 8px", color: C.red }}>Deletar</Btn>}
+                {u.id !== user?.id && <Btn vr="ghost" onClick={() => delUser(u.id)} style={{ fontSize: 10, padding: "4px 8px", color: C.red }}>Deletar</Btn>}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Config */}
       {tab === "config" && (
         <div style={{ display: "grid", gap: 16 }}>
           <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, padding: 24 }}>
             <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Bloqueio de Cadastro</div>
-            <div style={{ fontSize: 12, color: C.muted, marginBottom: 16 }}>Quando ativado, novos usuários não poderão se cadastrar. Apenas admins podem criar contas.</div>
+            <div style={{ fontSize: 12, color: C.muted, marginBottom: 16 }}>Quando ativado, novos usuários não poderão se cadastrar.</div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div onClick={toggleBlock} style={{ width: 48, height: 26, borderRadius: 13, background: blocked ? C.red : C.border, cursor: "pointer", position: "relative", transition: "all .2s" }}>
                 <div style={{ width: 22, height: 22, borderRadius: 11, background: "#fff", position: "absolute", top: 2, left: blocked ? 24 : 2, transition: "all .2s" }} />
               </div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: blocked ? C.red : C.green }}>{blocked ? "Bloqueado — ninguém pode se cadastrar" : "Liberado — qualquer pessoa pode se cadastrar"}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: blocked ? C.red : C.green }}>{blocked ? "Bloqueado" : "Liberado"}</span>
             </div>
           </div>
-
           <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, padding: 24 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Informações do Sistema</div>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Sistema</div>
             <div style={{ fontSize: 12, color: C.muted, lineHeight: 2, marginTop: 8 }}>
               Versão: LaCasaStudio V2.3<br />
-              Banco: SQLite (Prisma ORM)<br />
-              Admin logado: {user?.name} ({user?.email})
+              Admin: {user?.name} ({user?.email})
             </div>
           </div>
         </div>
       )}
 
-      {/* Reset password modal */}
       {resetPw && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
           <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, padding: 24, width: 360 }}>
