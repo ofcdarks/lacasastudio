@@ -36,7 +36,7 @@ function AnalysisPanel({data,onClose,onSave,saved,toast}){
 
   const genImage=async(key,prompt)=>{setGenImg(key);try{const r=await aiApi.generateAsset({prompt});if(r.url)setMockImgs(p=>({...p,[key]:r.url}));else toast?.error("Falha");}catch(e){toast?.error(e.message);}setGenImg(null);};
 
-  const TABS=[["overview","📊"],["dna","🧬"],["blueprint","📐"],["money","💰"],["titles","🎯"],["calendar","🗓️"],["mockup","📺"]];
+  const TABS=[["overview","📊","Geral"],["dna","🧬","DNA Viral"],["blueprint","📐","Blueprint"],["money","💰","Receita"],["titles","🎯","Títulos"],["calendar","🗓️","30 Dias"],["mockup","📺","Canal"]];
 
   return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",backdropFilter:"blur(12px)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:12}}>
     <div onClick={e=>e.stopPropagation()} style={{width:880,background:C.bgCard,borderRadius:20,border:`1px solid ${C.border}`,maxHeight:"95vh",overflowY:"auto"}}>
@@ -46,14 +46,14 @@ function AnalysisPanel({data,onClose,onSave,saved,toast}){
         <button onClick={onClose} style={{width:28,height:28,borderRadius:8,border:"none",background:"rgba(255,255,255,.06)",color:C.muted,cursor:"pointer",fontSize:13}}>✕</button>
       </div>
       <div style={{display:"flex",gap:1,padding:"6px 20px",borderBottom:`1px solid ${C.border}`,overflowX:"auto"}}>
-        {TABS.map(([k,ic])=><button key={k} onClick={()=>{setSub(k);
+        {TABS.map(([k,ic,lb])=><button key={k} onClick={()=>{setSub(k);
           if(k==="dna")ld(k,dna,setDna,setDnaL,()=>researchApi.dna({channelName:data.name,topVideos:data.topVideos,avgDuration:data.avgDuration,subscribers:data.subscribers,niche:data.niche}));
           if(k==="blueprint")ld(k,bp,setBp,setBpL,()=>researchApi.blueprint(data));
           if(k==="money")ld(k,money,setMoney,setMoneyL,()=>researchApi.monetization({niche:data.niche,country:data.country,videosPerWeek:data.uploadsPerWeek||3,avgViews:data.avgViews||10000,subscribers:data.subscribers}));
           if(k==="titles")ld(k,titles,setTitles,setTitlesL,()=>researchApi.generateTitles({channelName:data.name,niche:data.niche,topVideoTitles:data.topVideos?.map(v=>v.title),targetCountry:data.country,language:data.language}).then(r=>r.ideas||[]));
           if(k==="calendar")ld(k,cal,setCal,setCalL,()=>researchApi.calendar({niche:data.niche,subNiche:data.subNiche,videosPerWeek:data.uploadsPerWeek||3,style:data.contentType,targetCountry:data.country,language:data.language}).then(r=>r.calendar||[]));
           if(k==="mockup")ld(k,mockup,setMockup,setMockL,()=>researchApi.channelMockup({originalChannel:data.name,niche:data.niche,subNiche:data.subNiche,style:data.contentType,targetCountry:data.country,language:data.language}));
-        }} style={{padding:"8px 12px",borderRadius:6,border:"none",cursor:"pointer",fontSize:13,background:sub===k?`${C.red}15`:"transparent",color:sub===k?C.red:C.muted}}>{ic}</button>)}
+        }} style={{padding:"8px 12px",borderRadius:6,border:"none",cursor:"pointer",fontSize:13,background:sub===k?`${C.red}15`:"transparent",color:sub===k?C.red:C.muted}}>{ic}<span style={{fontSize:9,marginLeft:3}}>{lb}</span></button>)}
       </div>
       <div style={{padding:"14px 20px"}}>
         {/* OVERVIEW */}
@@ -178,6 +178,7 @@ export default function Research(){
   const analyze=async id=>{setAzing(id);try{setAnalysis(await researchApi.analyze(id));}catch(e){toast?.error(e.message);}setAzing(null);};
   const saveC=async ch=>{try{const s=await researchApi.save(ch);setSaved(p=>[...p,s]);toast?.success("Salvo!");}catch(e){toast?.error(e.message);}};
   const delS=async id=>{try{await researchApi.deleteSaved(id);setSaved(p=>p.filter(s=>s.id!==id));}catch(e){toast?.error(e.message);}};
+  const cp=txt=>{try{const ta=document.createElement("textarea");ta.value=txt;ta.style.cssText="position:fixed;left:-9999px";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);toast?.success("Copiado!");}catch{}};
   const loadTrend=async(p,r)=>{setTLoad(true);try{setTrending((await researchApi.trending({period:p||tPeriod,regionCode:r||tRegion})).videos||[]);}catch(e){toast?.error(e.message);}setTLoad(false);};
   const loadEmerging=async()=>{setELoad(true);try{setEmerging(await researchApi.emerging());}catch(e){toast?.error(e.message);}setELoad(false);};
   const loadSpy=async()=>{if(!saved.length){toast?.error("Salve canais primeiro");return;}setSpyLoad(true);try{setSpyData(await researchApi.spy(saved.map(s=>s.ytChannelId)));}catch(e){toast?.error(e.message);}setSpyLoad(false);};
@@ -282,15 +283,24 @@ export default function Research(){
       {saved.length<2?<p style={{textAlign:"center",padding:50,color:C.dim}}>Salve pelo menos 2 canais para comparar</p>:<div>
         <div style={{fontSize:12,color:C.muted,marginBottom:12}}>Selecione 2-3 canais para comparar:</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>{saved.map(ch=>{const sel=compIds.includes(ch.ytChannelId);return<button key={ch.id} onClick={()=>setCompIds(p=>sel?p.filter(x=>x!==ch.ytChannelId):p.length>=3?p:[...p,ch.ytChannelId])} style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${sel?C.red:C.border}`,background:sel?`${C.red}15`:"transparent",color:sel?C.red:C.muted,cursor:"pointer",fontSize:11,fontWeight:sel?700:400}}>{ch.name}</button>})}</div>
-        {compIds.length>=2&&<Btn onClick={async()=>{setCompLoad(true);try{setCompData(await researchApi.spy(compIds));}catch(e){toast?.error(e.message);}setCompLoad(false);}} disabled={compLoad}>{compLoad?"⏳":"📊 Comparar"}</Btn>}
-        {compData?.channels?.length>=2&&<div style={{marginTop:16,display:"grid",gridTemplateColumns:`repeat(${compData.channels.length},1fr)`,gap:12}}>
-          {compData.channels.map(ch=><div key={ch.ytChannelId} style={{background:C.bgCard,borderRadius:14,border:`1px solid ${C.border}`,padding:16,textAlign:"center"}}>
-            {ch.thumbnail&&<img src={ch.thumbnail} style={{width:56,height:56,borderRadius:"50%",margin:"0 auto 8px"}}/>}
-            <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>{ch.name}</div>
-            <div style={{fontSize:10,color:C.dim,marginBottom:12}}>{fmt(ch.subscribers)} subs</div>
-            {[["Views Total",fmt(ch.totalViews),C.green],["Vídeos",ch.videoCount,C.blue],["Inscritos",fmt(ch.subscribers),C.purple]].map(([l,v,c])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${C.border}`}}><span style={{fontSize:11,color:C.dim}}>{l}</span><span style={{fontSize:11,fontWeight:700,color:c}}>{v}</span></div>)}
-            {ch.recentVideos?.length>0&&<div style={{marginTop:10}}><div style={{fontSize:10,fontWeight:700,color:C.red,marginBottom:6}}>Últimos vídeos:</div>{ch.recentVideos.slice(0,3).map(v=><div key={v.id} style={{fontSize:10,color:C.muted,padding:"3px 0",borderBottom:`1px solid ${C.border}`,textAlign:"left"}}>{v.title?.slice(0,40)}... <span style={{color:C.green}}>{fmt(v.views)}</span></div>)}</div>}
-          </div>)}
+        {compIds.length>=2&&<Btn onClick={async()=>{setCompLoad(true);try{const spy=await researchApi.spy(compIds);setCompData(spy);const ai=await researchApi.smartCompare(spy.channels||[]);setCompData(p=>({...p,ai}));}catch(e){toast?.error(e.message);}setCompLoad(false);}} disabled={compLoad}>{compLoad?"⏳ Analisando...":"📊 Comparar com IA"}</Btn>}
+        {compData?.channels?.length>=2&&<div style={{marginTop:16}}>
+          <div style={{display:"grid",gridTemplateColumns:`repeat(${compData.channels.length},1fr)`,gap:12,marginBottom:16}}>
+            {compData.channels.map(ch=><div key={ch.ytChannelId} style={{background:C.bgCard,borderRadius:14,border:`1px solid ${C.border}`,padding:16,textAlign:"center"}}>
+              {ch.thumbnail&&<img src={ch.thumbnail} style={{width:48,height:48,borderRadius:"50%",margin:"0 auto 6px"}}/>}
+              <div style={{fontWeight:700,fontSize:13,marginBottom:2}}>{ch.name}</div>
+              <div style={{fontSize:10,color:C.dim,marginBottom:10}}>{fmt(ch.subscribers)} subs</div>
+              {[["Views",fmt(ch.totalViews),C.green],["Vídeos",ch.videoCount,C.blue]].map(([l,v,c])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:`1px solid ${C.border}`}}><span style={{fontSize:10,color:C.dim}}>{l}</span><span style={{fontSize:10,fontWeight:700,color:c}}>{v}</span></div>)}
+              {ch.recentVideos?.slice(0,3).map(v=><div key={v.id} style={{fontSize:9,color:C.muted,padding:"3px 0",borderBottom:`1px solid ${C.border}`,textAlign:"left"}}>{v.title?.slice(0,35)}... <span style={{color:C.green}}>{fmt(v.views)}</span></div>)}
+            </div>)}
+          </div>
+          {/* AI Analysis */}
+          {compData.ai&&<div>
+            {compData.ai.winner&&<Sec t={`Vencedor: ${compData.ai.winner}`} i="🏆"><p style={{fontSize:12,color:C.muted,lineHeight:1.7}}>{compData.ai.recommendation}</p></Sec>}
+            {compData.ai.gaps?.length>0&&<Sec t="Lacunas (ninguém explora)" i="🕳️"><div style={{display:"flex",flexDirection:"column",gap:4}}>{compData.ai.gaps.map((g,i)=><div key={i} style={{fontSize:12,color:C.muted,padding:"4px 0",borderBottom:`1px solid ${C.border}`}}>⚡ {g}</div>)}</div></Sec>}
+            {compData.ai.unexploredThemes?.length>0&&<Sec t="Temas Inexplorados com Alta Procura" i="🔥"><div style={{display:"flex",flexDirection:"column",gap:4}}>{compData.ai.unexploredThemes.map((t,i)=><div key={i} style={{fontSize:12,color:C.green}}>💡 {t}</div>)}</div></Sec>}
+            {compData.ai.titlesToExplore?.length>0&&<Sec t="5 Títulos para Explorar" i="🎯"><div style={{display:"grid",gap:6}}>{compData.ai.titlesToExplore.map((t,i)=><div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",padding:"6px 0",borderBottom:`1px solid ${C.border}`}}><span style={{fontSize:14,fontWeight:900,color:C.red,opacity:.4}}>{i+1}</span><div><div style={{fontWeight:700,fontSize:12}}>{t.title}</div><div style={{fontSize:10,color:C.dim}}>{t.reason}</div></div><button onClick={()=>cp(t.title)} style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:8,flexShrink:0}}>📋</button></div>)}</div></Sec>}
+          </div>}
         </div>}
       </div>}
     </div>}

@@ -53,34 +53,39 @@ router.post("/search", async (req: any, res: Response, next: NextFunction) => {
     const { query, maxResults } = req.body as { query: string; maxResults?: number };
     if (!query?.trim()) { res.status(400).json({ error: "Busca vazia" }); return; }
 
-    const search = await ytFetch(`search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=${maxResults || 12}&order=relevance`, ytKey);
-    const channelIds = (search.items || []).map((i: any) => i.snippet?.channelId || i.id?.channelId).filter(Boolean);
-    if (!channelIds.length) { res.json({ channels: [] }); return; }
+    // Strategy: search VIDEOS first (finds channels making viral content), then channel search as backup
+    const vidSearch = await ytFetch(`search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=25&order=viewCount&publishedAfter=${new Date(Date.now() - 365*86400000).toISOString()}`, ytKey);
+    const vidChannelIds = [...new Set((vidSearch.items || []).map((i: any) => i.snippet?.channelId).filter(Boolean))] as string[];
+    
+    // Also do channel search
+    const chSearch = await ytFetch(`search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=10&order=relevance`, ytKey);
+    const chIds = (chSearch.items || []).map((i: any) => i.snippet?.channelId || i.id?.channelId).filter(Boolean);
+    
+    const allIds = [...new Set([...vidChannelIds, ...chIds])].slice(0, 20);
+    if (!allIds.length) { res.json({ channels: [], totalFound: 0, filtered: 0 }); return; }
 
-    const details = await ytFetch(`channels?part=snippet,statistics,brandingSettings,topicDetails&id=${channelIds.join(",")}`, ytKey);
+    const details = await ytFetch(`channels?part=snippet,statistics,brandingSettings,topicDetails&id=${allIds.join(",")}`, ytKey);
     const channels = (details.items || []).map((ch: any) => {
       const subs = Number(ch.statistics?.subscriberCount || 0);
       const views = Number(ch.statistics?.viewCount || 0);
       const vids = Number(ch.statistics?.videoCount || 0);
       const score = calcScore(subs, views, vids);
-      const topics = ch.topicDetails?.topicCategories?.map((t: string) => t.split("/").pop()) || [];
       return {
         ytChannelId: ch.id, name: ch.snippet?.title || "", handle: ch.snippet?.customUrl || "",
-        thumbnail: ch.snippet?.thumbnails?.medium?.url || ch.snippet?.thumbnails?.default?.url || "",
+        thumbnail: ch.snippet?.thumbnails?.medium?.url || "",
         subscribers: subs, totalViews: views, videoCount: vids, country: ch.snippet?.country || "N/A",
-        score, tier: getTier(score), topics,
+        score, tier: getTier(score),
         description: ch.snippet?.description?.slice(0, 200) || "",
-        publishedAt: ch.snippet?.publishedAt || "",
         channelAge: ch.snippet?.publishedAt ? Math.floor((Date.now() - new Date(ch.snippet.publishedAt).getTime()) / (86400000 * 30)) : 0,
       };
     });
 
-    // Filter: only show channels worth modeling (score >= 40, min 5 videos)
-    const filtered = channels.filter((c: any) => c.score >= 40 && c.videoCount >= 5);
+    const filtered = channels.filter((c: any) => c.score >= 35 && c.videoCount >= 3);
     filtered.sort((a: any, b: any) => b.score - a.score);
     res.json({ channels: filtered, totalFound: channels.length, filtered: channels.length - filtered.length });
   } catch (err) { next(err); }
 });
+
 
 // Deep analyze a single channel
 router.post("/analyze", async (req: any, res: Response, next: NextFunction) => {
@@ -473,42 +478,47 @@ Gere 10 ideias de vídeo com título + prompt de thumbnail. JSON:
 router.post("/trending", async (req: any, res: Response, next: NextFunction) => {
   try {
     const ytKey = await getYtKey();
-    if (!ytKey) { res.status(400).json({ error: "Configure a YouTube API Key" }); return; }
+    if (!ytKey) { res.status(400).json({ error: "Configure YouTube API Key" }); return; }
     const { period, regionCode } = req.body as { period?: string; regionCode?: string };
-    // Get trending videos
-    const data = await ytFetch(`videos?part=snippet,statistics,contentDetails&chart=mostPopular&regionCode=${regionCode || "US"}&maxResults=20`, ytKey);
-    const videos = (data.items || []).map((v: any) => {
+    
+    // Use search with viewCount order + publishedAfter for fresh viral content
+    const day = 86400000;
+    const after = period === "day" ? new Date(Date.now() - day) : period === "week" ? new Date(Date.now() - 7*day) : new Date(Date.now() - 30*day);
+    
+    // Combine: trending chart + fresh viral search
+    const [trendData, searchData] = await Promise.all([
+      ytFetch(`videos?part=snippet,statistics,contentDetails&chart=mostPopular&regionCode=${regionCode || "US"}&maxResults=10`, ytKey),
+      ytFetch(`search?part=snippet&type=video&regionCode=${regionCode || "US"}&maxResults=15&order=viewCount&publishedAfter=${after.toISOString()}`, ytKey)
+    ]);
+    
+    // Get video details for search results
+    const searchIds = (searchData.items || []).map((i: any) => i.id?.videoId).filter(Boolean);
+    let searchVids: any[] = [];
+    if (searchIds.length) {
+      const vData = await ytFetch(`videos?part=snippet,statistics,contentDetails&id=${searchIds.join(",")}`, ytKey);
+      searchVids = vData.items || [];
+    }
+    
+    const allVids = [...(trendData.items || []), ...searchVids];
+    const seen = new Set<string>();
+    const videos = allVids.filter((v: any) => { if (seen.has(v.id)) return false; seen.add(v.id); return true; }).map((v: any) => {
       const dur = v.contentDetails?.duration || "PT0S";
-      const match = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-      const secs = (Number(match?.[1]||0)*3600) + (Number(match?.[2]||0)*60) + Number(match?.[3]||0);
+      const m = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      const secs = (Number(m?.[1]||0)*3600) + (Number(m?.[2]||0)*60) + Number(m?.[3]||0);
       return {
         id: v.id, title: v.snippet?.title, channelTitle: v.snippet?.channelTitle,
         channelId: v.snippet?.channelId,
-        thumbnail: v.snippet?.thumbnails?.medium?.url || v.snippet?.thumbnails?.default?.url || "",
-        views: Number(v.statistics?.viewCount || 0),
-        likes: Number(v.statistics?.likeCount || 0),
-        comments: Number(v.statistics?.commentCount || 0),
-        publishedAt: v.snippet?.publishedAt,
+        thumbnail: v.snippet?.thumbnails?.medium?.url || "",
+        views: Number(v.statistics?.viewCount || 0), likes: Number(v.statistics?.likeCount || 0),
+        comments: Number(v.statistics?.commentCount || 0), publishedAt: v.snippet?.publishedAt,
         durationSecs: secs,
-        category: v.snippet?.categoryId,
       };
-    });
+    }).sort((a: any, b: any) => b.views - a.views);
 
-    // Filter by period
-    const now = Date.now();
-    const filtered = videos.filter((v: any) => {
-      if (!v.publishedAt) return true;
-      const age = now - new Date(v.publishedAt).getTime();
-      const day = 86400000;
-      if (period === "day") return age < day;
-      if (period === "week") return age < day * 7;
-      if (period === "month") return age < day * 30;
-      return true;
-    });
-
-    res.json({ videos: filtered.length > 0 ? filtered : videos });
+    res.json({ videos: videos.slice(0, 20) });
   } catch (err) { next(err); }
 });
+
 
 // 🔮 Detector de Tendências Emergentes — cross-country analysis
 router.post("/emerging", async (req: any, res: Response, next: NextFunction) => {
@@ -702,3 +712,38 @@ export default router;
 
 // Comparador side-by-side (reuse spy but structured for comparison)
 // Already handled by /spy endpoint - frontend will format as comparison
+
+// 📊 Smart Compare with AI gap analysis
+router.post("/smart-compare", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { channels } = req.body;
+
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({
+        model: await getModel(), temperature: 0.5, max_tokens: 2500,
+        messages: [{ role: "system", content: "Expert em análise competitiva YouTube. APENAS JSON." },
+          { role: "user", content: `Compare estes canais YouTube e encontre lacunas e oportunidades:
+${JSON.stringify(channels.map((c: any) => ({ name: c.name, subs: c.subscribers, views: c.totalViews, vids: c.videoCount, recentTitles: c.recentVideos?.slice(0,3).map((v: any) => v.title) })))}
+
+Retorne JSON:
+{
+  "winner": "Nome do canal com melhor potencial",
+  "comparison": [{"metric":"Métrica","analysis":"Quem ganha e por quê"}],
+  "gaps": ["Lacuna 1 que nenhum está explorando","Lacuna 2","Lacuna 3"],
+  "unexploredThemes": ["Tema inexplorado com alta procura 1","Tema 2","Tema 3"],
+  "titlesToExplore": [{"title":"Título viral 1","reason":"Por que funcionaria"},{"title":"Título 2","reason":"..."},{"title":"Título 3","reason":"..."},{"title":"Título 4","reason":"..."},{"title":"Título 5","reason":"..."}],
+  "recommendation": "Estratégia recomendada pra entrar nesse nicho (3-4 frases)"
+}` }]
+      })
+    });
+    if (!aiRes.ok) { res.status(500).json({ error: "AI error" }); return; }
+    const data = await aiRes.json() as any;
+    const raw = data.choices?.[0]?.message?.content || "{}";
+    try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
+    catch { res.status(500).json({ error: "Formato inválido" }); }
+  } catch (err) { next(err); }
+});

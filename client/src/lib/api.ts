@@ -196,6 +196,7 @@ export const researchApi = {
   abTest: (data: any) => api.post<any>("/research/ab-test", data),
   calendar: (data: any) => api.post<any>("/research/calendar", data),
   channelMockup: (data: any) => api.post<any>("/research/channel-mockup", data),
+  smartCompare: (channels: any[]) => api.post<any>("/research/smart-compare", { channels }),
   updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
 };
 
