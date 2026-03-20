@@ -179,3 +179,12 @@ export const exportApi = {
 };
 
 export default api;
+
+export const researchApi = {
+  search: (query: string) => api.post<{ channels: any[] }>("/research/search", { query, maxResults: 16 }),
+  analyze: (channelId: string) => api.post<any>("/research/analyze", { channelId }),
+  save: (data: any) => api.post<any>("/research/save", data),
+  listSaved: () => api.get<any[]>("/research/saved"),
+  deleteSaved: (id: number) => api.del<{ ok: boolean }>(`/research/saved/${id}`),
+  updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
+};

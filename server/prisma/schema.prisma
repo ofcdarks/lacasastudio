@@ -26,6 +26,7 @@ model User {
   budgetItems   BudgetItem[]
   ideas         Idea[]
   notifications Notification[]
+  savedChannels SavedChannel[]
 }
 
 model Setting {
@@ -229,4 +230,34 @@ model Idea {
 model SystemConfig {
   key   String @id
   value String @default("")
+}
+
+model SavedChannel {
+  id            Int      @id @default(autoincrement())
+  ytChannelId   String
+  name          String
+  handle        String   @default("")
+  thumbnail     String   @default("")
+  subscribers   Int      @default(0)
+  totalViews    Int      @default(0)
+  videoCount    Int      @default(0)
+  country       String   @default("")
+  score         Int      @default(0)
+  tier          String   @default("")
+  niche         String   @default("")
+  subNiche      String   @default("")
+  microNiche    String   @default("")
+  avgDuration   String   @default("")
+  uploadsPerWeek Float   @default(0)
+  bestUploadDay  String  @default("")
+  bestUploadHour String  @default("")
+  topCountries  String   @default("")
+  tags          String   @default("")
+  notes         String   @default("")
+  modelable     Boolean  @default(false)
+  analysisJson  String   @default("")
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

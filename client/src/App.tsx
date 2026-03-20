@@ -16,6 +16,7 @@ import Metas from "./pages/Metas";
 import Templates from "./pages/Templates";
 import Calendario from "./pages/Calendario";
 import Analytics from "./pages/Analytics";
+import Research from "./pages/Research";
 import Orcamento from "./pages/Orcamento";
 import Ativos from "./pages/Ativos";
 import Equipe from "./pages/Equipe";
@@ -55,6 +56,7 @@ export default function App() {
       <Route path="/templates" element={<Layout><Templates /></Layout>} />
       <Route path="/calendario" element={<Layout><Calendario /></Layout>} />
       <Route path="/analytics" element={<Layout><Analytics /></Layout>} />
+      <Route path="/research" element={<Layout><Research /></Layout>} />
       <Route path="/orcamento" element={<Layout><Orcamento /></Layout>} />
       <Route path="/ativos" element={<Layout><Ativos /></Layout>} />
       <Route path="/equipe" element={<Layout><Equipe /></Layout>} />

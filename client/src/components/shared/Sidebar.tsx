@@ -83,6 +83,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
           <Sec title="Estratégia" />
           <SItem icon="💡" label="Banco de Ideias" path="/ideas" onClick={closeMobile} />
           <SItem icon="✦" label="Gerador SEO + IA" path="/seo" onClick={closeMobile} />
+          <SItem icon="🔥" label="Inteligência" path="/research" onClick={closeMobile} />
           <SItem icon="◎" label="Metas & OKRs" path="/metas" onClick={closeMobile} />
           <SItem icon="◆" label="Templates de Série" path="/templates" onClick={closeMobile} />
           <Sec title="Gestão" />
