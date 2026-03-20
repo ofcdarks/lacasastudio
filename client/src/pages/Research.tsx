@@ -353,9 +353,38 @@ export default function Research(){
 
     {/* SAVED */}
     {tab==="saved"&&<div>
-      {saved.length>0?<div style={{display:"grid",gap:6}}>{saved.map(ch=>{const t=TIERS[ch.tier]||TIERS.INICIANTE;let a=null;try{a=JSON.parse(ch.analysisJson||"{}");}catch{};return<div key={ch.id} style={{background:C.bgCard,borderRadius:10,border:`1px solid ${C.border}`,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+      {/* Identidades Criadas */}
+      {saved.filter(ch=>{try{const n=JSON.parse(ch.notes||"{}");return n.mockup;}catch{return false;}}).length>0&&<div style={{marginBottom:20}}>
+        <div style={{fontSize:14,fontWeight:800,marginBottom:10}}>🚀 Identidades Criadas</div>
+        <div style={{display:"grid",gap:10}}>
+          {saved.filter(ch=>{try{return JSON.parse(ch.notes||"{}").mockup;}catch{return false;}}).map(ch=>{let id=null;try{id=JSON.parse(ch.notes);}catch{};if(!id?.mockup)return null;const m=id.mockup;const imgs=id.mockImgs||{};return<div key={ch.id+"_id"} style={{background:C.bgCard,borderRadius:14,border:`1px solid ${C.green}20`,overflow:"hidden"}}>
+            {/* Mini banner */}
+            <div style={{height:60,background:imgs.banner?`url(${imgs.banner}) center/cover`:`linear-gradient(135deg,${m.colors?.primary||"#1a1a2e"},${m.colors?.secondary||"#16213e"})`,position:"relative"}}>
+              <div style={{position:"absolute",bottom:-16,left:16,width:40,height:40,borderRadius:"50%",border:"2px solid #0f0f0f",background:imgs.logo?`url(${imgs.logo}) center/cover`:`linear-gradient(135deg,${m.colors?.primary||"#EF4444"},${m.colors?.accent||"#F59E0B"})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,color:"#fff"}}>{!imgs.logo&&(m.channelName?.[0]||"C")}</div>
+            </div>
+            <div style={{padding:"24px 16px 12px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <div><div style={{fontWeight:800,fontSize:14}}>{m.channelName}</div><div style={{fontSize:10,color:C.dim}}>{m.tagline} · Baseado em: {ch.name}</div></div>
+                <div style={{display:"flex",gap:4"}}>
+                  {imgs.banner&&<a href={imgs.banner} download="banner.png" style={{padding:"3px 8px",borderRadius:4,background:`${C.blue}08`,color:C.blue,fontSize:9,textDecoration:"none",border:`1px solid ${C.blue}20`}}>📥 Banner</a>}
+                  {imgs.logo&&<a href={imgs.logo} download="logo.png" style={{padding:"3px 8px",borderRadius:4,background:`${C.blue}08`,color:C.blue,fontSize:9,textDecoration:"none",border:`1px solid ${C.blue}20`}}>📥 Logo</a>}
+                  <button onClick={()=>cp(JSON.stringify({...m,images:imgs},null,2))} style={{padding:"3px 8px",borderRadius:4,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:9}}>📋 JSON</button>
+                  <button onClick={()=>delS(ch.id)} style={{padding:"3px 8px",borderRadius:4,border:`1px solid ${C.red}20`,background:`${C.red}08`,color:C.red,cursor:"pointer",fontSize:9}}>🗑</button>
+                </div>
+              </div>
+              <div style={{fontSize:11,color:C.muted,marginTop:6,lineHeight:1.5}}>{m.description?.slice(0,150)}...</div>
+              {m.videos?.length>0&&<div style={{display:"flex",gap:4,marginTop:8,overflowX:"auto"}}>{m.videos.slice(0,4).map((v,i)=><div key={i} style={{flexShrink:0,width:100}}><div style={{aspectRatio:"16/9",borderRadius:6,background:imgs[`thumb${i}`]?`url(${imgs[`thumb${i}`]}) center/cover`:"rgba(255,255,255,.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:C.dim}}>{!imgs[`thumb${i}`]&&"🎬"}</div><div style={{fontSize:8,color:C.muted,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v.title?.slice(0,25)}</div></div>)}</div>}
+              {m.keywords&&<div style={{display:"flex",gap:3,flexWrap:"wrap",marginTop:6}}>{m.keywords.slice(0,5).map(k=><span key={k} style={{fontSize:8,padding:"1px 5px",borderRadius:3,background:`${C.blue}10`,color:C.blue}}>#{k}</span>)}</div>}
+            </div>
+          </div>})}
+        </div>
+      </div>}
+
+      {/* Canais Salvos */}
+      <div style={{fontSize:14,fontWeight:800,marginBottom:10}}>💾 Canais Salvos</div>
+      {saved.length>0?<div style={{display:"grid",gap:6}}>{saved.map(ch=>{const t=TIERS[ch.tier]||TIERS.INICIANTE;let a=null;try{a=JSON.parse(ch.analysisJson||"{}");}catch{};const hasId=ch.notes&&ch.notes.includes("mockup");return<div key={ch.id} style={{background:C.bgCard,borderRadius:10,border:`1px solid ${C.border}`,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
         {ch.thumbnail?<img src={ch.thumbnail} style={{width:36,height:36,borderRadius:"50%"}}/>:<div style={{width:36,height:36,borderRadius:"50%",background:`${t.c}20`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,color:t.c,fontSize:12}}>{ch.name?.[0]}</div>}
-        <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}><span style={{fontWeight:700,fontSize:12}}>{ch.name}</span><span style={{fontSize:8,fontWeight:800,color:t.c,background:t.bg,padding:"1px 5px",borderRadius:3}}>{t.i}{ch.tier}</span>{ch.modelable&&<span style={{fontSize:8,color:C.green,background:`${C.green}15`,padding:"1px 5px",borderRadius:3}}>✅</span>}</div>
+        <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}><span style={{fontWeight:700,fontSize:12}}>{ch.name}</span><span style={{fontSize:8,fontWeight:800,color:t.c,background:t.bg,padding:"1px 5px",borderRadius:3}}>{t.i}{ch.tier}</span>{ch.modelable&&<span style={{fontSize:8,color:C.green,background:`${C.green}15`,padding:"1px 5px",borderRadius:3}}>✅</span>}{hasId&&<span style={{fontSize:8,color:C.purple,background:`${C.purple}15`,padding:"1px 5px",borderRadius:3}}>🚀 Identidade</span>}</div>
           <div style={{fontSize:9,color:C.dim}}>{fmt(ch.subscribers)} · Score {ch.score}{ch.niche?` · ${ch.niche}`:""}</div></div>
         <button onClick={()=>{if(a?.ytChannelId)setAnalysis(a);else analyze(ch.ytChannelId);}} style={{padding:"4px 8px",borderRadius:5,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:9}}>🔍</button>
         <a href={`https://youtube.com/channel/${ch.ytChannelId}`} target="_blank" style={{padding:"4px 8px",borderRadius:5,border:`1px solid ${C.blue}30`,background:`${C.blue}08`,color:C.blue,fontSize:9,textDecoration:"none"}}>🔗</a>
