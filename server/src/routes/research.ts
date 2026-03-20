@@ -17,6 +17,7 @@ function setCache(key: string, data: any, ttl = 300000) {
   // Cleanup old entries
   if (cache.size > 200) { const now = Date.now(); for (const [k, v] of cache) { if (v.exp < now) cache.delete(k); } }
 }
+const LANG_RULE = "REGRA DE IDIOMA: Toda explicação, análise, dica, feedback, insight, estratégia e comentário deve ser SEMPRE em Português do Brasil (PT-BR), independente do idioma do canal. O conteúdo do canal (títulos, descrições, tags, roteiros, hooks) deve ser no idioma escolhido pelo usuário. APENAS JSON válido sem markdown.";
 
 async function getYtKey(): Promise<string> {
   const c = cached("ytkey", 60000); if (c) return c;
@@ -305,7 +306,7 @@ router.post("/dna", async (req: any, res: Response, next: NextFunction) => {
       body: JSON.stringify({
         model: await getModel(), temperature: 0.4, max_tokens: 3000,
         messages: [
-          { role: "system", content: "Você é o maior especialista em análise de vídeos virais do YouTube. Analise padrões e extraia o DNA viral. Responda APENAS JSON válido." },
+          { role: "system", content: "Especialista em DNA viral de canais YouTube. " + LANG_RULE },
           { role: "user", content: `Analise o DNA viral deste canal e seus top vídeos:
 Canal: "${channelName}" (${subscribers} subs, nicho: ${niche})
 Duração média: ${avgDuration}
@@ -350,7 +351,7 @@ router.post("/blueprint", async (req: any, res: Response, next: NextFunction) =>
       body: JSON.stringify({
         model: await getModel(), temperature: 0.3, max_tokens: 4000,
         messages: [
-          { role: "system", content: "Você é consultor expert em criação de canais YouTube modelados. Crie blueprints detalhados e acionáveis. Responda APENAS JSON válido." },
+          { role: "system", content: "Consultor expert em blueprints de canais YouTube. " + LANG_RULE },
           { role: "user", content: `Crie um BLUEPRINT COMPLETO para modelar este canal:
 Canal original: "${channelName}" (${subscribers} subs, ${totalViews} views, ${videoCount} vídeos)
 Nicho: ${niche} > ${subNiche} > ${microNiche}
@@ -472,7 +473,7 @@ router.post("/generate-titles", async (req: any, res: Response, next: NextFuncti
       body: JSON.stringify({
         model: await getModel(), temperature: 0.7, max_tokens: 3000,
         messages: [
-          { role: "system", content: "Expert em títulos virais e thumbnails para YouTube. Gere títulos otimizados para CTR e prompts de thumbnail. APENAS JSON." },
+          { role: "system", content: "Expert em títulos virais e thumbnails YouTube. " + LANG_RULE },
           { role: "user", content: `Baseado neste canal de referência, gere títulos + thumbnails para um canal modelado:
 Canal original: "${channelName}" | Nicho: ${niche} | País alvo: ${targetCountry} | Idioma: ${language || "pt-BR"}
 Títulos originais que funcionam: ${topVideoTitles?.join(" | ")}
@@ -571,7 +572,7 @@ router.post("/emerging", async (req: any, res: Response, next: NextFunction) => 
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
         model: await getModel(), temperature: 0.4, max_tokens: 2000,
-        messages: [{ role: "system", content: "Analise tendências de YouTube cross-country. APENAS JSON." },
+        messages: [{ role: "system", content: "Analise tendências YouTube cross-country. " + LANG_RULE },
           { role: "user", content: `Analise estes vídeos trending de ${regions.length} países e identifique tendências EMERGENTES (temas que estão viralizando em um país mas ainda não chegaram em outros = OPORTUNIDADE):
 ${JSON.stringify(allTrending.slice(0, 60))}
 
@@ -639,7 +640,7 @@ router.post("/ab-test", async (req: any, res: Response, next: NextFunction) => {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
         model: await getModel(), temperature: 0.3, max_tokens: 2000,
-        messages: [{ role: "system", content: "Expert em CTR e psicologia de títulos YouTube. APENAS JSON." },
+        messages: [{ role: "system", content: "Expert em CTR e psicologia de títulos YouTube. " + LANG_RULE },
           { role: "user", content: `Analise estes títulos e dê score de CTR (0-100). Nicho: ${niche}. Público: ${targetAudience || "geral"}.
 Títulos: ${JSON.stringify(titles)}
 
@@ -666,7 +667,7 @@ router.post("/calendar", async (req: any, res: Response, next: NextFunction) => 
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
         model: await getModel(), temperature: 0.6, max_tokens: 4000,
-        messages: [{ role: "system", content: "Expert em estratégia de conteúdo YouTube. Crie calendários editoriais detalhados. APENAS JSON." },
+        messages: [{ role: "system", content: "Expert em estratégia de conteúdo YouTube. " + LANG_RULE },
           { role: "user", content: `Crie calendário de 30 dias para canal YouTube modelado:
 Nicho: ${niche} > ${subNiche || "geral"}
 Vídeos/semana: ${videosPerWeek || 3}
@@ -706,7 +707,8 @@ REGRAS:
 - Thumbnails com conceitos visuais SUPERIORES
 - Nichos e abordagens que o ORIGINAL DEVERIA ter explorado mas não fez
 - Pense como se fosse criar o canal que DESTRUIRIA o original na competição
-- APENAS JSON válido sem markdown` },
+- APENAS JSON válido sem markdown
+- REGRA DE IDIOMA: Toda explicação, análise e estratégia em PT-BR. Conteúdo do canal (nome, títulos, descrições, tags) no idioma alvo do canal.` },
           { role: "user", content: `Analise o canal "${originalChannel || "referência"}" e crie um canal SUPERIOR:
 
 CANAL ORIGINAL: "${originalChannel}"
@@ -784,7 +786,7 @@ RESPONDA APENAS JSON (sem \`\`\`):
       body: JSON.stringify({
         model: visionModel, temperature: 0.4, max_tokens: 4000,
         messages: [
-          { role: "system", content: "Expert em YouTube. Analise screenshots de canais. APENAS JSON válido sem markdown." },
+          { role: "system", content: "Expert em YouTube. Analise screenshots de canais. " + LANG_RULE },
           { role: "user", content }
         ]
       })
@@ -826,7 +828,7 @@ router.post("/smart-compare", async (req: any, res: Response, next: NextFunction
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
         model, temperature: 0.5, max_tokens: 2500,
-        messages: [{ role: "system", content: "Expert em análise competitiva YouTube. APENAS JSON." },
+        messages: [{ role: "system", content: "Expert em análise competitiva YouTube. " + LANG_RULE },
           { role: "user", content: `Compare estes canais e encontre lacunas:
 ${JSON.stringify(channels.map((c: any) => ({ name: c.name, subs: c.subscribers, views: c.totalViews, vids: c.videoCount, recentTitles: c.recentVideos?.slice(0,3).map((v: any) => v.title) })))}
 JSON: {"winner":"Canal","comparison":[{"metric":"M","analysis":"Quem ganha"}],"gaps":["Lacuna 1","2","3"],"unexploredThemes":["Tema 1","2","3"],"titlesToExplore":[{"title":"T1","reason":"R1"},{"title":"T2","reason":"R2"},{"title":"T3","reason":"R3"},{"title":"T4","reason":"R4"},{"title":"T5","reason":"R5"}],"recommendation":"Estratégia"}` }]
@@ -851,7 +853,7 @@ router.post("/pre-publish-score", async (req: any, res: Response, next: NextFunc
     const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.3, max_tokens: 1500,
-        messages: [{ role: "system", content: "Expert em SEO YouTube. Pontue vídeos antes de publicar. APENAS JSON." },
+        messages: [{ role: "system", content: "Expert em SEO YouTube. Pontue vídeos antes de publicar. " + LANG_RULE },
           { role: "user", content: `Analise este vídeo ANTES de publicar. Nicho: ${niche||"geral"}
 Título: "${title}"
 Descrição: "${description||""}"
@@ -880,7 +882,7 @@ router.post("/multi-language", async (req: any, res: Response, next: NextFunctio
     const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.3, max_tokens: 2500,
-        messages: [{ role: "system", content: "Tradutor expert em SEO YouTube para múltiplos idiomas. APENAS JSON." },
+        messages: [{ role: "system", content: "Tradutor expert em SEO YouTube para múltiplos idiomas. " + LANG_RULE },
           { role: "user", content: `Traduza e OTIMIZE para SEO YouTube em ${langs.length} idiomas:
 Título: "${title}"
 Descrição: "${description||""}"
@@ -916,7 +918,7 @@ router.post("/pipeline", async (req: any, res: Response, next: NextFunction) => 
     const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.6, max_tokens: 4000,
-        messages: [{ role: "system", content: "Expert em criação de canais YouTube do zero. APENAS JSON sem markdown." },
+        messages: [{ role: "system", content: "Expert em criação de canais YouTube do zero. " + LANG_RULE },
           { role: "user", content: prompt }]
       })
     });
@@ -943,7 +945,7 @@ router.post("/trending-niches", async (req: any, res: Response, next: NextFuncti
     const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.7, max_tokens: 2000,
-        messages: [{ role: "system", content: "Expert em nichos YouTube em 2025/2026. APENAS JSON." },
+        messages: [{ role: "system", content: "Expert em nichos YouTube 2025/2026. " + LANG_RULE },
           { role: "user", content: `Liste os nichos YouTube MAIS EM ALTA agora e os NOVOS crescendo rápido. Considere tendências globais atuais.
 
 JSON: {"trending":[{"name":"Nome do Nicho","emoji":"emoji","query":"query busca YouTube","status":"hot","growth":"alta","description":"Por que está bombando agora","examples":["Canal exemplo 1","Canal 2"],"tip":"Dica pra entrar nesse nicho"}],"emerging":[{"name":"Nicho Emergente","emoji":"emoji","query":"query","status":"new","growth":"explosiva","description":"Por que está crescendo","examples":["Canal 1"],"tip":"Como ser pioneiro"}]}
@@ -972,7 +974,7 @@ router.post("/full-script", async (req: any, res: Response, next: NextFunction) 
     const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.7, max_tokens: 4000,
-        messages: [{ role: "system", content: "Roteirista profissional de YouTube. Cria roteiros completos palavra-por-palavra. APENAS JSON." },
+        messages: [{ role: "system", content: "Roteirista profissional de YouTube. " + LANG_RULE },
           { role: "user", content: `Roteiro COMPLETO palavra-por-palavra para: "${title}"
 Nicho: ${niche||"geral"}, Duração: ${duration||"10:00"}, Estilo: ${style||"educativo"}, Idioma: ${language||"pt"}
 ${hook ? `Hook sugerido: ${hook}` : ""}
@@ -998,7 +1000,7 @@ router.post("/predict-viral", async (req: any, res: Response, next: NextFunction
     const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.3, max_tokens: 1500,
-        messages: [{ role: "system", content: "Analista de dados YouTube. Preveja performance de vídeos. APENAS JSON." },
+        messages: [{ role: "system", content: "Analista de dados YouTube. Preveja performance de vídeos. " + LANG_RULE },
           { role: "user", content: `Preveja a performance deste vídeo ANTES de publicar:
 Título: "${title}", Thumb: "${thumbnailConcept||""}", Nicho: ${niche||"geral"}
 Horário: ${uploadTime||"não definido"}, Tags: ${tags||""}, Inscritos: ${subscribers||"novo canal"}
@@ -1023,7 +1025,7 @@ router.post("/monetize-360", async (req: any, res: Response, next: NextFunction)
     const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.5, max_tokens: 3000,
-        messages: [{ role: "system", content: "Consultor de monetização YouTube expert. APENAS JSON." },
+        messages: [{ role: "system", content: "Consultor de monetização YouTube expert. " + LANG_RULE },
           { role: "user", content: `Estratégia COMPLETA de monetização para canal YouTube:
 Nicho: ${niche}, Inscritos: ${subscribers||"1K"}, Views médias: ${avgViews||"10K"}, País: ${country||"BR"}, Estilo: ${style||"faceless"}
 
@@ -1047,7 +1049,7 @@ router.post("/repurpose", async (req: any, res: Response, next: NextFunction) =>
     const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({ model, temperature: 0.6, max_tokens: 3500,
-        messages: [{ role: "system", content: "Expert em repurpose de conteúdo multiplataforma. APENAS JSON." },
+        messages: [{ role: "system", content: "Expert em repurpose de conteúdo multiplataforma. " + LANG_RULE },
           { role: "user", content: `Transforme este vídeo YouTube em 10+ peças de conteúdo:
 Título: "${title}", Nicho: ${niche||"geral"}, Idioma: ${language||"pt"}
 ${script ? `Roteiro/resumo: ${script.slice(0,500)}` : ""}

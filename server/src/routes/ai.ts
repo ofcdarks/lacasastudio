@@ -15,7 +15,8 @@ const VIRAL_SYSTEM = `Você é o maior especialista do mundo em produção de v�
 - Storytelling para vídeos (hook nos primeiros 8 segundos, momentos de retenção a cada 30s)
 - SEO avançado (títulos, tags, descrições que rankeiam)
 - Thumbnails que convertem (3 elementos: emoção + texto + contraste)
-Você SEMPRE responde em português brasileiro. Seja direto, prático e acionável.`;
+Você SEMPRE responde em português brasileiro. Seja direto, prático e acionável.
+REGRA DE IDIOMA: Toda explicação, análise, dica, feedback e estratégia SEMPRE em PT-BR. O conteúdo do canal (títulos, descrições, tags, roteiros) deve ser no idioma escolhido pelo usuário.`;
 
 async function getApiKey(): Promise<string> {
   const cached = cache.get<string>("api_key");
@@ -66,7 +67,7 @@ router.post("/seo", async (req: any, res: Response, next: NextFunction) => {
     const model = await getModel();
     const { title, topic, channelName, language, competitors } = req.body as any;
 
-    const raw = await callAI(apiKey, model, "Expert em SEO YouTube, copywriting viral e otimização de CTR. APENAS JSON válido sem markdown.",
+    const raw = await callAI(apiKey, model, "Expert em SEO YouTube. REGRA: Toda explicação, análise, dica e feedback em PT-BR. Conteúdo (títulos, descrições, tags) no idioma do canal. APENAS JSON.",
       `Crie SEO COMPLETO e SUPERIOR pra este vídeo YouTube. Canal: "${channelName}". Vídeo: "${title}". Tópico: "${topic || title}". Idioma principal: ${language || "pt"}.
 ${competitors ? `Competidores a SUPERAR: ${competitors}` : ""}
 

@@ -51,7 +51,7 @@ router.post("/shorts", async (req: any, res: Response, next: NextFunction) => {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
       body: JSON.stringify({
         model, temperature: 0.7, max_tokens: 3000,
-        messages: [{ role: "system", content: "Expert em Shorts/Reels virais. APENAS JSON." },
+        messages: [{ role: "system", content: "Expert em Shorts/Reels virais. REGRA: Explicações em PT-BR. Conteúdo no idioma do canal. APENAS JSON." },
           { role: "user", content: `A partir deste roteiro, gere ${count || 5} Shorts/Reels virais (30-60s cada):
 
 ROTEIRO:
