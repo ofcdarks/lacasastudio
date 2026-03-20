@@ -201,6 +201,7 @@ export const researchApi = {
   prePublishScore: (data: any) => api.post<any>("/research/pre-publish-score", data),
   multiLanguage: (data: any) => api.post<any>("/research/multi-language", data),
   pipeline: (data: any) => api.post<any>("/research/pipeline", data),
+  trendingNiches: () => api.post<any>("/research/trending-niches", {}),
   updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
 };
 

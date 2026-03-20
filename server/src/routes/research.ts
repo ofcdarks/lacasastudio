@@ -911,4 +911,37 @@ router.post("/pipeline", async (req: any, res: Response, next: NextFunction) => 
   } catch (err) { next(err); }
 });
 
+
+// 🔥 Dynamic trending niches
+router.post("/trending-niches", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const model = await getModel();
+    const ck = "niches:" + new Date().toISOString().slice(0, 13); // cache 1hr
+    const c = cached(ck, 3600000);
+    if (c) { res.json(c); return; }
+
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({ model, temperature: 0.7, max_tokens: 2000,
+        messages: [{ role: "system", content: "Expert em nichos YouTube em 2025/2026. APENAS JSON." },
+          { role: "user", content: `Liste os nichos YouTube MAIS EM ALTA agora e os NOVOS crescendo rápido. Considere tendências globais atuais.
+
+JSON: {"trending":[{"name":"Nome do Nicho","emoji":"emoji","query":"query busca YouTube","status":"hot","growth":"alta","description":"Por que está bombando agora","examples":["Canal exemplo 1","Canal 2"],"tip":"Dica pra entrar nesse nicho"}],"emerging":[{"name":"Nicho Emergente","emoji":"emoji","query":"query","status":"new","growth":"explosiva","description":"Por que está crescendo","examples":["Canal 1"],"tip":"Como ser pioneiro"}]}
+
+Retorne 10 trending + 8 emerging. Nichos REAIS de 2025/2026, não genéricos.` }]
+      })
+    });
+    if (!aiRes.ok) { res.status(500).json({ error: "AI error" }); return; }
+    const data = await aiRes.json() as any;
+    const raw = data.choices?.[0]?.message?.content || "{}";
+    try {
+      const parsed = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
+      setCache(ck, parsed, 3600000);
+      res.json(parsed);
+    } catch { res.status(500).json({ error: "Formato inválido" }); }
+  } catch (err) { next(err); }
+});
+
 export default router;

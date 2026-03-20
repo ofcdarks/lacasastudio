@@ -9,6 +9,7 @@ const TIERS={OURO:{c:"#F59E0B",bg:"#F59E0B15",i:"💎"},PRATA:{c:"#94A3B8",bg:"#
 function fmt(n){if(!n&&n!==0)return"0";if(n>=1e9)return(n/1e9).toFixed(1)+"B";if(n>=1e6)return(n/1e6).toFixed(1)+"M";if(n>=1e3)return(n/1e3).toFixed(1)+"K";return String(n);}
 function ageStr(m){if(!m)return"Novo";if(m>=24)return Math.floor(m/12)+"a";if(m>=12)return"1a "+(m-12)+"m";return m+"m";}
 const VIRAL_Q=["faceless youtube channels viral","dark channels mystery horror","factory process satisfying","AI generated content channels","cash cow channels 2025","storytelling channels viral","shorts channels millions views","educational animated channels","true crime documentary","ASMR satisfying","finance investing growth","tech review faceless"];
+const FALLBACK_NICHES={trending:[],emerging:[]};
 const REGIONS=[["US","🇺🇸"],["BR","🇧🇷"],["GB","🇬🇧"],["IN","🇮🇳"],["DE","🇩🇪"],["JP","🇯🇵"],["KR","🇰🇷"],["MX","🇲🇽"],["FR","🇫🇷"],["ES","🇪🇸"]];
 const COUNTRIES={"US":"🇺🇸 EUA","GB":"🇬🇧 UK","CA":"🇨🇦 Canadá","AU":"🇦🇺 Austrália","DE":"🇩🇪 Alemanha","BR":"🇧🇷 Brasil","MX":"🇲🇽 México","IN":"🇮🇳 Índia","ES":"🇪🇸 Espanha","FR":"🇫🇷 França","JP":"🇯🇵 Japão","KR":"🇰🇷 Coreia","PT":"🇵🇹 Portugal","IT":"🇮🇹 Itália","SA":"🇸🇦 Arábia"};
 function Sec({t,i,children}){return<div style={{background:"rgba(255,255,255,.02)",borderRadius:12,border:`1px solid ${C.border}`,padding:16,marginBottom:12}}><div style={{fontWeight:700,fontSize:14,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>{i} {t}</div>{children}</div>}
@@ -208,6 +209,7 @@ export default function Research(){
   const[trending,setTrending]=useState([]);const[tPeriod,setTPeriod]=useState("week");const[tRegion,setTRegion]=useState("US");const[tLoad,setTLoad]=useState(false);
   const[emerging,setEmerging]=useState(null);const[eLoad,setELoad]=useState(false);
   const[spyData,setSpyData]=useState(null);const[spyLoad,setSpyLoad]=useState(false);
+  const[niches,setNiches]=useState(null);const[nichesLoad,setNichesLoad]=useState(false);
   const[abTitles,setAbTitles]=useState("");
   const[compIds,setCompIds]=useState([]);const[compData,setCompData]=useState(null);const[compLoad,setCompLoad]=useState(false);const[abNiche,setAbNiche]=useState("");const[abResults,setAbResults]=useState(null);const[abLoad,setAbLoad]=useState(false);
 
@@ -221,6 +223,7 @@ export default function Research(){
   const loadTrend=async(p,r)=>{setTLoad(true);pg?.start("Carregando Hype",["Buscando trending","Filtrando"]);try{pg?.update(1);setTrending((await researchApi.trending({period:p||tPeriod,regionCode:r||tRegion})).videos||[]);pg?.done();}catch(e){pg?.fail(e.message);toast?.error(e.message);}setTLoad(false);};
   const loadEmerging=async()=>{setELoad(true);pg?.start("Detectando Tendências",["Coletando trending US","Coletando trending BR","Coletando trending IN,GB","Coletando trending DE,JP,KR,MX","IA cruzando dados de 8 países"]);try{pg?.update(2,"Buscando dados de 8 países...");const r=await researchApi.emerging();pg?.update(4,"IA analisando padrões...");pg?.done();setEmerging(r);}catch(e){pg?.fail(e.message);toast?.error(e.message);}setELoad(false);};
   const loadSpy=async()=>{if(!saved.length){toast?.error("Salve canais primeiro");return;}setSpyLoad(true);pg?.start("Espiando Canais",saved.map(s=>s.name));try{const r=await researchApi.spy(saved.map(s=>s.ytChannelId));pg?.done();setSpyData(r);}catch(e){pg?.fail(e.message);toast?.error(e.message);}setSpyLoad(false);};
+  const loadNiches=async()=>{if(niches)return;setNichesLoad(true);pg?.start("🔥 Buscando Nichos em Alta",["Analisando tendências","IA identificando oportunidades"]);try{const r=await researchApi.trendingNiches();pg?.done();setNiches(r);}catch(e){pg?.fail(e.message);setNiches(FALLBACK_NICHES);}setNichesLoad(false);};
   const runAB=async()=>{if(!abTitles.trim())return;setAbLoad(true);pg?.start("🧪 Testando CTR",["Analisando títulos","IA pontuando","Gerando melhorias"]);try{pg?.update(1);const ts=abTitles.split("\n").filter(t=>t.trim());setAbResults((await researchApi.abTest({titles:ts,niche:abNiche})).results||[]);pg?.done();}catch(e){pg?.fail(e.message);toast?.error(e.message);}setAbLoad(false);};
   const isSaved=id=>saved.some(s=>s.ytChannelId===id);
   const dR=filterTier==="Todos"?results:results.filter(r=>r.tier===filterTier);
@@ -229,7 +232,7 @@ export default function Research(){
     {analysis&&<AnalysisPanel data={analysis} onClose={()=>setAnalysis(null)} onSave={saveC} saved={isSaved(analysis.ytChannelId)} toast={toast}/>}
     <Hdr title="Inteligência de Mercado" sub="DNA · Blueprint · Monetização · Títulos · Calendário · Preview de Canal"/>
     <div style={{display:"flex",gap:2,marginBottom:20,borderBottom:`1px solid ${C.border}`,overflowX:"auto",flexShrink:0}}>
-      {[["search","🔍 Buscar"],["trending","📈 Hype"],["emerging","🔮 Tendências"],["viral","🔥 Nichos"],["spy","🕵️ Spy"],["abtest","🧪 A/B Test"],["saved","💾 ("+saved.length+")"],["compare","📊 Comparar"]].map(([k,l])=><button key={k} onClick={()=>{setTab(k);if(k==="trending"&&!trending.length)loadTrend();if(k==="emerging"&&!emerging)loadEmerging();if(k==="spy"&&!spyData)loadSpy();}} style={{padding:"10px 14px",border:"none",cursor:"pointer",fontSize:11,fontWeight:600,background:"transparent",color:tab===k?C.red:C.muted,borderBottom:tab===k?`2px solid ${C.red}`:"2px solid transparent",whiteSpace:"nowrap"}}>{l}</button>)}
+      {[["search","🔍 Buscar"],["trending","📈 Hype"],["emerging","🔮 Tendências"],["viral","🔥 Nichos"],["spy","🕵️ Spy"],["abtest","🧪 A/B Test"],["saved","💾 ("+saved.length+")"],["compare","📊 Comparar"]].map(([k,l])=><button key={k} onClick={()=>{setTab(k);if(k==="trending"&&!trending.length)loadTrend();if(k==="emerging"&&!emerging)loadEmerging();if(k==="spy"&&!spyData)loadSpy();if(k==="viral")loadNiches();}} style={{padding:"10px 14px",border:"none",cursor:"pointer",fontSize:11,fontWeight:600,background:"transparent",color:tab===k?C.red:C.muted,borderBottom:tab===k?`2px solid ${C.red}`:"2px solid transparent",whiteSpace:"nowrap"}}>{l}</button>)}
     </div>
 
     {/* SEARCH */}
@@ -265,7 +268,42 @@ export default function Research(){
     </div>}
 
     {/* VIRAL */}
-    {tab==="viral"&&<div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:8}}>{VIRAL_Q.map(q=><button key={q} onClick={async()=>{setQuery(q);setTab("search");setLoading(true);try{const d=await researchApi.search(q);setResults(d.channels||[]);setFc(d.filtered||0);}catch{}setLoading(false);}} style={{padding:"12px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:C.bgCard,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:8}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.red+"50"} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><span style={{fontSize:18}}>🔥</span><div><div style={{fontWeight:600,fontSize:12,color:C.text,textTransform:"capitalize"}}>{q.replace(/channels?|youtube|viral/gi,"").trim()}</div></div></button>)}</div></div>}
+    {tab==="viral"&&<div>
+      {nichesLoad?<div style={{textAlign:"center",padding:40,color:C.dim}}>⏳ Buscando nichos em alta...</div>
+      :niches&&(niches.trending?.length||niches.emerging?.length)?<div>
+        {niches.trending?.length>0&&<div style={{marginBottom:20}}>
+          <div style={{fontSize:14,fontWeight:800,marginBottom:10}}>🔥 Nichos em Alta Agora</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:8}}>
+            {niches.trending.map((n,i)=><button key={i} onClick={async()=>{setQuery(n.query||n.name);setTab("search");setLoading(true);pg?.start("🔍 Buscando",["Pesquisando"]);try{const d=await researchApi.search(n.query||n.name);setResults(d.channels||[]);setFc(d.filtered||0);pg?.done();}catch{}setLoading(false);}} style={{padding:"12px 14px",borderRadius:12,border:`1px solid ${C.border}`,background:C.bgCard,cursor:"pointer",textAlign:"left"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.red+"50"} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <span style={{fontSize:18}}>{n.emoji||"🔥"}</span>
+                <span style={{fontWeight:700,fontSize:13,flex:1}}>{n.name}</span>
+                <span style={{fontSize:9,fontWeight:700,color:C.red,background:`${C.red}15`,padding:"2px 6px",borderRadius:4}}>●HOT</span>
+              </div>
+              <div style={{fontSize:10,color:C.dim,lineHeight:1.5,marginBottom:4}}>{n.description?.slice(0,80)}</div>
+              {n.examples?.length>0&&<div style={{fontSize:9,color:C.muted}}>Ex: {n.examples.slice(0,2).join(", ")}</div>}
+              {n.tip&&<div style={{fontSize:9,color:C.green,marginTop:3}}>💡 {n.tip?.slice(0,60)}</div>}
+            </button>)}
+          </div>
+        </div>}
+        {niches.emerging?.length>0&&<div>
+          <div style={{fontSize:14,fontWeight:800,marginBottom:10}}>🌱 Emergentes — Crescendo Rápido</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:8}}>
+            {niches.emerging.map((n,i)=><button key={i} onClick={async()=>{setQuery(n.query||n.name);setTab("search");setLoading(true);pg?.start("🔍 Buscando",["Pesquisando"]);try{const d=await researchApi.search(n.query||n.name);setResults(d.channels||[]);setFc(d.filtered||0);pg?.done();}catch{}setLoading(false);}} style={{padding:"12px 14px",borderRadius:12,border:`1px solid ${C.green}20`,background:`${C.green}04`,cursor:"pointer",textAlign:"left"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.green+"50"} onMouseLeave={e=>e.currentTarget.style.borderColor=C.green+"20"}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <span style={{fontSize:18}}>{n.emoji||"🌱"}</span>
+                <span style={{fontWeight:700,fontSize:13,flex:1}}>{n.name}</span>
+                <span style={{fontSize:9,fontWeight:700,color:C.green,background:`${C.green}15`,padding:"2px 6px",borderRadius:4}}>●NOVO</span>
+              </div>
+              <div style={{fontSize:10,color:C.dim,lineHeight:1.5,marginBottom:4}}>{n.description?.slice(0,80)}</div>
+              {n.tip&&<div style={{fontSize:9,color:C.green,marginTop:3}}>💡 {n.tip?.slice(0,60)}</div>}
+            </button>)}
+          </div>
+        </div>}
+        <button onClick={()=>{setNiches(null);loadNiches();}} style={{marginTop:12,padding:"8px 16px",borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,cursor:"pointer",fontSize:11}}>🔄 Atualizar Nichos</button>
+      </div>
+      :<div><div style={{fontSize:12,color:C.dim,marginBottom:12}}>Nichos estáticos (clique pra buscar):</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:8}}>{VIRAL_Q.map(q=><button key={q} onClick={async()=>{setQuery(q);setTab("search");setLoading(true);try{const d=await researchApi.search(q);setResults(d.channels||[]);setFc(d.filtered||0);}catch{}setLoading(false);}} style={{padding:"12px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:C.bgCard,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:8}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.red+"50"} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}><span style={{fontSize:18}}>🔥</span><div style={{fontWeight:600,fontSize:12,color:C.text,textTransform:"capitalize"}}>{q.replace(/channels?|youtube|viral/gi,"").trim()}</div></button>)}</div></div>}
+    </div>}
 
     {/* SPY */}
     {tab==="spy"&&<div>
