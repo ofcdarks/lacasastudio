@@ -3,6 +3,7 @@ import { useState } from "react";
 import { C, Btn, Hdr, Input, Label } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
 import { useProgress } from "../components/shared/ProgressModal";
+import MagicTabs from "../components/shared/MagicTabs";
 
 const api = {
   audit: (data) => fetch("/api/competitive/seo-audit", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("lc_token")}` }, body: JSON.stringify(data) }).then(r => r.json()),
@@ -44,11 +45,7 @@ export default function SeoAudit() {
   return <div className="page-enter" style={{ maxWidth: 1000, margin: "0 auto" }}>
     <Hdr title="SEO Score Audit" sub="Audite qualquer vídeo publicado ou valide antes de publicar" />
 
-    <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
-      {[["published", "📺 Vídeo Publicado"], ["pre", "📝 Pré-Publicação"]].map(([k, l]) =>
-        <button key={k} onClick={() => setTab(k)} style={{ padding: "10px 20px", borderRadius: 8, border: `1px solid ${tab === k ? C.red : C.border}`, background: tab === k ? `${C.red}12` : "transparent", color: tab === k ? C.red : C.dim, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>{l}</button>
-      )}
-    </div>
+    <MagicTabs tabs={[{key:"published",icon:"📺",label:"Vídeo Publicado",color:C.blue},{key:"pre",icon:"📝",label:"Pré-Publicação",color:C.green}]} active={tab} onChange={setTab}/>
 
     {/* PUBLISHED AUDIT */}
     {tab === "published" && <div>

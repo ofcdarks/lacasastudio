@@ -45,7 +45,7 @@ export default function Dashboard(){
   const[showOnboarding,setShowOnboarding]=useState(()=>!localStorage.getItem("lcs_onboarded"));
 
   useEffect(()=>{
-    researchApi.listSaved().then(s=>{setSaved(s);setIdentities(s.filter(ch=>{try{return JSON.parse(ch.notes||"{}").mockup;}catch{return false;}}));}).catch(()=>{});
+    researchApi.listSaved().then(s=>{const arr=Array.isArray(s)?s:[];setSaved(arr);setIdentities(arr.filter(ch=>{try{return JSON.parse(ch.notes||"{}").mockup;}catch{return false;}}));}).catch(()=>{});
   },[]);
 
   const totalSubs=saved.reduce((a,c)=>a+c.subscribers,0);

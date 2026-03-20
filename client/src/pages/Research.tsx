@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { researchApi, aiApi } from "../lib/api";
 import { C, Btn, Hdr, Input, Select } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
+import MagicTabs from "../components/shared/MagicTabs";
 
 const TIERS={OURO:{c:"#F59E0B",bg:"#F59E0B15",i:"💎"},PRATA:{c:"#94A3B8",bg:"#94A3B815",i:"🥈"},PROMISSOR:{c:"#22C55E",bg:"#22C55E15",i:"⭐"},INICIANTE:{c:"#6B7280",bg:"#6B728015",i:"🌱"}};
 function fmt(n){if(!n&&n!==0)return"0";if(n>=1e9)return(n/1e9).toFixed(1)+"B";if(n>=1e6)return(n/1e6).toFixed(1)+"M";if(n>=1e3)return(n/1e3).toFixed(1)+"K";return String(n);}
@@ -47,15 +48,15 @@ function AnalysisPanel({data,onClose,onSave,saved,toast,pg}){
         <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>{data.name}<span style={{fontSize:9,fontWeight:800,color:t.c,background:t.bg,padding:"2px 6px",borderRadius:4}}>{t.i}{data.score}</span></div><div style={{fontSize:10,color:C.dim}}>{fmt(data.subscribers)} subs · {data.country} · {ageStr(data.channelAge)}</div></div>
         <button onClick={onClose} style={{width:28,height:28,borderRadius:8,border:"none",background:"rgba(255,255,255,.06)",color:C.muted,cursor:"pointer",fontSize:13}}>✕</button>
       </div>
-      <div style={{display:"flex",gap:1,padding:"6px 20px",borderBottom:`1px solid ${C.border}`,overflowX:"auto"}}>
-        {TABS.map(([k,ic,lb])=><button key={k} onClick={()=>{setSub(k);
+      <div style={{padding:"6px 20px",borderBottom:`1px solid ${C.border}`,overflowX:"auto"}}>
+        <MagicTabs tabs={TABS.map(([k,ic,lb])=>({key:k,icon:ic,label:lb,color:k==="overview"?C.blue:k==="dna"?C.purple:k==="blueprint"?C.teal:k==="money"?C.green:k==="titles"?C.orange:k==="calendar"?C.blue:C.red}))} active={sub} onChange={k=>{setSub(k);
           if(k==="dna")ld(k,dna,setDna,setDnaL,()=>researchApi.dna({channelName:data.name,topVideos:data.topVideos,avgDuration:data.avgDuration,subscribers:data.subscribers,niche:data.niche}),"🧬 Extraindo DNA Viral");
           if(k==="blueprint")ld(k,bp,setBp,setBpL,()=>researchApi.blueprint(data),"📐 Gerando Blueprint");
           if(k==="money")ld(k,money,setMoney,setMoneyL,()=>researchApi.monetization({niche:data.niche,country:data.country,videosPerWeek:data.uploadsPerWeek||3,avgViews:data.avgViews||10000,subscribers:data.subscribers}),"💰 Calculando Monetização");
           if(k==="titles")ld(k,titles,setTitles,setTitlesL,()=>researchApi.generateTitles({channelName:data.name,niche:data.niche,topVideoTitles:data.topVideos?.map(v=>v.title),targetCountry:data.country,language:data.language}).then(r=>r.ideas||[]),"🎯 Gerando Títulos Virais");
           if(k==="calendar")ld(k,cal,setCal,setCalL,()=>researchApi.calendar({niche:data.niche,subNiche:data.subNiche,videosPerWeek:data.uploadsPerWeek||3,style:data.contentType,targetCountry:data.country,language:data.language}).then(r=>r.calendar||[]),"🗓️ Planejando 30 Dias");
           if(k==="mockup")ld(k,mockup,setMockup,setMockL,()=>researchApi.channelMockup({originalChannel:data.name,niche:data.niche,subNiche:data.subNiche,style:data.contentType,targetCountry:data.country,language:data.language,analysisData:{subscribers:data.subscribers,totalViews:data.totalViews,videoCount:data.videoCount,score:data.score,topVideos:data.topVideos}}),"🚀 Criando Canal SUPERIOR");
-        }} style={{padding:"8px 12px",borderRadius:6,border:"none",cursor:"pointer",fontSize:13,background:sub===k?`${C.red}15`:"transparent",color:sub===k?C.red:C.muted}}>{ic}<span style={{fontSize:9,marginLeft:3}}>{lb}</span></button>)}
+        }}/>
       </div>
       <div style={{padding:"14px 20px"}}>
         {/* OVERVIEW */}
@@ -221,7 +222,7 @@ export default function Research(){
   const[abTitles,setAbTitles]=useState("");
   const[compIds,setCompIds]=useState([]);const[compData,setCompData]=useState(null);const[compLoad,setCompLoad]=useState(false);const[abNiche,setAbNiche]=useState("");const[abResults,setAbResults]=useState(null);const[abLoad,setAbLoad]=useState(false);
 
-  useEffect(()=>{researchApi.listSaved().then(setSaved).catch(()=>{});},[]);
+  useEffect(()=>{researchApi.listSaved().then(r=>setSaved(Array.isArray(r)?r:[])).catch(()=>{});},[]);
 
   const search=async q=>{const s=q||query;if(!s.trim())return;setLoading(true);pg?.start("🔍 Buscando Canais",["Pesquisando","Filtrando","Pontuando"]);try{pg?.update(1);const d=await researchApi.search(s);setResults(d.channels||[]);setFc(d.filtered||0);pg?.done();}catch(e){pg?.fail(e.message);toast?.error(e.message);}setLoading(false);};
   const analyze=async id=>{setAzing(id);pg?.start("Analisando Canal",["Buscando dados do YouTube","Analisando vídeos recentes","Calculando métricas","IA analisando nicho"]);try{pg?.update(1,"Buscando dados do canal...");const r=await researchApi.analyze(id);pg?.done();setAnalysis(r);}catch(e){pg?.fail(e.message);toast?.error(e.message);}setAzing(null);};

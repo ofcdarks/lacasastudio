@@ -18,7 +18,7 @@ export default function DailyIdeas() {
   const [context, setContext] = useState(null);
   const cp = txt => { try { const ta = document.createElement("textarea"); ta.value = txt; ta.style.cssText = "position:fixed;left:-9999px"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); toast?.success("Copiado!"); } catch {} };
 
-  useEffect(() => { api.list().then(setIdeas).catch(() => {}); }, []);
+  useEffect(() => { api.list().then(r => setIdeas(Array.isArray(r) ? r : [])).catch(() => {}); }, []);
 
   const generate = async () => {
     setLoading(true); pg?.start("💡 Gerando Ideias do Dia", ["Coletando trends", "Analisando seus nichos", "IA criando ideias", "Ranqueando potencial"]);
@@ -26,7 +26,7 @@ export default function DailyIdeas() {
       const d = await api.generate(); pg?.done();
       if (d.error) throw new Error(d.error);
       setContext({ niches: d.niches, trending: d.trendingContext });
-      api.list().then(setIdeas).catch(() => {});
+      api.list().then(r => setIdeas(Array.isArray(r) ? r : [])).catch(() => {});
     } catch (e) { pg?.fail(e.message); } setLoading(false);
   };
 

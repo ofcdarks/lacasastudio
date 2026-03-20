@@ -33,12 +33,12 @@ export default function Keywords() {
   const [history, setHistory] = useState([]);
   const cp = txt => { try { const ta = document.createElement("textarea"); ta.value = txt; ta.style.cssText = "position:fixed;left:-9999px"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); toast?.success("Copiado!"); } catch {} };
 
-  useEffect(() => { api.history().then(setHistory).catch(() => {}); }, []);
+  useEffect(() => { api.history().then(r => setHistory(Array.isArray(r) ? r : [])).catch(() => {}); }, []);
 
   const search = async () => {
     if (!keyword.trim()) { toast?.error("Keyword obrigatória"); return; }
     setLoading(true); pg?.start("🔍 Pesquisando Keyword", ["Buscando no YouTube", "Calculando volume", "Analisando competição", "Score final"]);
-    try { const d = await api.search({ keyword, niche }); pg?.done(); setR(d); api.history().then(setHistory).catch(() => {}); }
+    try { const d = await api.search({ keyword, niche }); pg?.done(); setR(d); api.history().then(r => setHistory(Array.isArray(r) ? r : [])).catch(() => {}); }
     catch (e) { pg?.fail(e.message); } setLoading(false);
   };
 

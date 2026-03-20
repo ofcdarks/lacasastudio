@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { C, Btn, Hdr } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
+import MagicTabs from "../components/shared/MagicTabs";
 import api from "../lib/api";
 
 export default function Admin() {
@@ -76,11 +77,7 @@ export default function Admin() {
   return (
     <div className="page-enter" style={{ maxWidth: 1000, margin: "0 auto" }}>
       <Hdr title="Painel Admin" sub="Gerenciamento do sistema" />
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
-        {[["dashboard", "Dashboard"], ["users", "Usuários"], ["config", "Configurações"]].map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} style={{ padding: "10px 20px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, background: "transparent", color: tab === k ? C.red : C.muted, borderBottom: tab === k ? `2px solid ${C.red}` : "2px solid transparent" }}>{l}</button>
-        ))}
-      </div>
+      <MagicTabs tabs={[{key:"dashboard",icon:"📊",label:"Dashboard",color:C.red},{key:"users",icon:"👥",label:"Usuários",color:C.blue},{key:"config",icon:"⚙️",label:"Configurações",color:C.green}]} active={tab} onChange={setTab}/>
 
       {tab === "dashboard" && stats && (
         <div>

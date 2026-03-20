@@ -18,7 +18,7 @@ export default function Seo(){
   const[history,setHistory]=useState([]);const[error,setError]=useState("");
   const[translations,setTranslations]=useState(null);const[transLangs,setTransLangs]=useState(["en","es"]);const[transLoading,setTransLoading]=useState(false);
   const vid=videos.find(v=>v.id===selV);const ch=vid?.channel||channels.find(c=>c.id===vid?.channelId);
-  useEffect(()=>{if(!selV)return;seoResultApi.listByVideo(selV).then(setHistory).catch(()=>setHistory([]));},[selV]);
+  useEffect(()=>{if(!selV)return;seoResultApi.listByVideo(selV).then(r=>setHistory(Array.isArray(r)?r:[])).catch(()=>setHistory([]));},[selV]);
   const cp=txt=>{try{const ta=document.createElement("textarea");ta.value=txt;ta.style.cssText="position:fixed;left:-9999px";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);toast?.success("Copiado!");}catch{}};
 
   const generate=async()=>{
@@ -29,7 +29,7 @@ export default function Seo(){
       if(data.error){pg?.fail(data.error);setError(data.error);return;}
       pg?.done();setResults(data);
       await seoResultApi.create({videoId:selV,titles:(data.titles||[]).map(t=>t.text||t),description:data.description,tags:data.tags,score:data.score,tips:Array.isArray(data.tips)?data.tips.join("\n"):data.tips}).catch(()=>{});
-      seoResultApi.listByVideo(selV).then(setHistory).catch(()=>{});
+      seoResultApi.listByVideo(selV).then(r=>setHistory(Array.isArray(r)?r:[])).catch(()=>{});
     }catch(err){pg?.fail(err.message);setError(err.message);}
     finally{setLoading(false);}
   };

@@ -4,6 +4,7 @@ import { researchApi } from "../lib/api";
 import { C, Btn, Hdr, Input, Select, Label } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
 import { useProgress } from "../components/shared/ProgressModal";
+import MagicTabs from "../components/shared/MagicTabs";
 
 const fmt=n=>{if(!n)return"0";if(n>=1e6)return(n/1e6).toFixed(1)+"M";if(n>=1e3)return(n/1e3).toFixed(1)+"K";return n.toString();};
 
@@ -26,11 +27,7 @@ export default function AlgoTools(){
 
   return<div className="page-enter" style={{maxWidth:1000,margin:"0 auto"}}>
     <Hdr title="Armas do Algoritmo" sub="Spy Alerts · Melhor Horário · Tendências · Engajamento"/>
-    <div style={{display:"flex",gap:4,marginBottom:20}}>
-      {[["alerts","🔔 Spy Alerts"],["time","⏰ Melhor Horário"],["trends","📈 Tendências"],["engage","💬 Engajamento"]].map(([k,l])=>
-        <button key={k} onClick={()=>setTab(k)} style={{padding:"10px 18px",borderRadius:8,border:`1px solid ${tab===k?C.red:C.border}`,background:tab===k?`${C.red}12`:"transparent",color:tab===k?C.red:C.dim,cursor:"pointer",fontSize:12,fontWeight:700}}>{l}</button>
-      )}
-    </div>
+    <MagicTabs tabs={[{key:"alerts",icon:"🔔",label:"Spy Alerts",color:C.red},{key:"time",icon:"⏰",label:"Melhor Horário",color:C.blue},{key:"trends",icon:"📈",label:"Tendências",color:C.green},{key:"engage",icon:"💬",label:"Engajamento",color:C.purple}]} active={tab} onChange={setTab}/>
 
     {/* 🔔 SPY ALERTS */}
     {tab==="alerts"&&<div>

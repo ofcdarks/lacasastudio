@@ -42,7 +42,7 @@ export default function Compare() {
   const [selected, setSelected] = useState([]);
   const [r, setR] = useState(null); const [loading, setLoading] = useState(false);
 
-  useEffect(() => { researchApi.listSaved().then(setSaved).catch(() => {}); }, []);
+  useEffect(() => { researchApi.listSaved().then(r=>setSaved(Array.isArray(r)?r:[])).catch(() => {}); }, []);
 
   const toggle = (ch) => {
     if (selected.find(s => s.ytChannelId === ch.ytChannelId)) setSelected(selected.filter(s => s.ytChannelId !== ch.ytChannelId));

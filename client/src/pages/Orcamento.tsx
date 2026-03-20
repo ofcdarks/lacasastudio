@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { budgetApi } from "../lib/api";
 import { C, Btn, Hdr, Input, Select, Label } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
+import MagicTabs from "../components/shared/MagicTabs";
 
 const CATS=[
   {id:"equip",icon:"🎥",name:"Equipamento",color:"#3B82F6"},
@@ -87,11 +88,7 @@ export default function Orcamento(){
     </div>
 
     {/* Tabs */}
-    <div style={{display:"flex",gap:4,marginBottom:16}}>
-      {[["overview","📊 Overview"],["expenses","💸 Gastos"],["income","💰 Receitas"],["all","📋 Tudo"]].map(([k,l])=>
-        <button key={k} onClick={()=>setTab(k)} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${tab===k?C.blue:C.border}`,background:tab===k?`${C.blue}12`:"transparent",color:tab===k?C.blue:C.dim,cursor:"pointer",fontSize:11,fontWeight:600}}>{l}</button>
-      )}
-    </div>
+    <MagicTabs tabs={[{key:"overview",icon:"📊",label:"Overview",color:C.blue},{key:"expenses",icon:"💸",label:"Gastos",color:C.red},{key:"income",icon:"💰",label:"Receitas",color:C.green},{key:"all",icon:"📋",label:"Tudo",color:C.purple}]} active={tab} onChange={setTab}/>
 
     {/* OVERVIEW */}
     {tab==="overview"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>

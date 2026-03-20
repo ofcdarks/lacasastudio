@@ -15,7 +15,7 @@ export default function Analytics(){
   // Quick analyze
   const[query,setQuery]=useState("");const[qaResult,setQaResult]=useState(null);const[qaLoading,setQaLoading]=useState(false);
 
-  useEffect(()=>{researchApi.listSaved().then(setSaved).catch(()=>{});},[]);
+  useEffect(()=>{researchApi.listSaved().then(r=>setSaved(Array.isArray(r)?r:[])).catch(()=>{});},[]);
   const refresh=async()=>{if(!saved.length)return;setLoading(true);pg?.start("📊 Atualizando",saved.map(s=>s.name));try{setSpyData(await researchApi.spy(saved.map(s=>s.ytChannelId)));pg?.done();}catch(e){pg?.fail(e.message);}setLoading(false);};
   useEffect(()=>{if(saved.length>0&&!spyData)refresh();},[saved]);
 
