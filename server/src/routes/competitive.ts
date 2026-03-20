@@ -261,7 +261,7 @@ router.post("/tag-spy", async (req: any, res: Response, next: NextFunction) => {
       duration: video.contentDetails?.duration || "",
       tagCount: tags.length,
       tags: tagAnalysis,
-      hashtags: [...new Set(hashtags)],
+      hashtags: Array.from(new Set(hashtags as string[])),
       titleLength: title.length,
       descriptionLength: (video.snippet?.description || "").length,
       hasTimestamps: /\d{1,2}:\d{2}/.test(video.snippet?.description || ""),
@@ -506,7 +506,7 @@ router.post("/daily-ideas/generate", async (req: any, res: Response, next: NextF
 
     // Get user's saved channels for context
     const saved = await prisma.savedChannel.findMany({ where: { userId: req.user.id }, take: 10 });
-    const niches = [...new Set(saved.map(s => s.niche).filter(Boolean))];
+    const niches: string[] = Array.from(new Set(saved.map((s: any) => String(s.niche)).filter(Boolean)));
     const channelNames = saved.map(s => s.name).slice(0, 5);
     
     // Get trending videos

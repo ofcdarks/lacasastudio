@@ -39,7 +39,7 @@ export default function ViralPredict(){
         <div style={{background:C.bgCard,borderRadius:16,border:`1px solid ${C.border}`,padding:24,textAlign:"center"}}>
           <Ring score={r.viralScore||0} size={120}/>
           <div style={{fontSize:16,fontWeight:800,marginTop:8}}>Score Viral</div>
-          <div style={{fontSize:12,color:C.muted,marginTop:4,padding:"6px 12px",borderRadius:8,background:r.verdict?.includes("Publicar")?`${C.green}15`:r.verdict?.includes("Ajustar")?`${C.orange}15`:`${C.red}15`,color:r.verdict?.includes("Publicar")?C.green:r.verdict?.includes("Ajustar")?"#F59E0B":C.red,fontWeight:700,display:"inline-block"}}>{r.verdict?.split("—")[0]||"Analisando"}</div>
+          <div style={{fontSize:12,marginTop:4,padding:"6px 12px",borderRadius:8,background:r.verdict?.includes("Publicar")?`${C.green}15`:r.verdict?.includes("Ajustar")?`${C.orange}15`:`${C.red}15`,color:r.verdict?.includes("Publicar")?C.green:r.verdict?.includes("Ajustar")?"#F59E0B":C.red,fontWeight:700,display:"inline-block"}}>{r.verdict?.split("—")[0]||"Analisando"}</div>
           <div style={{fontSize:11,color:C.dim,marginTop:6}}>{r.verdict?.split("—")[1]||""}</div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>

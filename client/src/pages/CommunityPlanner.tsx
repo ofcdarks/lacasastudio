@@ -40,7 +40,7 @@ export default function CommunityPlanner(){
         <div style={{fontSize:12,color:C.muted,lineHeight:1.7}}>{r.schedule}</div>
       </div>}
       <div style={{display:"grid",gap:10,marginBottom:20}}>
-        {r.posts.map((p,i)=>{const t=TYPES[p.type]||TYPES.text;return<div key={i} style={{background:C.bgCard,borderRadius:14,border:`1px solid ${C.border}`,padding:16,borderLeft:`4px solid ${t.c}`,borderRadius:0}}>
+        {r.posts.map((p,i)=>{const t=TYPES[p.type]||TYPES.text;return<div key={i} style={{background:C.bgCard,border:`1px solid ${C.border}`,padding:16,borderLeft:`4px solid ${t.c}`,borderRadius:0}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
             <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:16}}>{t.i}</span><span style={{fontWeight:700,fontSize:13}}>{p.type}</span><span style={{fontSize:10,color:C.dim}}>· {p.timing}</span></div>
             <button onClick={()=>{cp(p.content);toast?.success("Copiado!");}} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,cursor:"pointer",fontSize:10}}>📋</button>
