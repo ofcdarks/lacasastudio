@@ -151,4 +151,21 @@ JSON sem markdown: {"viralScore":0-100,"analysis":"2-3 frases","strengths":["3"]
   }
 });
 
+// Generate visual structure for whiteboard
+router.post("/visual-structure", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const apiKey = await getApiKey();
+    if (!apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
+    const model = await getModel();
+    const { topic } = req.body as any;
+    const raw = await callAI(apiKey, model,
+      "Você gera estruturas visuais para whiteboards. Retorne APENAS JSON válido sem markdown.",
+      `Crie uma estrutura visual sobre: "${topic}"
+Retorne JSON: {"title":"título principal","points":["ponto 1","ponto 2","ponto 3","ponto 4","ponto 5","ponto 6"],"colors":["#EF4444","#F59E0B","#22C55E","#3B82F6","#A855F7","#EC4899"],"layout":"grid"}`
+    );
+    res.json({ structure: parseJSON(raw) });
+  } catch (err: any) {
+    res.status(500).json({ error: "IA retornou formato inválido", structure: { title: "Erro", points: ["Tente novamente com outro tema"] } });
+  }
+});
 export default router;

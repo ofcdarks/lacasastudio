@@ -61,6 +61,34 @@ function rrFn(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.qua
 function wrapFn(c,t,x,y,mw,lh,ml){const w=t.split(" ");let l="",n=0;for(const s of w){const test=l+(l?" ":"")+s;if(c.measureText(test).width>mw&&l){c.fillText(l,x,y+n*lh);l=s;n++;if(n>=ml)return;}else l=test;}if(l&&n<ml)c.fillText(l,x,y+n*lh);}
 function hatchFn(c,el){c.save();c.strokeStyle=(el.color||"#fff")+"35";c.lineWidth=1;c.beginPath();const s=8;for(let i=-Math.abs(el.h);i<Math.abs(el.w)+Math.abs(el.h);i+=s){c.moveTo(el.x+i,el.y);c.lineTo(el.x+i-Math.abs(el.h),el.y+Math.abs(el.h));}c.stroke();c.restore();}
 function gridFn(c,W,H,ox,oy,z){c.strokeStyle="rgba(255,255,255,.03)";c.lineWidth=1;const g=20*z,sx=ox%g,sy=oy%g;c.beginPath();for(let x=sx;x<W;x+=g){c.moveTo(x,0);c.lineTo(x,H);}for(let y=sy;y<H;y+=g){c.moveTo(0,y);c.lineTo(W,y);}c.stroke();}
+/* ── element library ──────────────────────── */
+const ICONS=["📱","💻","🎥","🎬","📊","📈","💰","🎯","🚀","⭐","❤️","🔥","💡","✅","❌","⚠️","📌","🎨","📝","🔗","👤","👥","🌍","📦","🔒","🔓","⏰","📅","💬","📢","🎉","🏆","🎮","📸","🎧","📻","🖥","⚡","🧠","💎","🌟","👑","🎪","🏠","🔔","📮","🗂","📂","🔍","⚙️"];
+const ARROWS_LIB=[
+  {n:"Seta simples →",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#fff",sw:2})},
+  {n:"Seta curva ↗",make:(x,y)=>({type:"arrow",x,y,w:150,h:-80,color:"#3B82F6",sw:3})},
+  {n:"Seta grossa →",make:(x,y)=>({type:"arrow",x,y,w:150,h:0,color:"#EF4444",sw:5})},
+  {n:"Seta dupla ↔",make:(x,y)=>([{type:"arrow",x,y,w:120,h:0,color:"#22C55E",sw:2},{type:"arrow",x:x+120,y,w:-120,h:0,color:"#22C55E",sw:2}])},
+  {n:"Conector L ↳",make:(x,y)=>([{type:"line",x,y,w:0,h:80,color:"#F59E0B",sw:2},{type:"arrow",x,y:y+80,w:100,h:0,color:"#F59E0B",sw:2}])},
+];
+const SHAPES_LIB=[
+  {n:"Balão de fala",make:(x,y)=>({type:"ellipse",x,y,w:200,h:100,color:"#3B82F6",sw:2,fill:"solid"})},
+  {n:"Badge",make:(x,y)=>({type:"ellipse",x,y,w:80,h:80,color:"#EF4444",sw:3,fill:"solid"})},
+  {n:"Card",make:(x,y)=>({type:"rect",x,y,w:200,h:260,color:"#6366F1",sw:2,fill:"solid"})},
+  {n:"Banner",make:(x,y)=>({type:"rect",x,y,w:400,h:80,color:"#F59E0B",sw:0,fill:"solid"})},
+  {n:"Divisor",make:(x,y)=>({type:"line",x,y,w:400,h:0,color:"#fff",sw:1})},
+  {n:"Box com título",make:(x,y)=>([{type:"rect",x,y,w:250,h:180,color:"#22C55E",sw:2,fill:"none"},{type:"rect",x,y,w:250,h:36,color:"#22C55E",sw:0,fill:"solid"},{type:"text",x:x+10,y:y+26,text:"TÍTULO",color:"#fff",fontSize:16,bold:true,fontFamily:"'Plus Jakarta Sans',sans-serif"}])},
+];
+const EXPORT_SIZES=[
+  {n:"Instagram Post",w:1080,h:1080},
+  {n:"Instagram Story",w:1080,h:1920},
+  {n:"YouTube Thumbnail",w:1280,h:720},
+  {n:"TikTok/Reels",w:1080,h:1920},
+  {n:"Twitter/X Post",w:1200,h:675},
+  {n:"Apresentação 16:9",w:1920,h:1080},
+  {n:"Facebook Cover",w:820,h:312},
+  {n:"Original",w:0,h:0},
+];
+
 /* ── templates ────────────────────────────── */
 const TEMPLATES={
   "Carrossel Instagram":{w:1080,h:1080,els:[{type:"rect",x:40,y:40,w:1000,h:1000,color:"#3B82F6",sw:3,fill:"solid",opacity:100},{type:"text",x:100,y:200,text:"Slide 1\nTítulo Principal",color:"#fff",fontSize:48,fontFamily:"'Plus Jakarta Sans',sans-serif",bold:true,sw:1,opacity:100,fill:"none"},{type:"text",x:100,y:900,text:"@seucanal",color:"#fff",fontSize:24,fontFamily:"'Plus Jakarta Sans',sans-serif",sw:1,opacity:60,fill:"none"}]},
@@ -99,6 +127,13 @@ export default function Ideas(){
   const[showBlocks,setShowBlocks]=useState(false);
   const[searchQ,setSearchQ]=useState("");
   const[favOnly,setFavOnly]=useState(false);
+  const[showLibrary,setShowLibrary]=useState(false);
+  const[libTab,setLibTab]=useState("icons");
+  const[showExport,setShowExport]=useState(false);
+  const[showAI,setShowAI]=useState(false);
+  const[aiPrompt,setAiPrompt]=useState("");
+  const[aiLoading,setAiLoading]=useState(false);
+  const[presenting,setPresenting]=useState(false);
   // Interaction
   const[hist,setHist]=useState([[]]);const[hIdx,setHIdx]=useState(0);const[drawing,setDrawing]=useState(false);const[dragSt,setDragSt]=useState(null);
   const[resizing,setResizing]=useState(null); // {id, dir, startX, startY, origBounds}
@@ -129,6 +164,7 @@ export default function Ideas(){
   useEffect(()=>{
     const kd=e=>{
       if(textEditor||stickyEditor)return;
+      if(e.key==="Escape"&&presenting){setPresenting(false);return;}
       if((e.ctrlKey||e.metaKey)&&e.key==="z"){e.preventDefault();e.shiftKey?redo():undo();return;}
       if((e.ctrlKey||e.metaKey)&&e.key==="y"){e.preventDefault();redo();return;}
       if((e.ctrlKey||e.metaKey)&&e.key==="c"&&selId){const el=els.find(e=>e.id===selId);if(el)localStorage.setItem("lc_clip",JSON.stringify(el));return;}
@@ -136,6 +172,7 @@ export default function Ideas(){
       if((e.key==="Delete"||e.key==="Backspace")&&selId){e.preventDefault();const n=els.filter(e=>e.id!==selId);setEls(n);push(n);setSelId(null);return;}
       if(e.altKey&&e.key==="z"){e.preventDefault();setZenMode(p=>!p);return;}
       if(e.altKey&&e.key==="r"){e.preventDefault();setViewMode(p=>!p);return;}
+      if(e.key==="F5"){e.preventDefault();setPresenting(true);return;}
       if(e.key===" "){e.preventDefault();setIsPan(true);return;}
       const map={v:"select",r:"rect",o:"ellipse",d:"diamond",l:"line",a:"arrow",p:"draw",t:"text",s:"sticky",m:"marker",e:"eraser"};
       if(map[e.key?.toLowerCase()]&&!e.ctrlKey&&!e.metaKey){setTool(map[e.key.toLowerCase()]);setSelId(null);}
@@ -148,6 +185,7 @@ export default function Ideas(){
   // Paste
   useEffect(()=>{
     const onP=e=>{if(textEditor||stickyEditor)return;const items=e.clipboardData?.items;if(!items)return;
+      if(e.key==="Escape"&&presenting){setPresenting(false);return;}
     for(const item of items){if(item.type.startsWith("image/")){e.preventDefault();const blob=item.getAsFile();const rd=new FileReader();rd.onload=ev=>{const src=ev.target.result;const img=new Image();img.onload=()=>{const sc=Math.min(400/img.width,400/img.height,1);const el={id:uid(),type:"image",x:100,y:100,w:img.width*sc,h:img.height*sc,src,_img:img,color:"#fff",sw:1,opacity:100,fill:"none"};imgCache.current[src]=img;const n=[...els,el];setEls(n);push(n);};img.src=src;};rd.readAsDataURL(blob);return;}
     if(item.type==="text/plain"){item.getAsString(str=>{if(str.match(/^https?:\/\//)){const el={id:uid(),type:"sticky",x:100,y:100,w:260,h:80,title:"🔗 Link",text:str,stickyColor:"#93C5FD",color:"#000",sw:1,opacity:100,fill:"none"};const n=[...els,el];setEls(n);push(n);}});}}};
     window.addEventListener("paste",onP);return()=>window.removeEventListener("paste",onP);
@@ -236,6 +274,45 @@ export default function Ideas(){
   const moveLayer=d=>{if(!selId)return;const idx=els.findIndex(e=>e.id===selId);if(idx<0)return;const n=[...els];if(d==="up"&&idx<n.length-1)[n[idx],n[idx+1]]=[n[idx+1],n[idx]];else if(d==="down"&&idx>0)[n[idx],n[idx-1]]=[n[idx-1],n[idx]];else if(d==="top")n.push(n.splice(idx,1)[0]);else if(d==="bottom")n.unshift(n.splice(idx,1)[0]);setEls(n);push(n);};
 
   // Board ops
+  const exportAs=async(format,size)=>{
+    const c=cvs.current;if(!c)return;
+    const tmpC=document.createElement("canvas");
+    const w=size?.w||c.width,h=size?.h||c.height;
+    tmpC.width=w;tmpC.height=h;const ctx=tmpC.getContext("2d");
+    ctx.fillStyle=canvasBg;ctx.fillRect(0,0,w,h);
+    const scaleX=w/c.width,scaleY=h/c.height,sc=Math.min(scaleX,scaleY);
+    ctx.save();ctx.scale(sc,sc);ctx.translate(pan.x/zoom,pan.y/zoom);ctx.scale(zoom,zoom);
+    els.forEach(el=>render(ctx,el,false));ctx.restore();
+    let dataUrl;
+    if(format==="jpg")dataUrl=tmpC.toDataURL("image/jpeg",0.95);
+    else if(format==="svg"){toast?.info("SVG: exportando como PNG de alta resolução");dataUrl=tmpC.toDataURL("image/png");}
+    else dataUrl=tmpC.toDataURL("image/png");
+    const a=document.createElement("a");
+    a.download=(boardName||"quadro")+(size?.n?"-"+size.n.replace(/\s/g,"-").toLowerCase():"")+"."+format;
+    a.href=dataUrl;a.click();setShowExport(false);toast?.success("Exportado!");
+  };
+  const addLibItem=(item)=>{
+    const x=150+Math.random()*200,y=150+Math.random()*200;
+    if(typeof item==="string"){const el={id:uid(),type:"text",x,y,text:item,fontSize:40,color:"#fff",sw:1,opacity:100,fill:"none",fontFamily:"serif"};const n=[...els,el];setEls(n);push(n);return;}
+    const made=item.make(x,y);
+    if(Array.isArray(made)){const newEls=made.map(e=>({...e,id:uid(),opacity:e.opacity||100,fill:e.fill||"none",sw:e.sw||2}));const n=[...els,...newEls];setEls(n);push(n);}
+    else{const el={...made,id:uid(),opacity:made.opacity||100,fill:made.fill||"none",sw:made.sw||2};const n=[...els,el];setEls(n);push(n);}
+    setShowLibrary(false);
+  };
+  const aiGenerate=async()=>{
+    if(!aiPrompt.trim())return;setAiLoading(true);
+    try{
+      const res=await fetch("/api/ai/visual-structure",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+localStorage.getItem("lc_token")},body:JSON.stringify({topic:aiPrompt})});
+      const data=await res.json();
+      if(data.structure){const newEls=[];let y=60;
+        if(data.structure.title){newEls.push({id:uid(),type:"text",x:100,y,text:data.structure.title,fontSize:36,bold:true,color:"#fff",fontFamily:FONTS[1].f,sw:1,opacity:100,fill:"none"});y+=60;}
+        if(data.structure.points){data.structure.points.forEach((p,i)=>{newEls.push({id:uid(),type:"sticky",x:50+(i%3)*240,y:y+Math.floor(i/3)*180,w:220,h:150,title:"#"+(i+1),text:p,stickyColor:STICKY_C[i%STICKY_C.length],color:"#000",sw:1,opacity:100,fill:"none"});});}
+        if(newEls.length){const n=[...els,...newEls];setEls(n);push(n);toast?.success("IA gerou "+newEls.length+" elementos!");}
+        else toast?.info("IA não retornou estrutura visual");
+      } else toast?.info("Resposta da IA sem estrutura — tente um tema mais específico");
+    }catch(err){toast?.error("Erro na IA — verifique sua API key nas configurações");}
+    setAiLoading(false);setShowAI(false);setAiPrompt("");
+  };
   const loadTemplate=(name)=>{const t=TEMPLATES[name];if(!t)return;const newEls=t.els.map(e=>({...e,id:uid()}));setEls(newEls);push(newEls);setShowTemplates(false);toast?.success("Template carregado!");};
   const addBlock=(block)=>{const b=block.make();const el={...b,id:uid(),x:200+Math.random()*100,y:200+Math.random()*100,sw:b.sw||2,opacity:b.opacity||100,fill:b.fill||"none",color:b.color||color};const n=[...els,el];setEls(n);push(n);setShowBlocks(false);};
   const duplicateBoard=async(b)=>{try{const board=await ideaApi.create({title:b.title+" (cópia)",content:b.content,color:b.color||"#3B82F6"});setBoards(p=>[board,...p]);toast?.success("Duplicado!");}catch{}};
@@ -271,6 +348,10 @@ export default function Ideas(){
         <div style={{width:1,height:20,background:C.border}}/>
         <Btn vr="ghost" onClick={()=>setShowTemplates(true)} style={{padding:"3px 8px",fontSize:10}}>📋 Templates</Btn>
         <Btn vr="ghost" onClick={()=>setShowBlocks(!showBlocks)} style={{padding:"3px 8px",fontSize:10}}>🧩 Blocos</Btn>
+        <Btn vr="ghost" onClick={()=>setShowLibrary(true)} style={{padding:"3px 8px",fontSize:10}}>📦 Biblioteca</Btn>
+        <Btn vr="ghost" onClick={()=>setShowAI(true)} style={{padding:"3px 8px",fontSize:10}}>🤖 IA</Btn>
+        <Btn vr="ghost" onClick={()=>setShowExport(true)} style={{padding:"3px 8px",fontSize:10}}>📤 Exportar</Btn>
+        <Btn vr="ghost" onClick={()=>setPresenting(true)} style={{padding:"3px 8px",fontSize:10}}>▶ Apresentar</Btn>
         <button onClick={()=>setDrawMode(drawMode==="clean"?"hand":"clean")} style={{padding:"3px 8px",borderRadius:6,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,background:drawMode==="hand"?`${C.purple}20`:"rgba(255,255,255,.04)",color:drawMode==="hand"?C.purple:C.dim}}>{drawMode==="hand"?"✎ Rabisco":"▬ Limpo"}</button>
         {/* Prefs button */}
         <div style={{position:"relative"}}><button onClick={()=>setShowPrefs(!showPrefs)} style={{width:30,height:30,borderRadius:6,border:"none",cursor:"pointer",fontSize:14,background:showPrefs?`${C.blue}22`:"transparent",color:showPrefs?C.blue:C.muted,display:"flex",alignItems:"center",justifyContent:"center"}}>☰</button>
@@ -332,6 +413,50 @@ export default function Ideas(){
               <div key={i} onClick={()=>addBlock(b)} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px",borderRadius:6,cursor:"pointer",fontSize:12,color:C.text}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.04)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                 <span style={{fontSize:14}}>{b.icon}</span><span>{b.n}</span>
               </div>))}
+          </div>}
+          {/* Library modal */}
+          {showLibrary&&<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:40}} onClick={()=>setShowLibrary(false)}>
+            <div onClick={e=>e.stopPropagation()} style={{background:C.bgCard,borderRadius:16,border:`1px solid ${C.border}`,padding:24,width:600,maxHeight:"80vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.5)"}}>
+              <div style={{fontWeight:700,fontSize:18,marginBottom:16}}>📦 Biblioteca de Elementos</div>
+              <div style={{display:"flex",gap:4,marginBottom:16}}>{[["icons","Ícones"],["arrows","Setas"],["shapes","Formas"]].map(([k,l])=><button key={k} onClick={()=>setLibTab(k)} style={{padding:"6px 14px",borderRadius:6,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:libTab===k?`${C.blue}20`:"rgba(255,255,255,.04)",color:libTab===k?C.blue:C.dim}}>{l}</button>)}</div>
+              {libTab==="icons"&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ICONS.map((ic,i)=><button key={i} onClick={()=>addLibItem(ic)} style={{width:44,height:44,borderRadius:8,border:"none",cursor:"pointer",fontSize:22,background:"rgba(255,255,255,.04)",transition:"all .15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.04)"}>{ic}</button>)}</div>}
+              {libTab==="arrows"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{ARROWS_LIB.map((a,i)=><button key={i} onClick={()=>addLibItem(a)} style={{padding:"12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,textAlign:"left",background:"rgba(255,255,255,.04)",color:C.text}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.04)"}>{a.n}</button>)}</div>}
+              {libTab==="shapes"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>{SHAPES_LIB.map((s,i)=><button key={i} onClick={()=>addLibItem(s)} style={{padding:"14px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:12,textAlign:"center",background:"rgba(255,255,255,.04)",color:C.text}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.04)"}>{s.n}</button>)}</div>}
+            </div></div>}
+
+          {/* Export modal */}
+          {showExport&&<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:40}} onClick={()=>setShowExport(false)}>
+            <div onClick={e=>e.stopPropagation()} style={{background:C.bgCard,borderRadius:16,border:`1px solid ${C.border}`,padding:24,width:500,boxShadow:"0 20px 60px rgba(0,0,0,.5)"}}>
+              <div style={{fontWeight:700,fontSize:18,marginBottom:4}}>📤 Exportar</div>
+              <div style={{fontSize:12,color:C.muted,marginBottom:20}}>Escolha formato e tamanho</div>
+              <div style={{marginBottom:16}}>
+                <div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:8}}>Formato</div>
+                <div style={{display:"flex",gap:8}}>{["png","jpg"].map(fmt=><Btn key={fmt} vr="ghost" onClick={()=>exportAs(fmt)} style={{flex:1,fontSize:12,textTransform:"uppercase"}}>{fmt}</Btn>)}</div>
+              </div>
+              <div>
+                <div style={{fontSize:11,fontWeight:600,color:C.muted,marginBottom:8}}>Tamanho por plataforma</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{EXPORT_SIZES.map((s,i)=><button key={i} onClick={()=>exportAs("png",s.w?s:null)} style={{padding:"10px",borderRadius:8,border:"none",cursor:"pointer",fontSize:12,textAlign:"left",background:"rgba(255,255,255,.04)",color:C.text}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.04)"}><div style={{fontWeight:600}}>{s.n}</div>{s.w>0&&<div style={{fontSize:10,color:C.dim}}>{s.w}×{s.h}px</div>}</button>)}</div>
+              </div>
+            </div></div>}
+
+          {/* AI modal */}
+          {showAI&&<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:40}} onClick={()=>setShowAI(false)}>
+            <div onClick={e=>e.stopPropagation()} style={{background:C.bgCard,borderRadius:16,border:`1px solid ${C.border}`,padding:24,width:500,boxShadow:"0 20px 60px rgba(0,0,0,.5)"}}>
+              <div style={{fontWeight:700,fontSize:18,marginBottom:4}}>🤖 IA — Gerar Conteúdo Visual</div>
+              <div style={{fontSize:12,color:C.muted,marginBottom:16}}>Descreva o tema e a IA criará blocos visuais</div>
+              <textarea value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)} placeholder="Ex: 5 verdades sobre canal dark no YouTube
+Ex: Funil de vendas para infoproduto
+Ex: Roteiro de reels sobre produtividade" style={{width:"100%",background:"rgba(255,255,255,.04)",border:`1px solid ${C.border}`,borderRadius:8,padding:"12px",color:C.text,fontSize:13,outline:"none",minHeight:100,resize:"vertical",marginBottom:16}}/>
+              <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                <Btn vr="ghost" onClick={()=>setShowAI(false)}>Cancelar</Btn>
+                <Btn onClick={aiGenerate} disabled={aiLoading} style={{opacity:aiLoading?.6:1}}>{aiLoading?"Gerando...":"🚀 Gerar"}</Btn>
+              </div>
+            </div></div>}
+
+          {/* Presentation mode */}
+          {presenting&&<div style={{position:"fixed",inset:0,background:canvasBg,zIndex:9999,cursor:"none"}} onClick={()=>setPresenting(false)} onKeyDown={e=>{if(e.key==="Escape")setPresenting(false);}}>
+            <canvas ref={el=>{if(!el)return;const ctx=el.getContext("2d");el.width=window.innerWidth;el.height=window.innerHeight;ctx.fillStyle=canvasBg;ctx.fillRect(0,0,el.width,el.height);const b={x:Infinity,y:Infinity,mx:-Infinity,my:-Infinity};els.forEach(e=>{const bn=bounds(e);b.x=Math.min(b.x,bn.x);b.y=Math.min(b.y,bn.y);b.mx=Math.max(b.mx,bn.x+bn.w);b.my=Math.max(b.my,bn.y+bn.h);});const cw=b.mx-b.x||1,ch=b.my-b.y||1;const sc=Math.min((el.width-80)/cw,(el.height-80)/ch,2);const ox=(el.width-cw*sc)/2-b.x*sc,oy=(el.height-ch*sc)/2-b.y*sc;ctx.save();ctx.translate(ox,oy);ctx.scale(sc,sc);els.forEach(e=>render(ctx,e,false));ctx.restore();}} style={{width:"100%",height:"100%"}}/>
+            <div style={{position:"absolute",bottom:20,left:"50%",transform:"translateX(-50%)",padding:"8px 20px",borderRadius:8,background:"rgba(0,0,0,.5)",color:"#fff",fontSize:12,opacity:.5}}>Clique para sair da apresentação</div>
           </div>}
           {zenMode&&<button onClick={()=>setZenMode(false)} style={{position:"absolute",top:10,right:10,padding:"6px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:C.bgCard,color:C.muted,cursor:"pointer",fontSize:11,zIndex:5,opacity:.5}}>Sair do Zen (Alt+Z)</button>}
           {viewMode&&<div style={{position:"absolute",top:10,left:"50%",transform:"translateX(-50%)",padding:"6px 14px",borderRadius:8,background:`${C.blue}20`,color:C.blue,fontSize:11,fontWeight:600,zIndex:5}}>Modo Visualização · Alt+R para sair</div>}
