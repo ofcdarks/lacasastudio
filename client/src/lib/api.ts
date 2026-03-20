@@ -4,35 +4,37 @@ const BASE = "/api";
 
 function getToken(): string | null { return localStorage.getItem("lc_token"); }
 
-async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, opts: RequestInit = {}, skipAuthRedirect = false): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json", ...(opts.headers as Record<string, string> || {}) };
   if (token) headers["Authorization"] = `Bearer ${token}`;
   if (opts.body instanceof FormData) delete headers["Content-Type"];
 
   const res = await fetch(`${BASE}${path}`, { ...opts, headers });
+  const data = await res.json();
 
-  if (res.status === 401) {
-    localStorage.removeItem("lc_token");
-    window.location.href = "/login";
-    throw new Error("Sessão expirada");
+  if (!res.ok) {
+    // Only redirect on 401 if it's NOT an auth route
+    if (res.status === 401 && !skipAuthRedirect) {
+      localStorage.removeItem("lc_token");
+      window.location.href = "/login";
+    }
+    throw new Error(data.error || "Erro na requisição");
   }
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Erro na requisição");
   return data as T;
 }
 
 const api = {
   get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: any) => request<T>(path, { method: "POST", body: JSON.stringify(body) }),
+  post: <T>(path: string, body?: any, skipAuth = false) => request<T>(path, { method: "POST", body: JSON.stringify(body) }, skipAuth),
   put: <T>(path: string, body?: any) => request<T>(path, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
   del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };
 
 export const authApi = {
-  login: (email: string, password: string) => api.post<{ token: string; user: { id: number; name: string; email: string; avatar: string } }>("/auth/login", { email, password }),
-  register: (email: string, name: string, password: string) => api.post<{ token: string; user: { id: number; name: string; email: string; avatar: string } }>("/auth/register", { email, name, password }),
+  login: (email: string, password: string) => api.post<{ token: string; user: { id: number; name: string; email: string; avatar: string } }>("/auth/login", { email, password }, true),
+  register: (email: string, name: string, password: string) => api.post<{ token: string; user: { id: number; name: string; email: string; avatar: string } }>("/auth/register", { email, name, password }, true),
   me: () => api.get<{ id: number; name: string; email: string; avatar: string; role: string }>("/auth/me"),
 };
 

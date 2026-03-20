@@ -2,645 +2,638 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useApp } from "../context/AppContext";
 import { ideaApi } from "../lib/api";
-import { C, Btn, Hdr, Input } from "../components/shared/UI";
+import { C, Btn, Hdr } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
 
-/* ─── Types ──────────────────────────────────────── */
 const TOOLS = {
-  select: { icon: "⇱", label: "Selecionar", key: "V" },
-  rect: { icon: "▭", label: "Retângulo", key: "R" },
-  ellipse: { icon: "⬭", label: "Elipse", key: "O" },
-  diamond: { icon: "◇", label: "Diamante", key: "D" },
-  line: { icon: "╱", label: "Linha", key: "L" },
-  arrow: { icon: "→", label: "Seta", key: "A" },
-  draw: { icon: "✎", label: "Desenho Livre", key: "P" },
-  text: { icon: "T", label: "Texto", key: "T" },
-  eraser: { icon: "⌫", label: "Borracha", key: "E" },
+  select: { icon: "↖", label: "Selecionar (V)", cur: "default" },
+  rect: { icon: "□", label: "Retângulo (R)", cur: "crosshair" },
+  ellipse: { icon: "○", label: "Elipse (O)", cur: "crosshair" },
+  diamond: { icon: "◇", label: "Diamante (D)", cur: "crosshair" },
+  line: { icon: "╱", label: "Linha (L)", cur: "crosshair" },
+  arrow: { icon: "→", label: "Seta (A)", cur: "crosshair" },
+  draw: { icon: "✎", label: "Desenho Livre (P)", cur: "crosshair" },
+  text: { icon: "T", label: "Texto (T)", cur: "text" },
+  sticky: { icon: "🗒", label: "Post-it (S)", cur: "crosshair" },
+  marker: { icon: "⚑", label: "Marcador (M)", cur: "crosshair" },
+  eraser: { icon: "⌫", label: "Borracha (E)", cur: "cell" },
 };
 
 const COLORS = ["#ffffff","#EF4444","#F59E0B","#22C55E","#3B82F6","#A855F7","#EC4899","#06B6D4","#F97316","#6366F1"];
-const STROKE_WIDTHS = [1, 2, 3, 5, 8];
-const FILL_STYLES = ["none", "solid", "hatch"];
+const STICKY_COLORS = ["#FEF08A","#FDBA74","#86EFAC","#93C5FD","#C4B5FD","#FDA4AF","#67E8F9","#FCA5A5"];
+const MARKER_TYPES = [
+  { icon: "⭐", label: "Importante" },
+  { icon: "❗", label: "Urgente" },
+  { icon: "✅", label: "Feito" },
+  { icon: "❓", label: "Dúvida" },
+  { icon: "💡", label: "Ideia" },
+  { icon: "🔥", label: "Hot" },
+  { icon: "🎯", label: "Meta" },
+  { icon: "⚠️", label: "Atenção" },
+];
+const STROKE_W = [1, 2, 3, 5, 8];
+const FONT_SIZES = [14, 18, 24, 32, 48];
 
-function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
-function hitTest(el, x, y) {
-  const m = 8;
-  if (el.type === "draw") {
-    for (const p of (el.points || [])) {
-      if (Math.abs(p[0] - x) < m * 2 && Math.abs(p[1] - y) < m * 2) return true;
-    }
-    return false;
-  }
-  if (el.type === "text") {
-    const w = (el.text || "").length * 10;
-    return x >= el.x - m && x <= el.x + w + m && y >= el.y - 20 && y <= el.y + m;
-  }
-  if (el.type === "line" || el.type === "arrow") {
-    const dx = el.w, dy = el.h, len = Math.sqrt(dx * dx + dy * dy) || 1;
-    const dot = ((x - el.x) * dx + (y - el.y) * dy) / (len * len);
-    const cx = el.x + dot * dx, cy = el.y + dot * dy;
-    const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
-    return dot >= -0.1 && dot <= 1.1 && dist < m * 2;
-  }
-  if (el.type === "diamond") {
-    const cx = el.x + el.w / 2, cy = el.y + el.h / 2;
-    const rx = Math.abs(el.w) / 2 || 1, ry = Math.abs(el.h) / 2 || 1;
-    return (Math.abs(x - cx) / rx + Math.abs(y - cy) / ry) <= 1.2;
-  }
-  if (el.type === "ellipse") {
-    const cx = el.x + el.w / 2, cy = el.y + el.h / 2;
-    const rx = Math.abs(el.w) / 2 || 1, ry = Math.abs(el.h) / 2 || 1;
-    return ((x - cx) ** 2 / rx ** 2 + (y - cy) ** 2 / ry ** 2) <= 1.3;
-  }
-  // rect default
-  const minX = Math.min(el.x, el.x + (el.w || 0)), maxX = Math.max(el.x, el.x + (el.w || 0));
-  const minY = Math.min(el.y, el.y + (el.h || 0)), maxY = Math.max(el.y, el.y + (el.h || 0));
-  return x >= minX - m && x <= maxX + m && y >= minY - m && y <= maxY + m;
-}
-
-function drawElement(ctx, el, selected) {
+/* ─── Render engine ──────────────────────── */
+function renderEl(ctx, el, sel) {
+  ctx.save();
   ctx.strokeStyle = el.color || "#fff";
-  ctx.lineWidth = el.strokeWidth || 2;
+  ctx.lineWidth = el.sw || 2;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.globalAlpha = el.opacity || 1;
+  ctx.globalAlpha = el.op ?? 1;
 
-  const fill = el.fill && el.fill !== "none";
-  if (fill) {
-    ctx.fillStyle = el.fill === "solid" ? (el.color || "#fff") + "30" : "transparent";
-  }
+  const hasFill = el.fill && el.fill !== "none";
 
-  if (el.type === "rect") {
-    if (fill && el.fill === "solid") { ctx.fillRect(el.x, el.y, el.w, el.h); }
-    ctx.strokeRect(el.x, el.y, el.w, el.h);
-    if (fill && el.fill === "hatch") drawHatch(ctx, el.x, el.y, el.w, el.h, el.color);
-  } else if (el.type === "ellipse") {
-    ctx.beginPath();
-    ctx.ellipse(el.x + el.w / 2, el.y + el.h / 2, Math.abs(el.w / 2), Math.abs(el.h / 2), 0, 0, Math.PI * 2);
-    if (fill && el.fill === "solid") ctx.fill();
-    ctx.stroke();
-    if (fill && el.fill === "hatch") drawHatchEllipse(ctx, el.x, el.y, el.w, el.h, el.color);
-  } else if (el.type === "diamond") {
-    const cx = el.x + el.w / 2, cy = el.y + el.h / 2;
-    ctx.beginPath();
-    ctx.moveTo(cx, el.y); ctx.lineTo(el.x + el.w, cy); ctx.lineTo(cx, el.y + el.h); ctx.lineTo(el.x, cy); ctx.closePath();
-    if (fill && el.fill === "solid") ctx.fill();
-    ctx.stroke();
-  } else if (el.type === "line") {
-    ctx.beginPath(); ctx.moveTo(el.x, el.y); ctx.lineTo(el.x + el.w, el.y + el.h); ctx.stroke();
-  } else if (el.type === "arrow") {
-    const ex = el.x + el.w, ey = el.y + el.h;
-    ctx.beginPath(); ctx.moveTo(el.x, el.y); ctx.lineTo(ex, ey); ctx.stroke();
-    const angle = Math.atan2(el.h, el.w);
-    const hl = 14;
-    ctx.beginPath();
-    ctx.moveTo(ex - hl * Math.cos(angle - 0.4), ey - hl * Math.sin(angle - 0.4));
-    ctx.lineTo(ex, ey);
-    ctx.lineTo(ex - hl * Math.cos(angle + 0.4), ey - hl * Math.sin(angle + 0.4));
-    ctx.stroke();
-  } else if (el.type === "draw") {
-    if (!el.points || el.points.length < 2) return;
-    ctx.beginPath();
-    ctx.moveTo(el.points[0][0], el.points[0][1]);
-    for (let i = 1; i < el.points.length; i++) ctx.lineTo(el.points[i][0], el.points[i][1]);
-    ctx.stroke();
-  } else if (el.type === "text") {
-    ctx.font = `${el.fontSize || 20}px 'Plus Jakarta Sans', sans-serif`;
-    ctx.fillStyle = el.color || "#fff";
-    ctx.fillText(el.text || "", el.x, el.y);
-  }
-
-  if (selected) {
-    ctx.strokeStyle = "#3B82F6";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    if (el.type === "draw" && el.points?.length) {
-      let mx = -Infinity, my = -Infinity, mnx = Infinity, mny = Infinity;
-      el.points.forEach(p => { mx = Math.max(mx, p[0]); my = Math.max(my, p[1]); mnx = Math.min(mnx, p[0]); mny = Math.min(mny, p[1]); });
-      ctx.strokeRect(mnx - 4, mny - 4, mx - mnx + 8, my - mny + 8);
-    } else if (el.type === "text") {
-      const tw = (el.text || "").length * (el.fontSize || 20) * 0.6;
-      ctx.strokeRect(el.x - 4, el.y - (el.fontSize || 20), tw + 8, (el.fontSize || 20) + 8);
-    } else if (el.type === "line" || el.type === "arrow") {
-      ctx.strokeRect(Math.min(el.x, el.x + el.w) - 4, Math.min(el.y, el.y + el.h) - 4, Math.abs(el.w) + 8, Math.abs(el.h) + 8);
-    } else {
-      ctx.strokeRect(el.x - 4, el.y - 4, (el.w || 0) + 8, (el.h || 0) + 8);
+  switch (el.type) {
+    case "rect": {
+      if (hasFill) { ctx.fillStyle = el.fill === "hatch" ? "transparent" : (el.color || "#fff") + "25"; ctx.fillRect(el.x, el.y, el.w, el.h); }
+      ctx.strokeRect(el.x, el.y, el.w, el.h);
+      if (el.fill === "hatch") hatch(ctx, el.x, el.y, el.w, el.h, el.color);
+      break;
     }
-    ctx.setLineDash([]);
+    case "ellipse": {
+      ctx.beginPath();
+      ctx.ellipse(el.x + el.w / 2, el.y + el.h / 2, Math.abs(el.w / 2) || 1, Math.abs(el.h / 2) || 1, 0, 0, Math.PI * 2);
+      if (hasFill) { ctx.fillStyle = (el.color || "#fff") + "25"; ctx.fill(); }
+      ctx.stroke();
+      break;
+    }
+    case "diamond": {
+      const cx = el.x + el.w / 2, cy = el.y + el.h / 2;
+      ctx.beginPath(); ctx.moveTo(cx, el.y); ctx.lineTo(el.x + el.w, cy); ctx.lineTo(cx, el.y + el.h); ctx.lineTo(el.x, cy); ctx.closePath();
+      if (hasFill) { ctx.fillStyle = (el.color || "#fff") + "25"; ctx.fill(); }
+      ctx.stroke();
+      break;
+    }
+    case "line": {
+      ctx.beginPath(); ctx.moveTo(el.x, el.y); ctx.lineTo(el.x + el.w, el.y + el.h); ctx.stroke();
+      break;
+    }
+    case "arrow": {
+      const ex = el.x + el.w, ey = el.y + el.h;
+      ctx.beginPath(); ctx.moveTo(el.x, el.y); ctx.lineTo(ex, ey); ctx.stroke();
+      const a = Math.atan2(el.h, el.w), hl = 16;
+      ctx.beginPath();
+      ctx.moveTo(ex - hl * Math.cos(a - 0.4), ey - hl * Math.sin(a - 0.4));
+      ctx.lineTo(ex, ey);
+      ctx.lineTo(ex - hl * Math.cos(a + 0.4), ey - hl * Math.sin(a + 0.4));
+      ctx.stroke();
+      break;
+    }
+    case "draw": {
+      const pts = el.points || [];
+      if (pts.length < 2) break;
+      ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.stroke();
+      break;
+    }
+    case "text": {
+      const fs = el.fontSize || 20;
+      ctx.font = `${el.bold ? "bold " : ""}${fs}px 'Plus Jakarta Sans', sans-serif`;
+      ctx.fillStyle = el.color || "#fff";
+      const lines = (el.text || "").split("\n");
+      lines.forEach((line, i) => ctx.fillText(line, el.x, el.y + i * (fs * 1.3)));
+      break;
+    }
+    case "sticky": {
+      const sw = el.w || 200, sh = el.h || 150;
+      ctx.fillStyle = el.stickyColor || "#FEF08A";
+      ctx.shadowColor = "rgba(0,0,0,0.2)"; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+      roundRect(ctx, el.x, el.y, sw, sh, 6); ctx.fill();
+      ctx.shadowColor = "transparent";
+      ctx.strokeStyle = "rgba(0,0,0,0.1)"; ctx.lineWidth = 1;
+      roundRect(ctx, el.x, el.y, sw, sh, 6); ctx.stroke();
+      // Header bar
+      ctx.fillStyle = "rgba(0,0,0,0.06)";
+      ctx.fillRect(el.x, el.y, sw, 28);
+      // Text
+      ctx.fillStyle = "#1a1a1a";
+      ctx.font = "bold 13px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillText(el.title || "Post-it", el.x + 10, el.y + 18);
+      ctx.font = "12px 'Plus Jakarta Sans', sans-serif";
+      const textLines = wrapText(ctx, el.text || "", sw - 20, 14);
+      textLines.forEach((ln, i) => ctx.fillText(ln, el.x + 10, el.y + 44 + i * 16));
+      break;
+    }
+    case "marker": {
+      ctx.font = "36px serif";
+      ctx.fillText(el.icon || "⭐", el.x, el.y + 36);
+      if (el.label) {
+        ctx.font = "bold 11px 'Plus Jakarta Sans', sans-serif";
+        ctx.fillStyle = el.color || "#fff";
+        ctx.fillText(el.label, el.x - 4, el.y + 52);
+      }
+      break;
+    }
+    case "image": {
+      if (el._img) {
+        try { ctx.drawImage(el._img, el.x, el.y, el.w || el._img.width, el.h || el._img.height); } catch {}
+      }
+      break;
+    }
   }
-  ctx.globalAlpha = 1;
+
+  // Selection box
+  if (sel) {
+    ctx.strokeStyle = "#3B82F6"; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+    const b = getBounds(el);
+    ctx.strokeRect(b.x - 5, b.y - 5, b.w + 10, b.h + 10);
+    ctx.setLineDash([]);
+    // Resize handles
+    const corners = [[b.x - 5, b.y - 5], [b.x + b.w + 5, b.y - 5], [b.x - 5, b.y + b.h + 5], [b.x + b.w + 5, b.y + b.h + 5]];
+    ctx.fillStyle = "#3B82F6";
+    corners.forEach(([cx, cy]) => { ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill(); });
+  }
+  ctx.restore();
 }
 
-function drawHatch(ctx, x, y, w, h, color) {
-  ctx.save(); ctx.strokeStyle = (color || "#fff") + "40"; ctx.lineWidth = 1;
-  const step = 8;
-  ctx.beginPath();
-  for (let i = -Math.abs(h); i < Math.abs(w) + Math.abs(h); i += step) {
-    ctx.moveTo(x + i, y); ctx.lineTo(x + i - Math.abs(h), y + Math.abs(h));
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+}
+
+function wrapText(ctx, text, maxW, lineH) {
+  const words = text.split(" "), lines = []; let line = "";
+  for (const w of words) {
+    const test = line + (line ? " " : "") + w;
+    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+    else line = test;
   }
+  if (line) lines.push(line);
+  return lines.slice(0, 7);
+}
+
+function hatch(ctx, x, y, w, h, color) {
+  ctx.save(); ctx.strokeStyle = (color || "#fff") + "35"; ctx.lineWidth = 1;
+  const step = 8; ctx.beginPath();
+  for (let i = -Math.abs(h); i < Math.abs(w) + Math.abs(h); i += step) { ctx.moveTo(x + i, y); ctx.lineTo(x + i - Math.abs(h), y + Math.abs(h)); }
   ctx.stroke(); ctx.restore();
 }
-function drawHatchEllipse(ctx, x, y, w, h, color) { drawHatch(ctx, x, y, w, h, color); }
 
-function drawGrid(ctx, width, height, offsetX, offsetY, zoom) {
-  ctx.strokeStyle = "rgba(255,255,255,0.03)";
-  ctx.lineWidth = 1;
-  const gridSize = 20 * zoom;
-  const startX = (offsetX % gridSize);
-  const startY = (offsetY % gridSize);
+function getBounds(el) {
+  if (el.type === "draw" && el.points?.length) {
+    let mnx = Infinity, mny = Infinity, mxx = -Infinity, mxy = -Infinity;
+    el.points.forEach(p => { mnx = Math.min(mnx, p[0]); mny = Math.min(mny, p[1]); mxx = Math.max(mxx, p[0]); mxy = Math.max(mxy, p[1]); });
+    return { x: mnx, y: mny, w: mxx - mnx, h: mxy - mny };
+  }
+  if (el.type === "text") {
+    const fs = el.fontSize || 20;
+    const lines = (el.text || "").split("\n");
+    const w = Math.max(...lines.map(l => l.length)) * fs * 0.6;
+    return { x: el.x, y: el.y - fs, w: Math.max(w, 40), h: lines.length * fs * 1.3 + 4 };
+  }
+  if (el.type === "marker") return { x: el.x - 4, y: el.y - 4, w: 44, h: 60 };
+  if (el.type === "sticky") return { x: el.x, y: el.y, w: el.w || 200, h: el.h || 150 };
+  if (el.type === "image") return { x: el.x, y: el.y, w: el.w || 200, h: el.h || 200 };
+  const x = Math.min(el.x, el.x + (el.w || 0)), y = Math.min(el.y, el.y + (el.h || 0));
+  return { x, y, w: Math.abs(el.w || 0), h: Math.abs(el.h || 0) };
+}
+
+function hitTest(el, px, py) {
+  const b = getBounds(el);
+  const m = 10;
+  return px >= b.x - m && px <= b.x + b.w + m && py >= b.y - m && py <= b.y + b.h + m;
+}
+
+function drawGrid(ctx, W, H, ox, oy, z) {
+  ctx.strokeStyle = "rgba(255,255,255,0.03)"; ctx.lineWidth = 1;
+  const g = 20 * z, sx = ox % g, sy = oy % g;
   ctx.beginPath();
-  for (let x = startX; x < width; x += gridSize) { ctx.moveTo(x, 0); ctx.lineTo(x, height); }
-  for (let y = startY; y < height; y += gridSize) { ctx.moveTo(0, y); ctx.lineTo(width, y); }
+  for (let x = sx; x < W; x += g) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let y = sy; y < H; y += g) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
   ctx.stroke();
 }
 
-/* ─── Main Component ────────────────────────────── */
+/* ─── MAIN ──────────────────────────────── */
 export default function Ideas() {
   const { channels } = useApp();
   const toast = useToast();
-  const canvasRef = useRef(null);
-  const containerRef = useRef(null);
+  const cvs = useRef(null);
+  const box = useRef(null);
 
-  // Board state
   const [boards, setBoards] = useState([]);
-  const [currentBoard, setCurrentBoard] = useState(null);
+  const [curBoard, setCurBoard] = useState(null);
   const [boardName, setBoardName] = useState("");
-  const [showBoardList, setShowBoardList] = useState(true);
+  const [showList, setShowList] = useState(true);
 
-  // Canvas state
-  const [elements, setElements] = useState([]);
+  const [els, setEls] = useState([]);
   const [tool, setTool] = useState("select");
   const [color, setColor] = useState("#ffffff");
-  const [strokeWidth, setStrokeWidth] = useState(2);
-  const [fillStyle, setFillStyle] = useState("none");
+  const [sw, setSw] = useState(2);
+  const [fill, setFill] = useState("none");
   const [fontSize, setFontSize] = useState(20);
-  const [selectedId, setSelectedId] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [historyIdx, setHistoryIdx] = useState(-1);
+  const [selId, setSelId] = useState(null);
+  const [stickyColor, setStickyColor] = useState("#FEF08A");
+  const [markerType, setMarkerType] = useState(0);
 
-  // Interaction state
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [dragStart, setDragStart] = useState(null);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [hist, setHist] = useState([[]]);
+  const [hIdx, setHIdx] = useState(0);
+  const [drawing, setDrawing] = useState(false);
+  const [dragSt, setDragSt] = useState(null);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState(null);
-  const [textInput, setTextInput] = useState(null);
-  const drawingElRef = useRef(null);
+  const [isPan, setIsPan] = useState(false);
+  const [panSt, setPanSt] = useState(null);
+  const [editText, setEditText] = useState(null);
+  const [editSticky, setEditSticky] = useState(null);
+  const drawRef = useRef(null);
+  const imgCache = useRef({});
 
-  // Load boards
-  useEffect(() => {
-    ideaApi.list().then(setBoards).catch(() => {});
-  }, []);
+  useEffect(() => { ideaApi.list().then(setBoards).catch(() => {}); }, []);
 
-  // Save to history
-  const pushHistory = useCallback((els) => {
-    setHistory(prev => {
-      const next = [...prev.slice(0, historyIdx + 1), JSON.parse(JSON.stringify(els))];
-      if (next.length > 50) next.shift();
-      return next;
-    });
-    setHistoryIdx(prev => Math.min(prev + 1, 49));
-  }, [historyIdx]);
+  const push = useCallback((newEls) => {
+    const snap = JSON.parse(JSON.stringify(newEls.map(e => { const c = {...e}; delete c._img; return c; })));
+    setHist(p => [...p.slice(0, hIdx + 1), snap].slice(-50));
+    setHIdx(p => Math.min(p + 1, 49));
+  }, [hIdx]);
 
   const undo = useCallback(() => {
-    if (historyIdx <= 0) return;
-    const newIdx = historyIdx - 1;
-    setHistoryIdx(newIdx);
-    setElements(JSON.parse(JSON.stringify(history[newIdx] || [])));
-  }, [history, historyIdx]);
+    if (hIdx <= 0) return;
+    setHIdx(hIdx - 1); setEls(JSON.parse(JSON.stringify(hist[hIdx - 1] || [])));
+  }, [hist, hIdx]);
 
   const redo = useCallback(() => {
-    if (historyIdx >= history.length - 1) return;
-    const newIdx = historyIdx + 1;
-    setHistoryIdx(newIdx);
-    setElements(JSON.parse(JSON.stringify(history[newIdx] || [])));
-  }, [history, historyIdx]);
+    if (hIdx >= hist.length - 1) return;
+    setHIdx(hIdx + 1); setEls(JSON.parse(JSON.stringify(hist[hIdx + 1] || [])));
+  }, [hist, hIdx]);
 
-  // Canvas rendering
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const container = containerRef.current;
-    if (!container) return;
-
-    const rect = container.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawGrid(ctx, canvas.width, canvas.height, panOffset.x, panOffset.y, zoom);
-
-    ctx.save();
-    ctx.translate(panOffset.x, panOffset.y);
-    ctx.scale(zoom, zoom);
-
-    elements.forEach(el => {
-      drawElement(ctx, el, el.id === selectedId);
-    });
-
-    ctx.restore();
-  }, [elements, selectedId, panOffset, zoom]);
-
-  // Resize
-  useEffect(() => {
-    const onResize = () => {
-      const canvas = canvasRef.current;
-      const container = containerRef.current;
-      if (!canvas || !container) return;
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-    };
-    window.addEventListener("resize", onResize);
-    onResize();
-    return () => window.removeEventListener("resize", onResize);
+  // Load images
+  const loadImg = useCallback((el) => {
+    if (el.type !== "image" || !el.src) return el;
+    if (imgCache.current[el.src]) { el._img = imgCache.current[el.src]; return el; }
+    const img = new Image(); img.src = el.src;
+    img.onload = () => { imgCache.current[el.src] = img; el._img = img; setEls(p => [...p]); };
+    return el;
   }, []);
 
-  // Keyboard shortcuts
+  // Render
   useEffect(() => {
-    const handler = (e) => {
-      if (textInput) return;
-      if ((e.ctrlKey || e.metaKey) && e.key === "z") { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+    const c = cvs.current, b = box.current;
+    if (!c || !b) return;
+    const ctx = c.getContext("2d");
+    const r = b.getBoundingClientRect();
+    c.width = r.width; c.height = r.height;
+    ctx.clearRect(0, 0, c.width, c.height);
+    drawGrid(ctx, c.width, c.height, pan.x, pan.y, zoom);
+    ctx.save(); ctx.translate(pan.x, pan.y); ctx.scale(zoom, zoom);
+    els.forEach(el => renderEl(ctx, el, el.id === selId));
+    ctx.restore();
+  }, [els, selId, pan, zoom]);
+
+  useEffect(() => {
+    const resize = () => { if (cvs.current && box.current) { cvs.current.width = box.current.clientWidth; cvs.current.height = box.current.clientHeight; } };
+    window.addEventListener("resize", resize); resize();
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+
+  // Keyboard
+  useEffect(() => {
+    const kd = (e) => {
+      if (editText || editSticky) return;
+      if ((e.ctrlKey || e.metaKey) && e.key === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
       if ((e.ctrlKey || e.metaKey) && e.key === "y") { e.preventDefault(); redo(); return; }
-      if (e.key === "Delete" || e.key === "Backspace") {
-        if (selectedId && !textInput) {
-          e.preventDefault();
-          const newEls = elements.filter(el => el.id !== selectedId);
-          setElements(newEls);
-          pushHistory(newEls);
-          setSelectedId(null);
-        }
+      if ((e.ctrlKey || e.metaKey) && e.key === "c" && selId) {
+        const el = els.find(e => e.id === selId);
+        if (el) localStorage.setItem("lc_clipboard", JSON.stringify(el));
         return;
       }
-      if (e.key === " ") { e.preventDefault(); setIsPanning(true); return; }
-      const toolKey = Object.entries(TOOLS).find(([, v]) => v.key.toLowerCase() === e.key.toLowerCase());
-      if (toolKey && !e.ctrlKey && !e.metaKey) { setTool(toolKey[0]); setSelectedId(null); }
+      if ((e.ctrlKey || e.metaKey) && e.key === "v") {
+        const clip = localStorage.getItem("lc_clipboard");
+        if (clip) { try { const el = JSON.parse(clip); el.id = uid(); el.x += 20; el.y += 20; const n = [...els, el]; setEls(n); push(n); localStorage.setItem("lc_clipboard", JSON.stringify(el)); } catch {} }
+        return;
+      }
+      if ((e.key === "Delete" || e.key === "Backspace") && selId) {
+        e.preventDefault(); const n = els.filter(e => e.id !== selId); setEls(n); push(n); setSelId(null); return;
+      }
+      if (e.key === " ") { e.preventDefault(); setIsPan(true); return; }
+      const map = { v: "select", r: "rect", o: "ellipse", d: "diamond", l: "line", a: "arrow", p: "draw", t: "text", s: "sticky", m: "marker", e: "eraser" };
+      if (map[e.key.toLowerCase()] && !e.ctrlKey && !e.metaKey) { setTool(map[e.key.toLowerCase()]); setSelId(null); }
     };
-    const up = (e) => { if (e.key === " ") setIsPanning(false); };
-    window.addEventListener("keydown", handler);
-    window.addEventListener("keyup", up);
-    return () => { window.removeEventListener("keydown", handler); window.removeEventListener("keyup", up); };
-  }, [selectedId, elements, textInput, undo, redo, pushHistory]);
+    const ku = (e) => { if (e.key === " ") setIsPan(false); };
+    window.addEventListener("keydown", kd); window.addEventListener("keyup", ku);
+    return () => { window.removeEventListener("keydown", kd); window.removeEventListener("keyup", ku); };
+  }, [selId, els, editText, editSticky, undo, redo, push]);
 
-  // Mouse → canvas coords
-  const toCanvas = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
-    return { x: (e.clientX - rect.left - panOffset.x) / zoom, y: (e.clientY - rect.top - panOffset.y) / zoom };
+  // Paste images from clipboard
+  useEffect(() => {
+    const onPaste = (e) => {
+      if (editText || editSticky) return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          e.preventDefault();
+          const blob = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const src = ev.target.result;
+            const img = new Image();
+            img.onload = () => {
+              const scale = Math.min(400 / img.width, 400 / img.height, 1);
+              const el = { id: uid(), type: "image", x: 100, y: 100, w: img.width * scale, h: img.height * scale, src, _img: img, color: "#fff", sw: 1, op: 1, fill: "none" };
+              imgCache.current[src] = img;
+              const n = [...els, el]; setEls(n); push(n);
+              toast?.success("Imagem colada!");
+            };
+            img.src = src;
+          };
+          reader.readAsDataURL(blob);
+          return;
+        }
+        // Paste text or URL
+        if (item.type === "text/plain") {
+          item.getAsString((str) => {
+            if (str.match(/^https?:\/\//)) {
+              // It's a URL - create a link box
+              const el = { id: uid(), type: "sticky", x: 100, y: 100, w: 260, h: 80, title: "🔗 Link", text: str, stickyColor: "#93C5FD", color: "#fff", sw: 1, op: 1, fill: "none" };
+              const n = [...els, el]; setEls(n); push(n);
+              toast?.info("Link colado como post-it!");
+            }
+          });
+        }
+      }
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [els, editText, editSticky, push, toast]);
+
+  const toC = (e) => {
+    const r = cvs.current.getBoundingClientRect();
+    return { x: (e.clientX - r.left - pan.x) / zoom, y: (e.clientY - r.top - pan.y) / zoom };
   };
 
-  const onMouseDown = (e) => {
-    if (e.button === 1 || isPanning) {
-      setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
-      return;
-    }
-    const pos = toCanvas(e);
+  const onDown = (e) => {
+    if (e.button === 1 || isPan) { setPanSt({ x: e.clientX - pan.x, y: e.clientY - pan.y }); return; }
+    const p = toC(e);
 
     if (tool === "select") {
-      const hit = [...elements].reverse().find(el => hitTest(el, pos.x, pos.y));
-      setSelectedId(hit?.id || null);
-      if (hit) setDragStart({ x: pos.x - hit.x, y: pos.y - hit.y, id: hit.id });
+      const hit = [...els].reverse().find(el => hitTest(el, p.x, p.y));
+      setSelId(hit?.id || null);
+      if (hit) {
+        if (e.detail === 2 && (hit.type === "text" || hit.type === "sticky")) {
+          if (hit.type === "text") setEditText({ id: hit.id, value: hit.text || "", x: hit.x, y: hit.y, fontSize: hit.fontSize || 20 });
+          else setEditSticky({ id: hit.id, title: hit.title || "", text: hit.text || "", stickyColor: hit.stickyColor || "#FEF08A" });
+          return;
+        }
+        setDragSt({ x: p.x - hit.x, y: p.y - hit.y, id: hit.id });
+      }
       return;
     }
     if (tool === "eraser") {
-      const hit = [...elements].reverse().find(el => hitTest(el, pos.x, pos.y));
-      if (hit) {
-        const newEls = elements.filter(el => el.id !== hit.id);
-        setElements(newEls);
-        pushHistory(newEls);
-      }
+      const hit = [...els].reverse().find(el => hitTest(el, p.x, p.y));
+      if (hit) { const n = els.filter(el => el.id !== hit.id); setEls(n); push(n); }
       return;
     }
-    if (tool === "text") {
-      setTextInput({ x: pos.x, y: pos.y, value: "" });
+    if (tool === "text") { setEditText({ value: "", x: p.x, y: p.y, fontSize }); return; }
+    if (tool === "sticky") {
+      const el = { id: uid(), type: "sticky", x: p.x, y: p.y, w: 220, h: 160, title: "Post-it", text: "", stickyColor, color: "#000", sw: 1, op: 1, fill: "none" };
+      const n = [...els, el]; setEls(n);
+      setEditSticky({ id: el.id, title: el.title, text: el.text, stickyColor: el.stickyColor });
+      return;
+    }
+    if (tool === "marker") {
+      const mt = MARKER_TYPES[markerType];
+      const el = { id: uid(), type: "marker", x: p.x, y: p.y, icon: mt.icon, label: mt.label, color, sw: 1, op: 1, fill: "none" };
+      const n = [...els, el]; setEls(n); push(n);
       return;
     }
 
-    setIsDrawing(true);
-    const newEl = {
-      id: genId(), type: tool, x: pos.x, y: pos.y, w: 0, h: 0,
-      color, strokeWidth, fill: fillStyle, opacity: 1,
-      ...(tool === "draw" ? { points: [[pos.x, pos.y]] } : {}),
-      ...(tool === "text" ? { text: "", fontSize } : {}),
-    };
-    drawingElRef.current = newEl;
-    setElements(prev => [...prev, newEl]);
+    setDrawing(true);
+    const el = { id: uid(), type: tool, x: p.x, y: p.y, w: 0, h: 0, color, sw, fill, op: 1, ...(tool === "draw" ? { points: [[p.x, p.y]] } : {}) };
+    drawRef.current = el;
+    setEls(p => [...p, el]);
   };
 
-  const onMouseMove = (e) => {
-    if (panStart) {
-      setPanOffset({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+  const onMove = (e) => {
+    if (panSt) { setPan({ x: e.clientX - panSt.x, y: e.clientY - panSt.y }); return; }
+    if (dragSt) {
+      const p = toC(e);
+      setEls(prev => prev.map(el => el.id === dragSt.id ? { ...el, x: p.x - dragSt.x, y: p.y - dragSt.y } : el));
       return;
     }
-    if (dragStart) {
-      const pos = toCanvas(e);
-      setElements(prev => prev.map(el =>
-        el.id === dragStart.id ? { ...el, x: pos.x - dragStart.x, y: pos.y - dragStart.y } : el
-      ));
-      return;
-    }
-    if (!isDrawing || !drawingElRef.current) return;
-    const pos = toCanvas(e);
-    const el = drawingElRef.current;
-
-    if (tool === "draw") {
-      el.points = [...(el.points || []), [pos.x, pos.y]];
-      setElements(prev => prev.map(e => e.id === el.id ? { ...el } : e));
-    } else {
-      el.w = pos.x - el.x;
-      el.h = pos.y - el.y;
-      setElements(prev => prev.map(e => e.id === el.id ? { ...el } : e));
-    }
+    if (!drawing || !drawRef.current) return;
+    const p = toC(e), el = drawRef.current;
+    if (tool === "draw") { el.points = [...(el.points || []), [p.x, p.y]]; }
+    else { el.w = p.x - el.x; el.h = p.y - el.y; }
+    setEls(prev => prev.map(e => e.id === el.id ? { ...el } : e));
   };
 
-  const onMouseUp = () => {
-    if (panStart) { setPanStart(null); return; }
-    if (dragStart) {
-      setDragStart(null);
-      pushHistory(elements);
-      return;
-    }
-    if (isDrawing) {
-      setIsDrawing(false);
-      drawingElRef.current = null;
-      pushHistory(elements);
-    }
+  const onUp = () => {
+    if (panSt) { setPanSt(null); return; }
+    if (dragSt) { setDragSt(null); push(els); return; }
+    if (drawing) { setDrawing(false); drawRef.current = null; push(els); }
   };
 
-  const onWheel = (e) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoom(prev => Math.max(0.1, Math.min(5, prev * delta)));
-  };
+  const onWheel = (e) => { e.preventDefault(); setZoom(p => Math.max(0.1, Math.min(5, p * (e.deltaY > 0 ? 0.9 : 1.1)))); };
 
   const confirmText = () => {
-    if (!textInput || !textInput.value.trim()) { setTextInput(null); return; }
-    const newEl = { id: genId(), type: "text", x: textInput.x, y: textInput.y, text: textInput.value, color, fontSize, strokeWidth: 1, opacity: 1, fill: "none" };
-    const newEls = [...elements, newEl];
-    setElements(newEls);
-    pushHistory(newEls);
-    setTextInput(null);
+    if (!editText) return;
+    if (editText.id) {
+      // Editing existing
+      if (editText.value.trim()) {
+        setEls(p => p.map(e => e.id === editText.id ? { ...e, text: editText.value } : e));
+        push(els);
+      }
+    } else if (editText.value.trim()) {
+      const el = { id: uid(), type: "text", x: editText.x, y: editText.y, text: editText.value, color, fontSize: editText.fontSize, bold: false, sw: 1, op: 1, fill: "none" };
+      const n = [...els, el]; setEls(n); push(n);
+    }
+    setEditText(null);
   };
 
-  // Board operations
-  const saveBoard = async () => {
-    const data = JSON.stringify({ elements, panOffset, zoom });
+  const confirmSticky = () => {
+    if (!editSticky) return;
+    setEls(p => p.map(e => e.id === editSticky.id ? { ...e, title: editSticky.title, text: editSticky.text, stickyColor: editSticky.stickyColor } : e));
+    push(els);
+    setEditSticky(null);
+  };
+
+  // Board ops
+  const save = async () => {
+    const data = JSON.stringify({ elements: els.map(e => { const c = {...e}; delete c._img; return c; }), panOffset: pan, zoom });
     try {
-      if (currentBoard) {
-        await ideaApi.update(currentBoard.id, { content: data, title: boardName || currentBoard.title });
-        setBoards(prev => prev.map(b => b.id === currentBoard.id ? { ...b, content: data, title: boardName || b.title } : b));
-        toast?.success("Quadro salvo!");
+      if (curBoard) {
+        await ideaApi.update(curBoard.id, { content: data, title: boardName || curBoard.title });
+        setBoards(p => p.map(b => b.id === curBoard.id ? { ...b, content: data, title: boardName || b.title } : b));
+        toast?.success("Salvo!");
       } else {
         const name = boardName || "Quadro " + new Date().toLocaleDateString("pt-BR");
         const board = await ideaApi.create({ title: name, content: data, color: "#3B82F6" });
-        setBoards(prev => [board, ...prev]);
-        setCurrentBoard(board);
-        setBoardName(name);
+        setBoards(p => [board, ...p]); setCurBoard(board); setBoardName(name);
         toast?.success("Quadro criado!");
       }
-    } catch (err) { toast?.error("Erro ao salvar"); }
+    } catch { toast?.error("Erro ao salvar"); }
   };
 
-  const loadBoard = (board) => {
+  const load = (b) => {
     try {
-      const data = JSON.parse(board.content || "{}");
-      setElements(data.elements || []);
-      setPanOffset(data.panOffset || { x: 0, y: 0 });
-      setZoom(data.zoom || 1);
-      setHistory([data.elements || []]);
-      setHistoryIdx(0);
-    } catch {
-      setElements([]);
-    }
-    setCurrentBoard(board);
-    setBoardName(board.title);
-    setSelectedId(null);
-    setShowBoardList(false);
+      const d = JSON.parse(b.content || "{}");
+      const loaded = (d.elements || []).map(el => loadImg(el));
+      setEls(loaded); setPan(d.panOffset || { x: 0, y: 0 }); setZoom(d.zoom || 1);
+      setHist([loaded]); setHIdx(0);
+    } catch { setEls([]); }
+    setCurBoard(b); setBoardName(b.title); setSelId(null); setShowList(false);
   };
 
-  const newBoard = () => {
-    setElements([]);
-    setCurrentBoard(null);
-    setBoardName("");
-    setPanOffset({ x: 0, y: 0 });
-    setZoom(1);
-    setHistory([[]]);
-    setHistoryIdx(0);
-    setSelectedId(null);
-    setShowBoardList(false);
-  };
+  const newBoard = () => { setEls([]); setCurBoard(null); setBoardName(""); setPan({ x: 0, y: 0 }); setZoom(1); setHist([[]]); setHIdx(0); setSelId(null); setShowList(false); };
+  const delBoard = async (id) => { try { await ideaApi.del(id); setBoards(p => p.filter(b => b.id !== id)); if (curBoard?.id === id) newBoard(); toast?.success("Removido"); } catch {} };
+  const exportPng = () => { const c = cvs.current; if (!c) return; const l = document.createElement("a"); l.download = (boardName || "quadro") + ".png"; l.href = c.toDataURL("image/png"); l.click(); };
 
-  const deleteBoard = async (id) => {
-    try {
-      await ideaApi.del(id);
-      setBoards(prev => prev.filter(b => b.id !== id));
-      if (currentBoard?.id === id) newBoard();
-      toast?.success("Quadro removido");
-    } catch {}
-  };
-
-  const clearCanvas = () => {
-    setElements([]);
-    setSelectedId(null);
-    pushHistory([]);
-  };
-
-  const exportPng = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const link = document.createElement("a");
-    link.download = (boardName || "quadro") + ".png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  };
-
-  // ─── Board List View ──────────────────────────
-  if (showBoardList) {
-    return (
-      <div className="page-enter" style={{ maxWidth: 900, margin: "0 auto" }}>
-        <Hdr title="Banco de Ideias" sub="Quadros de ideias estilo whiteboard"
-          action={<Btn onClick={newBoard}>+ Novo Quadro</Btn>} />
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
-          {/* New board card */}
-          <div onClick={newBoard} style={{
-            background: C.bgCard, borderRadius: 14, border: `2px dashed ${C.border}`,
-            padding: 32, textAlign: "center", cursor: "pointer", display: "flex",
-            flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 180,
-            transition: "all 0.2s",
-          }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = C.red}
-            onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
-          >
-            <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.4 }}>+</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: C.muted }}>Novo Quadro</div>
-          </div>
-
-          {boards.map(b => (
-            <div key={b.id} style={{
-              background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`,
-              overflow: "hidden", cursor: "pointer", transition: "all 0.2s",
-            }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = C.borderH; e.currentTarget.style.transform = "translateY(-2px)"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = "translateY(0)"; }}
-            >
-              {/* Preview area */}
-              <div onClick={() => loadBoard(b)} style={{
-                height: 140, background: C.bg, position: "relative", overflow: "hidden",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <div style={{ fontSize: 48, opacity: 0.1 }}>✎</div>
-                {b.content && (() => {
-                  try {
-                    const d = JSON.parse(b.content);
-                    const count = (d.elements || []).length;
-                    return <div style={{ position: "absolute", bottom: 8, right: 8, fontSize: 10, color: C.dim, fontFamily: "var(--mono)" }}>{count} elementos</div>;
-                  } catch { return null; }
-                })()}
-              </div>
-              <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div onClick={() => loadBoard(b)}>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{b.title}</div>
-                  <div style={{ fontSize: 11, color: C.dim, marginTop: 2 }}>
-                    {new Date(b.updatedAt || b.createdAt).toLocaleDateString("pt-BR")}
-                  </div>
-                </div>
-                <Btn vr="subtle" onClick={(e) => { e.stopPropagation(); deleteBoard(b.id); }} style={{ color: C.red, fontSize: 11 }}>✕</Btn>
-              </div>
-            </div>
-          ))}
+  /* ─── Board List ──────────────────────── */
+  if (showList) return (
+    <div className="page-enter" style={{ maxWidth: 960, margin: "0 auto" }}>
+      <Hdr title="Banco de Ideias" sub="Whiteboard para brainstorm e planejamento visual" action={<Btn onClick={newBoard}>+ Novo Quadro</Btn>} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
+        <div onClick={newBoard} style={{ background: C.bgCard, borderRadius: 14, border: `2px dashed ${C.border}`, padding: 32, textAlign: "center", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 180, transition: "all 0.2s" }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = C.red} onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+          <div style={{ fontSize: 40, marginBottom: 8, opacity: 0.3 }}>✎</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: C.muted }}>Novo Quadro</div>
+          <div style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>Ctrl+V para colar imagens</div>
         </div>
+        {boards.map(b => (
+          <div key={b.id} style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, overflow: "hidden", cursor: "pointer", transition: "all 0.2s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = C.borderH; e.currentTarget.style.transform = "translateY(-2px)"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = "none"; }}>
+            <div onClick={() => load(b)} style={{ height: 120, background: `linear-gradient(135deg, ${C.bg}, ${C.bgCard})`, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+              <span style={{ fontSize: 36, opacity: 0.15 }}>✎</span>
+              {b.content && (() => { try { return <span style={{ position: "absolute", bottom: 6, right: 8, fontSize: 10, color: C.dim, fontFamily: "var(--mono)" }}>{(JSON.parse(b.content).elements || []).length} el.</span>; } catch { return null; } })()}
+            </div>
+            <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div onClick={() => load(b)}>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>{b.title}</div>
+                <div style={{ fontSize: 10, color: C.dim }}>{new Date(b.updatedAt || b.createdAt).toLocaleDateString("pt-BR")}</div>
+              </div>
+              <Btn vr="subtle" onClick={e => { e.stopPropagation(); delBoard(b.id); }} style={{ color: C.red, fontSize: 11 }}>✕</Btn>
+            </div>
+          </div>
+        ))}
       </div>
-    );
-  }
+    </div>
+  );
 
-  // ─── Whiteboard View ──────────────────────────
+  /* ─── Whiteboard ──────────────────────── */
+  const selEl = els.find(e => e.id === selId);
+
   return (
     <div style={{ position: "relative", height: "calc(100vh - 110px)", display: "flex", flexDirection: "column", margin: "-24px -32px", overflow: "hidden" }}>
-      {/* Top toolbar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: C.bgCard, borderBottom: `1px solid ${C.border}`, zIndex: 10, flexWrap: "wrap" }}>
-        {/* Back button */}
-        <Btn vr="ghost" onClick={() => setShowBoardList(true)} style={{ padding: "6px 10px", fontSize: 11 }}>← Quadros</Btn>
-        <div style={{ width: 1, height: 24, background: C.border, margin: "0 4px" }} />
-
-        {/* Tools */}
-        {Object.entries(TOOLS).map(([key, val]) => (
-          <button key={key} onClick={() => { setTool(key); setSelectedId(null); }}
-            title={`${val.label} (${val.key})`}
-            style={{
-              width: 36, height: 36, borderRadius: 8, border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-              background: tool === key ? `${C.red}20` : "transparent",
-              color: tool === key ? C.red : C.muted,
-              transition: "all 0.15s",
-            }}>
-            {val.icon}
+      {/* Toolbar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: C.bgCard, borderBottom: `1px solid ${C.border}`, zIndex: 10, flexWrap: "wrap", minHeight: 48 }}>
+        <Btn vr="ghost" onClick={() => setShowList(true)} style={{ padding: "5px 10px", fontSize: 11 }}>← Quadros</Btn>
+        <div style={{ width: 1, height: 22, background: C.border }} />
+        {Object.entries(TOOLS).map(([k, v]) => (
+          <button key={k} onClick={() => { setTool(k); setSelId(null); }} title={v.label}
+            style={{ width: 32, height: 32, borderRadius: 6, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: k === "sticky" || k === "marker" ? 14 : 15, background: tool === k ? `${C.red}22` : "transparent", color: tool === k ? C.red : C.muted, transition: "all 0.15s" }}>
+            {v.icon}
           </button>
         ))}
-
-        <div style={{ width: 1, height: 24, background: C.border, margin: "0 4px" }} />
-
-        {/* Colors */}
-        <div style={{ display: "flex", gap: 3 }}>
-          {COLORS.map(c => (
-            <div key={c} onClick={() => setColor(c)}
-              style={{
-                width: 22, height: 22, borderRadius: 6, cursor: "pointer",
-                background: c, border: color === c ? "2px solid #fff" : `2px solid ${C.border}`,
-                transition: "all 0.15s",
-              }} />
-          ))}
-        </div>
-
-        <div style={{ width: 1, height: 24, background: C.border, margin: "0 4px" }} />
-
-        {/* Stroke width */}
+        <div style={{ width: 1, height: 22, background: C.border }} />
         <div style={{ display: "flex", gap: 2 }}>
-          {STROKE_WIDTHS.map(w => (
-            <button key={w} onClick={() => setStrokeWidth(w)}
-              style={{
-                width: 28, height: 28, borderRadius: 6, border: "none", cursor: "pointer",
-                background: strokeWidth === w ? `${C.blue}20` : "transparent",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-              <div style={{ width: Math.min(w * 2 + 2, 16), height: Math.min(w * 2 + 2, 16), borderRadius: "50%", background: strokeWidth === w ? C.blue : C.dim }} />
-            </button>
-          ))}
+          {COLORS.map(c => <div key={c} onClick={() => setColor(c)} style={{ width: 18, height: 18, borderRadius: 4, cursor: "pointer", background: c, border: color === c ? "2px solid #fff" : `1px solid ${C.border}` }} />)}
         </div>
-
-        <div style={{ width: 1, height: 24, background: C.border, margin: "0 4px" }} />
-
-        {/* Fill style */}
-        <div style={{ display: "flex", gap: 2 }}>
-          {FILL_STYLES.map(f => (
-            <button key={f} onClick={() => setFillStyle(f)}
-              style={{
-                padding: "4px 8px", borderRadius: 6, border: "none", cursor: "pointer",
-                fontSize: 10, fontWeight: 600,
-                background: fillStyle === f ? `${C.purple}20` : "transparent",
-                color: fillStyle === f ? C.purple : C.dim,
-              }}>
-              {f === "none" ? "Sem" : f === "solid" ? "Sólido" : "Hachura"}
-            </button>
-          ))}
+        <div style={{ width: 1, height: 22, background: C.border }} />
+        <div style={{ display: "flex", gap: 1 }}>
+          {STROKE_W.map(w => <button key={w} onClick={() => setSw(w)} style={{ width: 24, height: 24, borderRadius: 4, border: "none", cursor: "pointer", background: sw === w ? `${C.blue}20` : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: Math.min(w * 2, 14), height: Math.min(w * 2, 14), borderRadius: "50%", background: sw === w ? C.blue : C.dim }} />
+          </button>)}
         </div>
-
+        <div style={{ width: 1, height: 22, background: C.border }} />
+        {["none", "solid", "hatch"].map(f => <button key={f} onClick={() => setFill(f)} style={{ padding: "3px 7px", borderRadius: 4, border: "none", cursor: "pointer", fontSize: 9, fontWeight: 600, background: fill === f ? `${C.purple}20` : "transparent", color: fill === f ? C.purple : C.dim }}>{f === "none" ? "Sem" : f === "solid" ? "Sólido" : "Hachura"}</button>)}
         <div style={{ flex: 1 }} />
-
-        {/* Actions */}
-        <Btn vr="ghost" onClick={undo} style={{ padding: "5px 8px", fontSize: 12 }} disabled={historyIdx <= 0}>↩</Btn>
-        <Btn vr="ghost" onClick={redo} style={{ padding: "5px 8px", fontSize: 12 }} disabled={historyIdx >= history.length - 1}>↪</Btn>
-        <Btn vr="ghost" onClick={clearCanvas} style={{ padding: "5px 8px", fontSize: 11 }}>Limpar</Btn>
-        <Btn vr="ghost" onClick={exportPng} style={{ padding: "5px 8px", fontSize: 11 }}>Exportar PNG</Btn>
-
-        <div style={{ width: 1, height: 24, background: C.border, margin: "0 4px" }} />
-
-        {/* Board name + save */}
-        <input value={boardName} onChange={e => setBoardName(e.target.value)}
-          placeholder="Nome do quadro..."
-          style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 10px", color: C.text, fontSize: 12, width: 160, outline: "none" }} />
-        <Btn onClick={saveBoard} style={{ padding: "6px 14px", fontSize: 12 }}>Salvar</Btn>
+        <Btn vr="ghost" onClick={undo} style={{ padding: "4px 7px", fontSize: 11 }} disabled={hIdx <= 0}>↩</Btn>
+        <Btn vr="ghost" onClick={redo} style={{ padding: "4px 7px", fontSize: 11 }} disabled={hIdx >= hist.length - 1}>↪</Btn>
+        <Btn vr="ghost" onClick={() => { setEls([]); setSelId(null); push([]); }} style={{ padding: "4px 7px", fontSize: 10 }}>Limpar</Btn>
+        <Btn vr="ghost" onClick={exportPng} style={{ padding: "4px 7px", fontSize: 10 }}>PNG</Btn>
+        <div style={{ width: 1, height: 22, background: C.border }} />
+        <input value={boardName} onChange={e => setBoardName(e.target.value)} placeholder="Nome..." style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 5, padding: "4px 8px", color: C.text, fontSize: 11, width: 130, outline: "none" }} />
+        <Btn onClick={save} style={{ padding: "5px 12px", fontSize: 11 }}>Salvar</Btn>
       </div>
 
-      {/* Canvas */}
-      <div ref={containerRef} style={{ flex: 1, position: "relative", cursor: isPanning ? "grab" : tool === "draw" ? "crosshair" : tool === "eraser" ? "cell" : tool === "text" ? "text" : tool === "select" ? "default" : "crosshair", overflow: "hidden" }}>
-        <canvas ref={canvasRef}
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onMouseLeave={onMouseUp}
-          onWheel={onWheel}
-          style={{ display: "block", width: "100%", height: "100%", background: C.bg }}
-        />
+      {/* Sub toolbar for special tools */}
+      {(tool === "sticky" || tool === "marker" || tool === "text") && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", background: "rgba(17,18,25,0.95)", borderBottom: `1px solid ${C.border}`, zIndex: 9 }}>
+          {tool === "sticky" && <>
+            <span style={{ fontSize: 11, color: C.dim }}>Cor do post-it:</span>
+            {STICKY_COLORS.map(sc => <div key={sc} onClick={() => setStickyColor(sc)} style={{ width: 22, height: 22, borderRadius: 5, cursor: "pointer", background: sc, border: stickyColor === sc ? "2px solid #fff" : `1px solid ${C.border}` }} />)}
+          </>}
+          {tool === "marker" && <>
+            <span style={{ fontSize: 11, color: C.dim }}>Marcador:</span>
+            {MARKER_TYPES.map((mt, i) => <button key={i} onClick={() => setMarkerType(i)} style={{ padding: "3px 8px", borderRadius: 5, border: "none", cursor: "pointer", fontSize: 13, background: markerType === i ? `${C.blue}20` : "transparent" }}>{mt.icon} <span style={{ fontSize: 10, color: markerType === i ? C.text : C.dim }}>{mt.label}</span></button>)}
+          </>}
+          {tool === "text" && <>
+            <span style={{ fontSize: 11, color: C.dim }}>Tamanho:</span>
+            {FONT_SIZES.map(fs => <button key={fs} onClick={() => setFontSize(fs)} style={{ padding: "3px 8px", borderRadius: 4, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, background: fontSize === fs ? `${C.blue}20` : "transparent", color: fontSize === fs ? C.blue : C.dim }}>{fs}px</button>)}
+          </>}
+        </div>
+      )}
 
-        {/* Text input overlay */}
-        {textInput && (
-          <div style={{ position: "absolute", left: textInput.x * zoom + panOffset.x, top: textInput.y * zoom + panOffset.y - fontSize, zIndex: 20 }}>
-            <input autoFocus value={textInput.value}
-              onChange={e => setTextInput(prev => ({ ...prev, value: e.target.value }))}
-              onKeyDown={e => { if (e.key === "Enter") confirmText(); if (e.key === "Escape") setTextInput(null); }}
+      {/* Canvas */}
+      <div ref={box} style={{ flex: 1, position: "relative", cursor: isPan ? "grab" : TOOLS[tool]?.cur || "default", overflow: "hidden" }}>
+        <canvas ref={cvs} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp} onWheel={onWheel}
+          style={{ display: "block", width: "100%", height: "100%", background: C.bg }} />
+
+        {/* Text input */}
+        {editText && (
+          <div style={{ position: "absolute", left: (editText.x * zoom + pan.x), top: (editText.y * zoom + pan.y - (editText.fontSize || 20)), zIndex: 20 }}>
+            <textarea autoFocus value={editText.value}
+              onChange={e => setEditText(p => ({ ...p, value: e.target.value }))}
+              onKeyDown={e => { if (e.key === "Escape") { setEditText(null); return; } if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); confirmText(); } }}
               onBlur={confirmText}
-              style={{
-                background: "rgba(0,0,0,0.7)", border: `1px solid ${C.blue}`, borderRadius: 4,
-                padding: "4px 8px", color: color, fontSize: fontSize, fontFamily: "'Plus Jakarta Sans', sans-serif",
-                outline: "none", minWidth: 120,
-              }} />
+              style={{ background: "rgba(0,0,0,0.85)", border: `2px solid ${C.blue}`, borderRadius: 6, padding: "8px 12px", color, fontSize: editText.fontSize || 20, fontFamily: "'Plus Jakarta Sans', sans-serif", outline: "none", minWidth: 200, minHeight: 60, resize: "both" }}
+              placeholder="Digite seu texto... (Shift+Enter = nova linha)" />
           </div>
         )}
 
-        {/* Zoom indicator */}
-        <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 4, alignItems: "center" }}>
-          <button onClick={() => setZoom(prev => Math.max(0.1, prev * 0.8))} style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.border}`, background: C.bgCard, color: C.muted, cursor: "pointer", fontSize: 14 }}>−</button>
-          <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: C.dim, minWidth: 40, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom(prev => Math.min(5, prev * 1.2))} style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.border}`, background: C.bgCard, color: C.muted, cursor: "pointer", fontSize: 14 }}>+</button>
-          <button onClick={() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); }} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.bgCard, color: C.dim, cursor: "pointer", fontSize: 10 }}>Reset</button>
-        </div>
+        {/* Sticky editor */}
+        {editSticky && (
+          <div onClick={e => e.stopPropagation()} style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 30, width: 320, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>Editar Post-it</div>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10, color: C.dim, marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>Título</div>
+              <input value={editSticky.title} onChange={e => setEditSticky(p => ({ ...p, title: e.target.value }))}
+                style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 10px", color: C.text, fontSize: 13, outline: "none" }} />
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10, color: C.dim, marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>Conteúdo</div>
+              <textarea value={editSticky.text} onChange={e => setEditSticky(p => ({ ...p, text: e.target.value }))}
+                style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 10px", color: C.text, fontSize: 13, outline: "none", minHeight: 80, resize: "vertical" }}
+                placeholder="Escreva sua ideia..." />
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 10, color: C.dim, marginBottom: 4, fontWeight: 600, textTransform: "uppercase" }}>Cor</div>
+              <div style={{ display: "flex", gap: 4 }}>
+                {STICKY_COLORS.map(sc => <div key={sc} onClick={() => setEditSticky(p => ({ ...p, stickyColor: sc }))} style={{ width: 28, height: 28, borderRadius: 6, cursor: "pointer", background: sc, border: editSticky.stickyColor === sc ? "2px solid #fff" : `1px solid ${C.border}` }} />)}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <Btn vr="ghost" onClick={() => setEditSticky(null)}>Cancelar</Btn>
+              <Btn onClick={confirmSticky}>Salvar</Btn>
+            </div>
+          </div>
+        )}
 
-        {/* Element count */}
-        <div style={{ position: "absolute", bottom: 12, left: 12, fontFamily: "var(--mono)", fontSize: 10, color: C.dim }}>
-          {elements.length} elementos {selectedId ? "· 1 selecionado" : ""}
+        {/* Selected element info */}
+        {selEl && !editText && !editSticky && (
+          <div style={{ position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)", background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 11, color: C.muted, display: "flex", gap: 10, alignItems: "center", zIndex: 5 }}>
+            <span>{selEl.type === "sticky" ? "📝 Post-it" : selEl.type === "marker" ? `${selEl.icon} Marcador` : selEl.type === "text" ? "T Texto" : selEl.type === "image" ? "🖼 Imagem" : selEl.type.charAt(0).toUpperCase() + selEl.type.slice(1)}</span>
+            {(selEl.type === "text" || selEl.type === "sticky") && <button onClick={() => { if (selEl.type === "text") setEditText({ id: selEl.id, value: selEl.text, x: selEl.x, y: selEl.y, fontSize: selEl.fontSize }); else setEditSticky({ id: selEl.id, title: selEl.title, text: selEl.text, stickyColor: selEl.stickyColor }); }} style={{ background: `${C.blue}20`, border: "none", borderRadius: 4, padding: "2px 8px", color: C.blue, cursor: "pointer", fontSize: 10 }}>Editar</button>}
+            <button onClick={() => { const n = els.filter(e => e.id !== selId); setEls(n); push(n); setSelId(null); }} style={{ background: `${C.red}20`, border: "none", borderRadius: 4, padding: "2px 8px", color: C.red, cursor: "pointer", fontSize: 10 }}>Deletar</button>
+          </div>
+        )}
+
+        {/* Zoom controls */}
+        <div style={{ position: "absolute", bottom: 10, right: 10, display: "flex", gap: 3, alignItems: "center" }}>
+          <button onClick={() => setZoom(p => Math.max(0.1, p * 0.8))} style={{ width: 26, height: 26, borderRadius: 5, border: `1px solid ${C.border}`, background: C.bgCard, color: C.muted, cursor: "pointer", fontSize: 13 }}>−</button>
+          <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: C.dim, minWidth: 36, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
+          <button onClick={() => setZoom(p => Math.min(5, p * 1.2))} style={{ width: 26, height: 26, borderRadius: 5, border: `1px solid ${C.border}`, background: C.bgCard, color: C.muted, cursor: "pointer", fontSize: 13 }}>+</button>
+          <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} style={{ padding: "3px 7px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.bgCard, color: C.dim, cursor: "pointer", fontSize: 9 }}>Reset</button>
         </div>
+        <div style={{ position: "absolute", bottom: 10, left: 10, fontFamily: "var(--mono)", fontSize: 10, color: C.dim }}>{els.length} el.{selId ? " · 1 sel." : ""} · Ctrl+V cola imagens</div>
       </div>
     </div>
   );
