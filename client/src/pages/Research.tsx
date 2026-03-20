@@ -113,49 +113,86 @@ function AnalysisPanel({data,onClose,onSave,saved,toast,pg}){
         {sub==="mockup"&&<div>{mockL?<div style={{textAlign:"center",padding:40}}>
           <div style={{width:200,height:6,borderRadius:3,background:"rgba(255,255,255,.06)",margin:"0 auto 12px",overflow:"hidden"}}><div style={{height:"100%",background:`linear-gradient(90deg,${C.red},${C.orange})`,borderRadius:3,animation:"pulse 1.5s ease-in-out infinite",width:"60%"}}/></div>
           <div style={{color:C.dim,fontSize:13}}>⏳ Criando identidade visual...</div>
-          <div style={{color:C.dim,fontSize:10,marginTop:6}}>Gerando nome, descrição, prompts de logo, banner e 4 thumbnails</div>
+          <div style={{color:C.dim,fontSize:10,marginTop:6}}>Gerando nome, descrição, prompts e 4 vídeos</div>
         </div>:mockup?<div>
-          <div style={{background:"#0f0f0f",borderRadius:14,overflow:"hidden",border:`1px solid ${C.border}`}}>
-            {/* Banner */}
-            <div style={{height:140,background:mockImgs.banner?`url(${mockImgs.banner}) center/cover`:`linear-gradient(135deg,${mockup.colors?.primary||"#1a1a2e"},${mockup.colors?.secondary||"#16213e"})`,position:"relative",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              {!mockImgs.banner?<button onClick={()=>genImage("banner",mockup.bannerPrompt)} disabled={!!genImg} style={{padding:"8px 16px",borderRadius:8,border:"1px solid rgba(255,255,255,.3)",background:"rgba(0,0,0,.5)",color:"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>{genImg==="banner"?"⏳ Gerando...":"🎨 Gerar Banner"}</button>
-              :<a href={mockImgs.banner} download="banner.png" style={{position:"absolute",top:6,right:6,padding:"4px 8px",borderRadius:4,background:"rgba(0,0,0,.6)",color:"#fff",fontSize:9,textDecoration:"none",cursor:"pointer"}}>📥 Download</a>}
+          {/* === YOUTUBE CHANNEL PAGE MOCKUP === */}
+          <div style={{background:"#0f0f0f",borderRadius:16,overflow:"hidden",border:`1px solid ${C.border}`}}>
+            {/* Banner - full width like YouTube */}
+            <div style={{height:160,background:mockImgs.banner?`url(${mockImgs.banner}) center/cover`:`linear-gradient(135deg,${mockup.colors?.primary||"#1a1a2e"},${mockup.colors?.secondary||"#16213e"})`,position:"relative"}}>
+              {!mockImgs.banner?<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}><button onClick={()=>genImage("banner",mockup.bannerPrompt)} disabled={!!genImg} style={{padding:"10px 20px",borderRadius:8,border:"1px solid rgba(255,255,255,.3)",background:"rgba(0,0,0,.5)",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:600,backdropFilter:"blur(4px)"}}>{genImg==="banner"?"⏳":"🎨 Gerar Banner"}</button></div>
+              :<a href={mockImgs.banner} download="banner.png" style={{position:"absolute",top:8,right:8,padding:"5px 10px",borderRadius:6,background:"rgba(0,0,0,.6)",color:"#fff",fontSize:10,textDecoration:"none",display:"flex",alignItems:"center",gap:4}}>📥 Download</a>}
             </div>
-            {/* Channel info */}
-            <div style={{padding:"16px 20px",display:"flex",gap:14,alignItems:"center"}}>
-              <div style={{width:64,height:64,borderRadius:"50%",background:mockImgs.logo?`url(${mockImgs.logo}) center/cover`:`linear-gradient(135deg,${mockup.colors?.primary||"#EF4444"},${mockup.colors?.accent||"#F59E0B"})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,fontWeight:900,color:"#fff",flexShrink:0,position:"relative",cursor:"pointer"}} onClick={()=>!mockImgs.logo&&genImage("logo",mockup.logoPrompt)}>
+            
+            {/* Channel header - like YouTube */}
+            <div style={{padding:"20px 24px",display:"flex",gap:16,alignItems:"center",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+              <div style={{width:80,height:80,borderRadius:"50%",background:mockImgs.logo?`url(${mockImgs.logo}) center/cover`:`linear-gradient(135deg,${mockup.colors?.primary||"#EF4444"},${mockup.colors?.accent||"#F59E0B"})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,fontWeight:900,color:"#fff",flexShrink:0,cursor:"pointer",position:"relative",border:"2px solid rgba(255,255,255,.1)"}} onClick={()=>!mockImgs.logo&&genImage("logo",mockup.logoPrompt)}>
                 {!mockImgs.logo&&<span>{mockup.channelName?.[0]||"C"}</span>}
-                {!mockImgs.logo&&<div style={{position:"absolute",inset:0,borderRadius:"50%",background:"rgba(0,0,0,.4)",display:"flex",alignItems:"center",justifyContent:"center",opacity:0,transition:"opacity .2s"}} onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity="0"}><span style={{fontSize:10,color:"#fff"}}>{genImg==="logo"?"⏳":"🎨 Logo"}</span></div>}
-                {mockImgs.logo&&<a href={mockImgs.logo} download="logo.png" onClick={e=>e.stopPropagation()} style={{position:"absolute",bottom:-4,right:-4,padding:"2px 6px",borderRadius:4,background:"rgba(0,0,0,.8)",color:"#fff",fontSize:8,textDecoration:"none"}}>📥</a>}
+                {mockImgs.logo&&<a href={mockImgs.logo} download="logo.png" onClick={e=>e.stopPropagation()} style={{position:"absolute",bottom:-2,right:-2,width:22,height:22,borderRadius:"50%",background:"rgba(0,0,0,.8)",display:"flex",alignItems:"center",justifyContent:"center",textDecoration:"none",fontSize:10}}>📥</a>}
+                {!mockImgs.logo&&<div style={{position:"absolute",inset:0,borderRadius:"50%",background:"rgba(0,0,0,.4)",display:"flex",alignItems:"center",justifyContent:"center",opacity:0,transition:"opacity .2s",fontSize:11,color:"#fff"}} onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity="0"}>🎨</div>}
               </div>
-              <div><div style={{fontWeight:700,fontSize:16,color:"#fff"}}>{mockup.channelName}</div><div style={{fontSize:11,color:"#aaa"}}>{mockup.tagline}</div><div style={{fontSize:10,color:"#666",marginTop:2}}>0 inscritos · {mockup.videos?.length||4} vídeos</div></div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:20,color:"#fff",display:"flex",alignItems:"center",gap:8}}>{mockup.channelName} <svg width="14" height="14" viewBox="0 0 24 24" fill="#aaa"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+                <div style={{fontSize:12,color:"#aaa",marginTop:2}}>@{(mockup.channelName||"").toLowerCase().replace(/\s+/g,"")} · 0 inscritos · {mockup.videos?.length||4} vídeos</div>
+                <div style={{fontSize:12,color:"#717171",marginTop:4,maxWidth:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{mockup.tagline || mockup.description?.slice(0,80)}</div>
+              </div>
+              <div style={{display:"flex",gap:8,flexShrink:0}}>
+                <div style={{padding:"8px 16px",borderRadius:20,background:"#fff",color:"#0f0f0f",fontSize:13,fontWeight:600,cursor:"default"}}>Inscrever-se</div>
+              </div>
             </div>
-            {/* Videos grid - 4 videos */}
-            <div style={{padding:"0 20px 20px",display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
-              {(mockup.videos||[]).slice(0,4).map((v,i)=><div key={i}>
-                <div style={{aspectRatio:"16/9",borderRadius:8,overflow:"hidden",background:mockImgs[`thumb${i}`]?`url(${mockImgs[`thumb${i}`]}) center/cover`:"linear-gradient(135deg,#1a1a1a,#2a2a2a)",position:"relative",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  {!mockImgs[`thumb${i}`]?<button onClick={()=>genImage(`thumb${i}`,v.thumbnailPrompt)} disabled={!!genImg} style={{padding:"5px 10px",borderRadius:6,border:"1px solid rgba(255,255,255,.2)",background:"rgba(0,0,0,.5)",color:"#fff",cursor:"pointer",fontSize:9}}>{genImg===`thumb${i}`?"⏳":"🎨 Gerar"}</button>
-                  :<a href={mockImgs[`thumb${i}`]} download={`thumb${i+1}.png`} style={{position:"absolute",top:4,right:4,padding:"2px 6px",borderRadius:3,background:"rgba(0,0,0,.7)",color:"#fff",fontSize:8,textDecoration:"none"}}>📥</a>}
-                  <div style={{position:"absolute",bottom:4,right:4,background:"rgba(0,0,0,.8)",color:"#fff",padding:"1px 4px",borderRadius:3,fontSize:9}}>{v.duration||"10:00"}</div>
+
+            {/* Tabs like YouTube */}
+            <div style={{display:"flex",gap:0,padding:"0 24px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+              {["Início","Vídeos","Playlists","Posts"].map((t,i)=><div key={t} style={{padding:"12px 20px",fontSize:13,fontWeight:i===1?600:400,color:i===1?"#fff":"#aaa",borderBottom:i===1?"2px solid #fff":"2px solid transparent"}}>{t}</div>)}
+            </div>
+
+            {/* Filter bar like YouTube */}
+            <div style={{padding:"12px 24px",display:"flex",gap:8}}>
+              {["Mais recentes","Em alta","Mais antigos"].map((f,i)=><div key={f} style={{padding:"6px 12px",borderRadius:6,background:i===0?"#fff":"rgba(255,255,255,.08)",color:i===0?"#0f0f0f":"#fff",fontSize:12,fontWeight:500}}>{f}</div>)}
+            </div>
+
+            {/* Videos grid - 4 videos in YouTube style */}
+            <div style={{padding:"8px 24px 24px",display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+              {(mockup.videos||[]).slice(0,4).map((v,i)=><div key={i} style={{cursor:"pointer"}}>
+                <div style={{aspectRatio:"16/9",borderRadius:10,overflow:"hidden",background:mockImgs[`thumb${i}`]?`url(${mockImgs[`thumb${i}`]}) center/cover`:"linear-gradient(135deg,#1a1a1a,#2a2a2a)",position:"relative",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {!mockImgs[`thumb${i}`]?<button onClick={()=>genImage(`thumb${i}`,v.thumbnailPrompt)} disabled={!!genImg} style={{padding:"6px 14px",borderRadius:6,border:"1px solid rgba(255,255,255,.25)",background:"rgba(0,0,0,.5)",color:"#fff",cursor:"pointer",fontSize:10}}>{genImg===`thumb${i}`?"⏳":"🎨 Gerar"}</button>
+                  :<a href={mockImgs[`thumb${i}`]} download={`thumb${i+1}.png`} style={{position:"absolute",top:6,right:6,padding:"3px 8px",borderRadius:4,background:"rgba(0,0,0,.7)",color:"#fff",fontSize:9,textDecoration:"none"}}>📥</a>}
+                  <div style={{position:"absolute",bottom:6,right:6,background:"rgba(0,0,0,.85)",color:"#fff",padding:"2px 6px",borderRadius:4,fontSize:11,fontWeight:500,letterSpacing:.5}}>{v.duration||"12:00"}</div>
                 </div>
-                <div style={{marginTop:6}}><div style={{fontSize:11,fontWeight:600,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v.title}</div><div style={{fontSize:9,color:"#666",marginTop:1}}>{v.views||"0"} views</div></div>
+                <div style={{display:"flex",gap:10,marginTop:10}}>
+                  <div style={{width:36,height:36,borderRadius:"50%",background:mockImgs.logo?`url(${mockImgs.logo}) center/cover`:`linear-gradient(135deg,${mockup.colors?.primary||"#EF4444"},${mockup.colors?.accent||"#F59E0B"})`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#fff"}}>{!mockImgs.logo&&(mockup.channelName?.[0]||"C")}</div>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:500,color:"#fff",lineHeight:1.4,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{v.title}</div>
+                    <div style={{fontSize:12,color:"#aaa",marginTop:3}}>{mockup.channelName}</div>
+                    <div style={{fontSize:12,color:"#aaa"}}>{v.views||"50K-100K"} views</div>
+                  </div>
+                </div>
               </div>)}
             </div>
           </div>
-          {/* Actions */}
-          <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
-            <button onClick={async()=>{setGenImg("all");const keys=["logo","banner",...(mockup.videos||[]).slice(0,4).map((_,i)=>`thumb${i}`)];for(const k of keys){const prompt=k==="logo"?mockup.logoPrompt:k==="banner"?mockup.bannerPrompt:mockup.videos?.[Number(k.replace("thumb",""))]?.thumbnailPrompt;if(prompt&&!mockImgs[k]){try{const r=await aiApi.generateAsset({prompt});if(r.url)setMockImgs(p=>({...p,[k]:r.url}));}catch{}}};setGenImg(null);}} disabled={!!genImg} style={{padding:"8px 16px",borderRadius:8,border:"none",background:`${C.red}20`,color:C.red,cursor:"pointer",fontSize:11,fontWeight:600}}>{genImg==="all"?"⏳ Gerando...":"🎨 Gerar Todas Imagens"}</button>
-            <button onClick={()=>{const all={...mockup,generatedImages:mockImgs};cp(JSON.stringify(all,null,2));}} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:11}}>📋 Copiar Tudo</button>
-            <button onClick={async()=>{try{await researchApi.save({...data,notes:JSON.stringify({mockup,mockImgs}),tags:"modelado"});toast?.success("Identidade salva!");}catch(e){toast?.error(e.message);}}} style={{padding:"8px 16px",borderRadius:8,border:"none",background:`${C.green}20`,color:C.green,cursor:"pointer",fontSize:11,fontWeight:600}}>💾 Salvar Identidade</button>
+
+          {/* Action buttons */}
+          <div style={{display:"flex",gap:6,marginTop:14,flexWrap:"wrap"}}>
+            <button onClick={async()=>{setGenImg("all");const keys=["logo","banner",...(mockup.videos||[]).slice(0,4).map((_,i)=>`thumb${i}`)];for(const k of keys){const prompt=k==="logo"?mockup.logoPrompt:k==="banner"?mockup.bannerPrompt:mockup.videos?.[Number(k.replace("thumb",""))]?.thumbnailPrompt;if(prompt&&!mockImgs[k]){try{const r=await aiApi.generateAsset({prompt});if(r.url)setMockImgs(p=>({...p,[k]:r.url}));}catch{}}};setGenImg(null);}} disabled={!!genImg} style={{padding:"10px 20px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${C.red},${C.orange})`,color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>{genImg==="all"?"⏳ Gerando...":"🎨 Gerar Todas as Imagens"}</button>
+            <button onClick={()=>{const all={...mockup,generatedImages:mockImgs};cp(JSON.stringify(all,null,2));}} style={{padding:"10px 20px",borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:12}}>📋 Copiar Tudo</button>
+            <button onClick={async()=>{try{await researchApi.save({...data,notes:JSON.stringify({mockup,mockImgs}),tags:"modelado"});toast?.success("Identidade salva!");}catch(e){toast?.error(e.message);}}} style={{padding:"10px 20px",borderRadius:8,border:"none",background:`${C.green}20`,color:C.green,cursor:"pointer",fontSize:12,fontWeight:600}}>💾 Salvar</button>
           </div>
-          {/* Prompts section */}
-          <Sec t="Prompts para Copiar" i="📋">
+
+          {/* All prompts ready to copy */}
+          <Sec t="Prompts Prontos para Copiar" i="📋">
             <div style={{display:"grid",gap:8}}>
-              {[["Logo",mockup.logoPrompt],["Banner",mockup.bannerPrompt],...(mockup.videos||[]).slice(0,4).map((v,i)=>[`Thumb ${i+1}: ${v.title?.slice(0,30)}`,v.thumbnailPrompt])].map(([l,p])=>p?<div key={l} style={{display:"flex",gap:6,alignItems:"flex-start"}}><div style={{flex:1}}><div style={{fontSize:10,fontWeight:700,color:C.red,marginBottom:2}}>{l}</div><div style={{fontSize:10,color:C.dim,fontFamily:"var(--mono)",lineHeight:1.5}}>{p}</div></div><button onClick={()=>cp(p)} style={{padding:"4px 8px",borderRadius:4,border:`1px solid ${C.blue}30`,background:`${C.blue}08`,color:C.blue,cursor:"pointer",fontSize:9,flexShrink:0}}>📋</button></div>:null)}
+              {[["🎨 Logo",mockup.logoPrompt],["🖼️ Banner (2560x1440)",mockup.bannerPrompt],...(mockup.videos||[]).slice(0,4).map((v,i)=>[`📸 Thumb ${i+1}: ${v.title?.slice(0,25)}...`,v.thumbnailPrompt])].map(([l,p])=>p?<div key={l} style={{display:"flex",gap:8,alignItems:"flex-start",padding:"8px 0",borderBottom:`1px solid ${C.border}`}}>
+                <div style={{flex:1}}><div style={{fontSize:11,fontWeight:700,color:C.red,marginBottom:3}}>{l}</div><div style={{fontSize:10,color:"rgba(255,255,255,.4)",fontFamily:"var(--mono)",lineHeight:1.5}}>{p}</div></div>
+                <button onClick={()=>cp(p)} style={{padding:"5px 10px",borderRadius:4,border:`1px solid ${C.blue}30`,background:`${C.blue}08`,color:C.blue,cursor:"pointer",fontSize:10,flexShrink:0}}>📋</button>
+              </div>:null)}
             </div>
           </Sec>
-          <Sec t="Descrição" i="📝"><p style={{fontSize:11,color:C.muted,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{mockup.description}</p><button onClick={()=>cp(mockup.description)} style={{marginTop:6,padding:"4px 10px",borderRadius:4,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:9}}>📋 Copiar</button></Sec>
-          {mockup.keywords&&<div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:12}}>{mockup.keywords.map(k=><span key={k} style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:`${C.blue}10`,color:C.blue}}>#{k}</span>)}</div>}
+
+          {/* Channel description + keywords */}
+          <Sec t="Descrição do Canal" i="📝">
+            <p style={{fontSize:12,color:C.muted,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{mockup.description}</p>
+            <button onClick={()=>cp(mockup.description)} style={{marginTop:8,padding:"5px 12px",borderRadius:4,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:10}}>📋 Copiar Descrição</button>
+          </Sec>
+          {mockup.keywords&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:12}}>{mockup.keywords.map(k=><span key={k} style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:`${C.blue}10`,color:C.blue}}>#{k}</span>)}</div>}
         </div>:<p style={{textAlign:"center",padding:30,color:C.dim}}>Clique pra criar preview do canal</p>}</div>}
       </div>
     </div>
