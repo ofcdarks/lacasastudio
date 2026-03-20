@@ -471,8 +471,8 @@ router.get("/streak/data", async (req: any, res: Response, next: NextFunction) =
     const entries = await (prisma as any).uploadStreak.findMany({
       where: { userId: req.user.id }, orderBy: { date: "desc" }, take: 365,
     });
-    const dates = entries.map((e: any) => e.date);
-    const uniqueDates = [...new Set(dates)].sort();
+    const dates = entries.map((e: any) => e.date as string);
+    const uniqueDates: string[] = [...new Set(dates)].sort();
 
     // Calculate streaks
     let currentStreak = 0; let longestStreak = 0; let tempStreak = 0;
