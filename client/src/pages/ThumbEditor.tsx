@@ -1,16 +1,16 @@
 // @ts-nocheck
 import { useProgress } from "../components/shared/ProgressModal";
 import { useState, useRef, useEffect } from "react";
-import { aiApi } from "../lib/api";
+import { aiApi, chatApi } from "../lib/api";
 import { C, Btn, Hdr, Label, Input } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
 
 const TEMPLATES = [
   { name: "Impacto", bg: "linear-gradient(135deg,#0f0c29,#302b63,#24243e)", textColor: "#fff", accentColor: "#EF4444" },
   { name: "Clean", bg: "linear-gradient(135deg,#1a1a2e,#16213e)", textColor: "#fff", accentColor: "#3B82F6" },
-  { name: "Energia", bg: "linear-gradient(135deg,#f12711,#f5af19)", textColor: "#fff", accentColor: "#000" },
+  { name: "Energia", bg: "linear-gradient(135deg,#f12711,#f5af19)", textColor: "#fff", accentColor: "#000000" },
   { name: "Dark", bg: "linear-gradient(135deg,#0a0a0a,#1a0a0a)", textColor: "#EF4444", accentColor: "#F59E0B" },
-  { name: "Neon", bg: "linear-gradient(135deg,#0a0a2e,#000)", textColor: "#0ff", accentColor: "#f0f" },
+  { name: "Neon", bg: "linear-gradient(135deg,#0a0a2e,#000000)", textColor: "#00ffff", accentColor: "#ff00ff" },
   { name: "Nature", bg: "linear-gradient(135deg,#134e5e,#71b280)", textColor: "#fff", accentColor: "#FDE047" },
 ];
 
@@ -27,6 +27,10 @@ export default function ThumbEditor() {
   const [elements, setElements] = useState([]);
   const [badge, setBadge] = useState("");
   const [emoji, setEmoji] = useState("");
+  const [videoTitle, setVideoTitle] = useState("");
+  const [videoNiche, setVideoNiche] = useState("");
+  const [thumbSuggestions, setThumbSuggestions] = useState([]);
+  const [genFromTitleLoading, setGenFromTitleLoading] = useState(false);
 
   const W = 1280, H = 720;
 
@@ -46,8 +50,9 @@ export default function ThumbEditor() {
 
   const fillGradient = (ctx, t) => {
     const grd = ctx.createLinearGradient(0, 0, W, H);
-    const colors = t.bg.match(/#[a-f0-9]{6}/gi) || ["#1a1a2e", "#16213e"];
-    colors.forEach((c, i) => grd.addColorStop(i / (colors.length - 1), c));
+    const colors = t.bg.match(/#[a-f0-9]{3,8}/gi) || ["#1a1a2e", "#16213e"];
+    if (colors.length === 1) { grd.addColorStop(0, colors[0]); grd.addColorStop(1, colors[0]); }
+    else colors.forEach((c, i) => grd.addColorStop(i / (colors.length - 1), c));
     ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
   };
 
@@ -102,6 +107,24 @@ export default function ThumbEditor() {
     setGenLoading(false);
   };
 
+  const genFromTitle = async () => {
+    if (!videoTitle.trim()) { toast?.error("Cole o título do vídeo"); return; }
+    setGenFromTitleLoading(true);
+    pg?.start("🎯 Criando Thumb de Alto Impacto", ["Analisando título", "Gerando 3 variações", "Otimizando CTR"]);
+    try {
+      const { reply } = await chatApi.send([{ role: "user", content: `Crie 3 variações de thumbnail para este vídeo YouTube. Nicho: ${videoNiche || "geral"}. Título: "${videoTitle}"
+
+RESPONDA APENAS JSON array (sem \`\`\`):
+[{"title":"TEXTO PRINCIPAL na thumb (curto, impactante, 2-4 palavras)","subtitle":"Texto secundário menor","badge":"Badge tipo NOVO ou TOP","emoji":"1 emoji impactante","prompt":"Prompt DETALHADO para ImageFX: cena cinematográfica, cores vibrantes, composição profissional, 16:9, sem texto na imagem. Descreva o visual da thumbnail como um diretor de arte","ctrScore":85}]
+
+Regras: SEM clickbait, máximo impacto visual, texto curto e legível, contraste alto.` }]);
+      const parsed = JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
+      setThumbSuggestions(Array.isArray(parsed) ? parsed : []);
+      pg?.done();
+    } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
+    setGenFromTitleLoading(false);
+  };
+
   const exportPng = () => {
     const c = cvs.current; if (!c) return;
     const link = document.createElement("a"); link.download = "thumbnail.png";
@@ -153,6 +176,24 @@ export default function ThumbEditor() {
               {genLoading ? "⏳ Gerando..." : "🎨 Gerar Background (ImageFX)"}
             </Btn>
             {aiBg && <button onClick={() => setAiBg(null)} style={{ width: "100%", marginTop: 6, padding: "6px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, cursor: "pointer", fontSize: 10 }}>Remover background IA</button>}
+          </div>
+
+          <div style={{ background: `linear-gradient(135deg,${C.red}08,${C.orange}08)`, borderRadius: 12, border: `1px solid ${C.red}20`, padding: 14 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>🎯 Thumb de Alto Impacto</div>
+            <div style={{ fontSize: 10, color: C.dim, marginBottom: 8 }}>Cole o título do vídeo e a IA gera uma thumbnail de alto CTR sem clickbait</div>
+            <Input value={videoTitle} onChange={e => setVideoTitle(e.target.value)} placeholder="Título do vídeo..." style={{ marginBottom: 6 }} />
+            <Input value={videoNiche} onChange={e => setVideoNiche(e.target.value)} placeholder="Nicho (ex: finanças, dark, ASMR)" style={{ marginBottom: 8 }} />
+            <Btn onClick={genFromTitle} disabled={genFromTitleLoading} style={{ width: "100%", justifyContent: "center", fontSize: 11, background: `linear-gradient(135deg,${C.red},${C.orange})`, border: "none", color: "#fff" }}>
+              {genFromTitleLoading ? "⏳ IA criando..." : "🚀 Gerar Thumb Completa"}
+            </Btn>
+            {thumbSuggestions.length > 0 && <div style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: C.muted, marginBottom: 4 }}>Sugestões geradas:</div>
+              {thumbSuggestions.map((s, i) => <div key={i} style={{ padding: "6px 8px", marginBottom: 4, borderRadius: 6, background: "rgba(255,255,255,.04)", border: `1px solid ${C.border}`, cursor: "pointer" }} onClick={() => { setTitle(s.title || title); setSubtitle(s.subtitle || ""); setBadge(s.badge || ""); setEmoji(s.emoji || ""); if (s.prompt) { setAiPrompt(s.prompt); } }}>
+                <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 2 }}>{s.title || "Título"}</div>
+                <div style={{ fontSize: 9, color: C.dim }}>{s.subtitle} · {s.badge} · CTR: {s.ctrScore}</div>
+                {s.prompt && <button onClick={async (e) => { e.stopPropagation(); setGenLoading(true); pg?.start("🎨 Gerando Thumb", ["Criando visual"]); try { const r = await aiApi.generateAsset({ prompt: s.prompt + ", YouTube thumbnail, 16:9, high quality, viral, no text" }); if (r.url) { setAiBg(r.url); pg?.done(); toast?.success("Thumbnail gerada!"); } } catch (err) { pg?.fail(err.message); } setGenLoading(false); }} style={{ marginTop: 4, padding: "4px 10px", borderRadius: 4, border: "none", background: `${C.red}20`, color: C.red, cursor: "pointer", fontSize: 9, fontWeight: 600, width: "100%" }}>🎨 Gerar esta thumb</button>}
+              </div>)}
+            </div>}
           </div>
         </div>
       </div>
