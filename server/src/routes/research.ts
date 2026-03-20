@@ -237,3 +237,207 @@ router.put("/saved/:id", async (req: any, res: Response, next: NextFunction) => 
 });
 
 export default router;
+
+// 🧬 DNA do Vídeo Viral — analyze top videos pattern
+router.post("/dna", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure a API Key" }); return; }
+    const { channelName, topVideos, avgDuration, subscribers, niche } = req.body;
+
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6", temperature: 0.4, max_tokens: 3000,
+        messages: [
+          { role: "system", content: "Você é o maior especialista em análise de vídeos virais do YouTube. Analise padrões e extraia o DNA viral. Responda APENAS JSON válido." },
+          { role: "user", content: `Analise o DNA viral deste canal e seus top vídeos:
+Canal: "${channelName}" (${subscribers} subs, nicho: ${niche})
+Duração média: ${avgDuration}
+Top vídeos: ${JSON.stringify(topVideos)}
+
+Extraia e retorne JSON:
+{
+  "hookPattern": "Padrão do hook nos primeiros 8 segundos (3-4 frases detalhando o padrão)",
+  "retentionFormula": "Fórmula de retenção: o que mantém as pessoas assistindo (3-4 frases)",
+  "titleFormula": "Fórmula dos títulos que funcionam com exemplos de padrões",
+  "thumbnailStyle": "Estilo das thumbnails: cores, elementos, texto, emoção",
+  "idealDuration": "Duração ideal baseada nos dados",
+  "uploadFrequency": "Frequência ideal de upload",
+  "contentStructure": ["Intro/Hook (0-8s): descrição", "Problema (8-30s): descrição", "Desenvolvimento: descrição", "Climax: descrição", "CTA: descrição"],
+  "viralElements": ["elemento1", "elemento2", "elemento3", "elemento4", "elemento5"],
+  "scriptTemplate": "Template completo de roteiro de ~500 palavras seguindo o padrão viral deste canal. Inclua marcações [HOOK], [PROBLEMA], [CONTEÚDO], [REVELAÇÃO], [CTA]. Use o estilo e tom que o canal usa.",
+  "musicStyle": "Estilo de música/trilha que o canal usa",
+  "editingPace": "Ritmo de edição (cortes por minuto, estilo de transição)",
+  "audienceProfile": "Perfil da audiência: idade, gênero, interesses, país principal"
+}` }
+        ]
+      })
+    });
+    if (!aiRes.ok) throw new Error("AI API error");
+    const aiData = await aiRes.json() as any;
+    const raw = aiData.choices?.[0]?.message?.content || "";
+    const parsed = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
+    res.json(parsed);
+  } catch (err) { next(err); }
+});
+
+// 📐 Blueprint de Modelagem
+router.post("/blueprint", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure a API Key" }); return; }
+    const { channelName, niche, subNiche, microNiche, subscribers, totalViews, videoCount, uploadsPerWeek, avgDuration, country, contentType, topVideos, modelableCountries } = req.body;
+
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6", temperature: 0.3, max_tokens: 4000,
+        messages: [
+          { role: "system", content: "Você é consultor expert em criação de canais YouTube modelados. Crie blueprints detalhados e acionáveis. Responda APENAS JSON válido." },
+          { role: "user", content: `Crie um BLUEPRINT COMPLETO para modelar este canal:
+Canal original: "${channelName}" (${subscribers} subs, ${totalViews} views, ${videoCount} vídeos)
+Nicho: ${niche} > ${subNiche} > ${microNiche}
+Tipo: ${contentType}, País: ${country}
+Uploads: ${uploadsPerWeek}/semana, Duração média: ${avgDuration}
+Países para modelar: ${JSON.stringify(modelableCountries)}
+Top vídeos: ${topVideos?.map(v => v.title).join(" | ")}
+
+Retorne JSON:
+{
+  "channelSetup": {
+    "name": "3 sugestões de nome para o canal modelado",
+    "description": "Bio otimizada para SEO",
+    "keywords": ["tag1","tag2","tag3","tag4","tag5"],
+    "targetCountry": "País mais lucrativo para modelar",
+    "language": "Idioma do canal"
+  },
+  "equipment": {
+    "minimum": ["item1 — R$ preço","item2"],
+    "recommended": ["item1 — R$ preço","item2"],
+    "software": ["software1 (grátis/pago)","software2"]
+  },
+  "contentStrategy": {
+    "videosPerWeek": 3,
+    "idealDuration": "10:00-15:00",
+    "bestDays": ["Terça","Quinta","Sábado"],
+    "bestHours": ["14:00 UTC","18:00 UTC"],
+    "contentPillars": ["pilar1","pilar2","pilar3"],
+    "first30Videos": "Estratégia detalhada dos primeiros 30 vídeos: temas, progressão, como ganhar tração"
+  },
+  "editingStyle": {
+    "pace": "Cortes por minuto",
+    "transitions": "Tipos de transição",
+    "effects": "Efeitos visuais",
+    "music": "Estilo de trilha",
+    "thumbnail": "Estilo de thumbnail detalhado"
+  },
+  "monetization": {
+    "estimatedCPM": "CPM estimado por país",
+    "revenueMonth3": "Receita projetada mês 3",
+    "revenueMonth6": "Receita projetada mês 6",
+    "revenueMonth12": "Receita projetada mês 12",
+    "additionalRevenue": "Outras fontes de receita (afiliados, produtos, etc)"
+  },
+  "growthHacks": ["hack1","hack2","hack3","hack4","hack5"],
+  "risks": ["risco1","risco2","risco3"],
+  "timeline": [
+    {"month":"Mês 1","goal":"Meta","action":"O que fazer"},
+    {"month":"Mês 3","goal":"Meta","action":"O que fazer"},
+    {"month":"Mês 6","goal":"Meta","action":"O que fazer"},
+    {"month":"Mês 12","goal":"Meta","action":"O que fazer"}
+  ],
+  "differentials": "Como se diferenciar do canal original e agregar valor único (3-4 frases)"
+}` }
+        ]
+      })
+    });
+    if (!aiRes.ok) throw new Error("AI API error");
+    const aiData = await aiRes.json() as any;
+    const raw = aiData.choices?.[0]?.message?.content || "";
+    const parsed = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
+    res.json(parsed);
+  } catch (err) { next(err); }
+});
+
+// 💰 Calculadora de Monetização
+router.post("/monetization", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { niche, country, videosPerWeek, avgViews, subscribers } = req.body;
+    // CPM data by country/niche (approximate USD)
+    const CPM_DATA: any = {
+      US: { default: 4.5, finance: 12, tech: 8, education: 6, gaming: 3.5, health: 7, entertainment: 3 },
+      GB: { default: 4, finance: 10, tech: 7, education: 5, gaming: 3, health: 6, entertainment: 2.5 },
+      CA: { default: 4, finance: 10, tech: 7, education: 5 },
+      AU: { default: 4.5, finance: 11, tech: 7.5, education: 5.5 },
+      DE: { default: 3.5, finance: 8, tech: 6, education: 4.5 },
+      BR: { default: 0.8, finance: 2, tech: 1.5, education: 1, gaming: 0.6, entertainment: 0.5 },
+      MX: { default: 0.6, finance: 1.5, tech: 1, education: 0.8 },
+      IN: { default: 0.3, finance: 0.8, tech: 0.5, education: 0.3 },
+      ES: { default: 2, finance: 5, tech: 3.5, education: 2.5 },
+      FR: { default: 3, finance: 7, tech: 5, education: 4 },
+      JP: { default: 3.5, finance: 8, tech: 6, education: 4 },
+      KR: { default: 2.5, finance: 6, tech: 4.5 },
+      PT: { default: 1.5, finance: 3.5, tech: 2.5 },
+      IT: { default: 2.5, finance: 6, tech: 4 },
+      SA: { default: 2, finance: 5, tech: 3 },
+    };
+    const nicheKey = (niche || "").toLowerCase().includes("financ") ? "finance" : (niche || "").toLowerCase().includes("tech") ? "tech" : (niche || "").toLowerCase().includes("educ") ? "education" : (niche || "").toLowerCase().includes("gam") ? "gaming" : (niche || "").toLowerCase().includes("saúde") || (niche || "").toLowerCase().includes("health") ? "health" : "default";
+
+    const countries = Object.entries(CPM_DATA).map(([code, cpms]: any) => {
+      const cpm = cpms[nicheKey] || cpms.default;
+      const monthlyVideos = (videosPerWeek || 3) * 4.3;
+      const monthlyViews = monthlyVideos * (avgViews || 10000);
+      const monthlyRevenue = (monthlyViews / 1000) * cpm;
+      return { country: code, cpm, monthlyViews, monthlyRevenue: Math.round(monthlyRevenue), yearlyRevenue: Math.round(monthlyRevenue * 12) };
+    });
+    countries.sort((a, b) => b.monthlyRevenue - a.monthlyRevenue);
+
+    const selected = countries.find(c => c.country === country) || countries[0];
+    const projections = [1, 3, 6, 12].map(m => {
+      const growth = 1 + (m * 0.15);
+      return { month: m, views: Math.round(selected.monthlyViews * growth), revenue: Math.round(selected.monthlyRevenue * growth) };
+    });
+
+    res.json({ countries, selected, projections, nicheKey });
+  } catch (err) { next(err); }
+});
+
+// 🎯 Gerador de Títulos + Thumbnails
+router.post("/generate-titles", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure a API Key" }); return; }
+    const { channelName, niche, topVideoTitles, targetCountry, language } = req.body;
+
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6", temperature: 0.7, max_tokens: 3000,
+        messages: [
+          { role: "system", content: "Expert em títulos virais e thumbnails para YouTube. Gere títulos otimizados para CTR e prompts de thumbnail. APENAS JSON." },
+          { role: "user", content: `Baseado neste canal de referência, gere títulos + thumbnails para um canal modelado:
+Canal original: "${channelName}" | Nicho: ${niche} | País alvo: ${targetCountry} | Idioma: ${language || "pt-BR"}
+Títulos originais que funcionam: ${topVideoTitles?.join(" | ")}
+
+Gere 10 ideias de vídeo com título + prompt de thumbnail. JSON:
+[{
+  "title": "Título viral otimizado para CTR (no idioma ${language || 'pt-BR'})",
+  "hook": "Frase de hook para os primeiros 5 segundos",
+  "thumbnailPrompt": "Prompt detalhado para gerar thumbnail no Midjourney/ImageFX: composição, cores, elementos, texto overlay, emoção, estilo",
+  "estimatedViews": "Estimativa de views",
+  "tags": ["tag1","tag2","tag3"]
+}]` }
+        ]
+      })
+    });
+    if (!aiRes.ok) throw new Error("AI API error");
+    const aiData = await aiRes.json() as any;
+    const raw = aiData.choices?.[0]?.message?.content || "";
+    const parsed = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
+    res.json({ ideas: Array.isArray(parsed) ? parsed : [] });
+  } catch (err) { next(err); }
+});

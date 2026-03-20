@@ -186,5 +186,9 @@ export const researchApi = {
   save: (data: any) => api.post<any>("/research/save", data),
   listSaved: () => api.get<any[]>("/research/saved"),
   deleteSaved: (id: number) => api.del<{ ok: boolean }>(`/research/saved/${id}`),
+  dna: (data: any) => api.post<any>("/research/dna", data),
+  blueprint: (data: any) => api.post<any>("/research/blueprint", data),
+  monetization: (data: any) => api.post<any>("/research/monetization", data),
+  generateTitles: (data: any) => api.post<any>("/research/generate-titles", data),
   updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
 };
