@@ -62,6 +62,24 @@ export default function CommandCenter(){
     </div>
 
     {r&&<div>
+      {/* Video info card */}
+      {v.title&&<div style={{display:"flex",gap:14,padding:14,background:C.bgCard,borderRadius:14,border:`1px solid ${C.border}`,marginBottom:16,alignItems:"center"}}>
+        {v.thumbnail&&<img src={v.thumbnail} style={{width:120,height:68,borderRadius:8,objectFit:"cover"}}/>}
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,fontSize:15,marginBottom:4}}>{v.title}</div>
+          <div style={{display:"flex",gap:8,fontSize:10,color:C.dim}}>
+            {v.publishedAt&&<span>📅 {v.publishedAt.slice(0,10)}</span>}
+            {v.daysSincePublish!==null&&<span>({v.daysSincePublish} dias)</span>}
+            {v.isFirst48h&&<span style={{color:C.red,fontWeight:700}}>🔥 Primeiras 48h!</span>}
+            {v.tagCount>0&&<span>🏷️ {v.tagCount} tags</span>}
+          </div>
+        </div>
+        {v.velocity>0&&<div style={{textAlign:"center",padding:"8px 14px",background:`${C.green}08`,borderRadius:10}}>
+          <div style={{fontSize:18,fontWeight:800,color:C.green}}>{v.velocity}</div>
+          <div style={{fontSize:9,color:C.dim}}>views/dia</div>
+        </div>}
+      </div>}
+
       {aiResult?.status&&<div style={{background:aiResult.status.includes("🟢")?`${C.green}08`:aiResult.status.includes("🟡")?`#F59E0B08`:`${C.red}08`,borderRadius:14,border:`1px solid ${aiResult.status.includes("🟢")?C.green:aiResult.status.includes("🟡")?"#F59E0B":C.red}20`,padding:20,marginBottom:20}}>
         <div style={{fontSize:18,fontWeight:800,marginBottom:6}}>{aiResult.status}</div>
         <div style={{fontSize:13,color:C.muted,lineHeight:1.7}}>{aiResult.diagnosis}</div>
@@ -79,8 +97,8 @@ export default function CommandCenter(){
         {aiResult?.layerPrediction&&<div style={{fontSize:12,color:C.muted,marginTop:10}}>🔮 {aiResult.layerPrediction}</div>}
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,marginBottom:20}}>
-        {[["Views",fmt(v.views),C.green],["Watch Time",`${fmt(v.watchTime)}min`,C.blue],["AVD",`${Math.round(v.avgDuration)}s`,C.purple],["Retenção",`${Math.round(v.avgPct)}%`,v.avgPct>=50?C.green:C.red],["Satisfaction",`${v.satisfaction}%`,v.satisfaction>=90?C.green:C.red]].map(([l,val,c])=>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:8,marginBottom:20}}>
+        {[["Total Views",fmt(v.totalViews||v.views),C.green],["7d Views",fmt(v.views7d||0),C.blue],["Watch Time",`${fmt(v.watchTime)}min`,C.purple],["AVD",`${Math.round(v.avgDuration)}s`,C.orange],["Retenção",`${Math.round(v.avgPct)}%`,v.avgPct>=50?C.green:C.red],["Satisfaction",`${v.satisfaction}%`,v.satisfaction>=90?C.green:C.red]].map(([l,val,c])=>
           <div key={l} style={{background:C.bgCard,borderRadius:12,border:`1px solid ${C.border}`,padding:"14px 10px",textAlign:"center"}}>
             <div style={{fontSize:9,color:C.dim,textTransform:"uppercase",marginBottom:4}}>{l}</div>
             <div style={{fontSize:20,fontWeight:800,color:c}}>{val}</div>

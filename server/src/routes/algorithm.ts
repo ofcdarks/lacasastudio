@@ -603,51 +603,104 @@ router.post("/command-center", async (req: any, res: Response, next: NextFunctio
     if (!at) { res.status(401).json({ error: "Conecte YouTube" }); return; }
     const { videoId } = req.body;
     if (!videoId) { res.status(400).json({ error: "videoId obrigatório" }); return; }
+    const ytKey = await getYtKey();
 
     const end = new Date().toISOString().split("T")[0];
-    const start = new Date(Date.now() - 3 * 86400000).toISOString().split("T")[0];
+    const start28 = new Date(Date.now() - 28 * 86400000).toISOString().split("T")[0];
+    const start7 = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
 
-    // Get hourly data for this video
-    const [hourly, overall] = await Promise.all([
-      ytAnalytics(at, `ids=channel==MINE&startDate=${start}&endDate=${end}&metrics=views,estimatedMinutesWatched,likes,comments,subscribersGained&dimensions=day&filters=video==${videoId}&sort=day`),
-      ytAnalytics(at, `ids=channel==MINE&startDate=${start}&endDate=${end}&metrics=views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,likes,dislikes,comments,shares,subscribersGained,subscribersLost&filters=video==${videoId}`),
+    // Pull BOTH: lifetime stats (Data API) + recent analytics (Analytics API)
+    const [dataApiRes, analytics28, analytics7, dailyData, chAvgRes] = await Promise.allSettled([
+      // 1. LIFETIME stats from YouTube Data API (total views, likes, comments)
+      ytKey ? ytFetch(`videos?part=snippet,statistics,contentDetails&id=${videoId}`, ytKey) : Promise.resolve(null),
+      // 2. 28-day analytics from YouTube Analytics API
+      ytAnalytics(at, `ids=channel==MINE&startDate=${start28}&endDate=${end}&metrics=views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,likes,dislikes,comments,shares,subscribersGained,subscribersLost&filters=video==${videoId}`),
+      // 3. 7-day analytics (more recent trend)
+      ytAnalytics(at, `ids=channel==MINE&startDate=${start7}&endDate=${end}&metrics=views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,likes,dislikes,comments,shares,subscribersGained,subscribersLost&filters=video==${videoId}`),
+      // 4. Daily breakdown (28 days)
+      ytAnalytics(at, `ids=channel==MINE&startDate=${start28}&endDate=${end}&metrics=views,estimatedMinutesWatched,likes,comments,subscribersGained&dimensions=day&filters=video==${videoId}&sort=day`),
+      // 5. Channel averages (90 days, top 20 videos)
+      ytAnalytics(at, `ids=channel==MINE&startDate=${new Date(Date.now() - 90 * 86400000).toISOString().split("T")[0]}&endDate=${end}&metrics=views,averageViewDuration,averageViewPercentage&dimensions=video&sort=-views&maxResults=20`),
     ]);
 
-    const totals = overall.rows?.[0] || [];
-    const views = totals[0] || 0;
-    const likes = totals[4] || 0;
-    const dislikes = totals[5] || 0;
+    // Parse lifetime stats from Data API
+    const videoData = dataApiRes.status === "fulfilled" ? (dataApiRes.value as any)?.items?.[0] : null;
+    const lifetime = {
+      title: videoData?.snippet?.title || "",
+      thumbnail: videoData?.snippet?.thumbnails?.medium?.url || "",
+      publishedAt: videoData?.snippet?.publishedAt || "",
+      duration: videoData?.contentDetails?.duration || "",
+      totalViews: Number(videoData?.statistics?.viewCount || 0),
+      totalLikes: Number(videoData?.statistics?.likeCount || 0),
+      totalComments: Number(videoData?.statistics?.commentCount || 0),
+      tags: videoData?.snippet?.tags || [],
+      description: videoData?.snippet?.description || "",
+    };
 
-    // Determine algorithm layer
+    // Parse recent analytics (28 days)
+    const a28 = analytics28.status === "fulfilled" ? (analytics28.value.rows?.[0] || []) : [];
+    const a7 = analytics7.status === "fulfilled" ? (analytics7.value.rows?.[0] || []) : [];
+
+    // Use BEST available data: lifetime from Data API, recent from Analytics API
+    const views = lifetime.totalViews || a28[0] || 0;
+    const likes = lifetime.totalLikes || a28[4] || 0;
+    const dislikes = a28[5] || 0;
+    const comments = lifetime.totalComments || a28[6] || 0;
+    const shares = a28[7] || 0;
+    const subsGained = a28[8] || 0;
+    const subsLost = a28[9] || 0;
+    const avgDuration = a28[2] || 0;
+    const avgPct = a28[3] || 0;
+    const watchTime = a28[1] || 0;
+
+    // Recent 7-day views for velocity
+    const views7d = a7[0] || 0;
+    const velocity = views7d > 0 ? Math.round(views7d / 7) : 0; // views per day recently
+
+    // Determine algorithm layer based on TOTAL views + recent velocity
     let layer = "testing";
-    if (views > 100000) layer = "viral";
-    else if (views > 10000) layer = "adjacent";
-    else if (views > 1000) layer = "topic";
-    else if (views > 100) layer = "recent";
+    if (views > 100000 || velocity > 5000) layer = "viral";
+    else if (views > 10000 || velocity > 1000) layer = "adjacent";
+    else if (views > 1000 || velocity > 100) layer = "topic";
+    else if (views > 100 || velocity > 10) layer = "recent";
     else if (views > 10) layer = "core";
 
-    // Save performance snapshot
-    await (prisma as any).videoPerformance.create({
-      data: {
-        ytVideoId: videoId, views, likes, dislikes, comments: totals[6] || 0, shares: totals[7] || 0,
-        subsGained: totals[8] || 0, subsLost: totals[9] || 0, avgViewDuration: totals[2] || 0,
-        avgViewPct: totals[3] || 0, watchTimeMin: totals[1] || 0,
-        satisfaction: likes + dislikes > 0 ? Math.round((likes / (likes + dislikes)) * 100) : 0,
-        layer, userId: req.userId,
-      }
-    });
+    const satisfaction = likes + dislikes > 0 ? Math.round((likes / (likes + dislikes)) * 100) : 0;
 
-    // Get channel averages for comparison
-    const chAvg = await ytAnalytics(at, `ids=channel==MINE&startDate=${new Date(Date.now() - 90 * 86400000).toISOString().split("T")[0]}&endDate=${end}&metrics=views,averageViewDuration,averageViewPercentage&dimensions=video&sort=-views&maxResults=20`);
+    // Days since publish
+    const publishDate = lifetime.publishedAt ? new Date(lifetime.publishedAt) : null;
+    const daysSincePublish = publishDate ? Math.floor((Date.now() - publishDate.getTime()) / 86400000) : null;
+    const isFirst48h = daysSincePublish !== null && daysSincePublish <= 2;
+
+    // Channel averages
+    const chAvg = chAvgRes.status === "fulfilled" ? chAvgRes.value : { rows: [] };
     const avgViews = chAvg.rows?.length ? Math.round(chAvg.rows.reduce((a: number, r: any) => a + r[1], 0) / chAvg.rows.length) : 0;
-    const avgDuration = chAvg.rows?.length ? Math.round(chAvg.rows.reduce((a: number, r: any) => a + r[2], 0) / chAvg.rows.length) : 0;
+    const avgChannelDuration = chAvg.rows?.length ? Math.round(chAvg.rows.reduce((a: number, r: any) => a + r[2], 0) / chAvg.rows.length) : 0;
+
+    // Save snapshot
+    await (prisma as any).videoPerformance.create({
+      data: { ytVideoId: videoId, views, likes, dislikes, comments, shares, subsGained, subsLost, avgViewDuration: avgDuration, avgViewPct: avgPct, watchTimeMin: watchTime, satisfaction, layer, userId: req.userId }
+    }).catch(() => {});
+
+    // Daily chart
+    const daily = dailyData.status === "fulfilled" ? (dailyData.value.rows || []).map((r: any) => ({ date: r[0], views: r[1], watchTime: Math.round(r[2]), likes: r[3], comments: r[4], subs: r[5] })) : [];
 
     res.json({
-      video: { id: videoId, views, watchTime: Math.round(totals[1] || 0), avgDuration: Math.round(totals[2] || 0), avgPct: Math.round(totals[3] || 0), likes, dislikes, comments: totals[6] || 0, shares: totals[7] || 0, subsGained: totals[8] || 0, subsLost: totals[9] || 0, satisfaction: likes + dislikes > 0 ? Math.round((likes / (likes + dislikes)) * 100) : 0 },
+      video: {
+        id: videoId, title: lifetime.title, thumbnail: lifetime.thumbnail, publishedAt: lifetime.publishedAt,
+        views, watchTime: Math.round(watchTime), avgDuration: Math.round(avgDuration), avgPct: Math.round(avgPct),
+        likes, dislikes, comments, shares, subsGained, subsLost, satisfaction,
+        totalViews: lifetime.totalViews, totalLikes: lifetime.totalLikes, totalComments: lifetime.totalComments,
+        views7d, velocity, daysSincePublish, isFirst48h, tagCount: lifetime.tags.length,
+      },
       layer,
       layerLabel: { testing: "Testando", core: "Audiência Core", recent: "Viewers Recentes", topic: "Match de Tópico", adjacent: "Audiência Adjacente", viral: "Viral" }[layer],
-      vsChannel: { avgViews, avgDuration, viewsVsAvg: avgViews > 0 ? Math.round((views / avgViews) * 100) : 0, durationVsAvg: avgDuration > 0 ? Math.round(((totals[2] || 0) / avgDuration) * 100) : 0 },
-      daily: (hourly.rows || []).map((r: any) => ({ date: r[0], views: r[1], watchTime: Math.round(r[2]), likes: r[3], comments: r[4], subs: r[5] })),
+      vsChannel: {
+        avgViews, avgDuration: avgChannelDuration,
+        viewsVsAvg: avgViews > 0 ? Math.round((views / avgViews) * 100) : 0,
+        durationVsAvg: avgChannelDuration > 0 ? Math.round((avgDuration / avgChannelDuration) * 100) : 0,
+      },
+      daily,
     });
   } catch (err) { next(err); }
 });
@@ -988,14 +1041,52 @@ router.post("/catalog/scan", async (req: any, res: Response, next: NextFunction)
 
 router.post("/catalog/fix", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const { videoId, issues } = req.body;
-    const result = await fetchAI(
-      "Expert em YouTube SEO. Corrija os problemas deste vídeo. " + LANG_RULE,
-      `Corrija estes problemas de SEO do vídeo "${videoId}":
-Problemas: ${JSON.stringify(issues)}
+    const { videoId, issues, title } = req.body;
+    if (!videoId) { res.status(400).json({ error: "videoId obrigatório" }); return; }
 
-JSON: {"newTitle":"Título otimizado","newDescription":"Descrição otimizada com timestamps, hashtags, links e CTAs","newTags":["tag1","tag2","tag3"],"changes":["O que mudou e por quê"]}`,
-      2000
+    // Fetch REAL video data from YouTube API
+    const ytKey = await getYtKey();
+    let realTitle = title || videoId;
+    let realDesc = "";
+    let realTags: string[] = [];
+    let channelTitle = "";
+    let views = 0;
+
+    if (ytKey) {
+      try {
+        // Bust cache to get fresh data
+        for (const [k] of cache) { if (k.includes(videoId)) cache.delete(k); }
+        const vData = await ytFetch(`videos?part=snippet,statistics&id=${videoId}`, ytKey);
+        const v = vData.items?.[0];
+        if (v) {
+          realTitle = v.snippet?.title || title || videoId;
+          realDesc = v.snippet?.description || "";
+          realTags = v.snippet?.tags || [];
+          channelTitle = v.snippet?.channelTitle || "";
+          views = Number(v.statistics?.viewCount || 0);
+        }
+      } catch {}
+    }
+
+    const result = await fetchAI(
+      `Expert #1 em YouTube SEO. Você recebe dados REAIS de um vídeo e deve corrigir TODOS os problemas mantendo a essência do conteúdo original. NUNCA mude o tema do vídeo. O título corrigido deve ser sobre o MESMO assunto. As tags devem ser do MESMO nicho. A descrição deve falar do MESMO conteúdo. ` + LANG_RULE,
+      `DADOS REAIS DO VÍDEO:
+Título atual: "${realTitle}"
+Canal: "${channelTitle}"
+Views: ${views}
+Tags atuais (${realTags.length}): ${realTags.join(", ")}
+Descrição atual (${realDesc.split(/\s+/).length} palavras): "${realDesc.slice(0, 800)}"
+
+PROBLEMAS ENCONTRADOS: ${JSON.stringify(issues)}
+
+CORRIJA mantendo o MESMO tema/assunto do vídeo. JSON:
+{
+  "newTitle": "Título corrigido (40-65 chars, mesmo assunto, com gatilho emocional + número se possível)",
+  "newDescription": "Descrição COMPLETA com 200+ palavras sobre o MESMO tema. Incluir: resumo do vídeo em 2-3 frases, timestamps (00:00 Intro, 01:30 etc), 3-5 hashtags relevantes ao tema, links placeholder (🔗 Inscreva-se: [link]), CTA. Pronta pra COPIAR e COLAR no YouTube.",
+  "newTags": ["15 tags relevantes ao tema do vídeo", "mix de curtas e longas", "inclui keyword do título"],
+  "changes": ["Explicação de cada mudança feita e por quê"]
+}`,
+      3000
     );
     res.json(result);
   } catch (err) { next(err); }
