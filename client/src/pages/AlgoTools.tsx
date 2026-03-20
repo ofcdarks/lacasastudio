@@ -106,25 +106,61 @@ export default function AlgoTools(){
     {tab==="trends"&&<div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:10,marginBottom:16,alignItems:"end"}}>
         <div><Label t="Nicho (opcional)"/><Input value={trNiche} onChange={e=>setTrNiche(e.target.value)} placeholder="Filtrar por nicho..."/></div>
-        <div><Label t="País"/><Select value={trCountry} onChange={e=>setTrCountry(e.target.value)}><option value="BR">Brasil</option><option value="US">EUA</option><option value="GB">UK</option><option value="global">Global</option></Select></div>
+        <div><Label t="País"/><Select value={trCountry} onChange={e=>setTrCountry(e.target.value)}><option value="BR">Brasil</option><option value="US">EUA</option><option value="GB">UK</option><option value="MX">México</option><option value="ES">Espanha</option><option value="PT">Portugal</option><option value="AR">Argentina</option><option value="CO">Colômbia</option><option value="FR">França</option><option value="DE">Alemanha</option><option value="JP">Japão</option><option value="IN">Índia</option></Select></div>
         <Btn onClick={loadTrends} disabled={trLoading}>{trLoading?"⏳":"📈 Buscar Tendências"}</Btn>
       </div>
       {trends&&<div>
-        {/* AI Insights */}
+        {/* AI Opportunities */}
         {trends.insights&&<div style={{background:`linear-gradient(135deg,${C.red}06,${C.blue}06)`,borderRadius:14,border:`1px solid ${C.red}20`,padding:16,marginBottom:16}}>
           <div style={{fontWeight:700,fontSize:14,marginBottom:10}}>🧠 Oportunidades pra Surfar AGORA</div>
-          {(trends.insights.opportunities||[]).map((o,i)=><div key={i} style={{padding:10,marginBottom:6,background:"rgba(255,255,255,.02)",borderRadius:8,border:`1px solid ${C.border}`,borderLeft:`3px solid ${o.urgency==="alta"?C.red:"#F59E0B"}`}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-              <span style={{fontWeight:700,fontSize:13}}>{o.topic}</span>
-              <span style={{fontSize:9,fontWeight:700,color:o.urgency==="alta"?C.red:"#F59E0B",background:o.urgency==="alta"?`${C.red}15`:`#F59E0B15`,padding:"2px 8px",borderRadius:4}}>●{o.urgency}</span>
+          {(trends.insights.opportunities||[]).map((o,i)=><div key={i} style={{padding:12,marginBottom:8,background:"rgba(255,255,255,.02)",borderRadius:10,border:`1px solid ${C.border}`,borderLeft:`3px solid ${o.urgency==="alta"?C.red:"#F59E0B"}`,borderTopLeftRadius:0,borderBottomLeftRadius:0}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+              <span style={{fontWeight:700,fontSize:14}}>{o.topic}</span>
+              <div style={{display:"flex",gap:4}}>
+                {o.estimatedViews&&<span style={{fontSize:9,color:C.green,background:`${C.green}12`,padding:"2px 8px",borderRadius:4}}>👁️ {o.estimatedViews}</span>}
+                {o.format&&<span style={{fontSize:9,color:C.purple,background:`${C.purple}12`,padding:"2px 8px",borderRadius:4}}>{o.format==="short"?"📱":"🎬"} {o.format}</span>}
+                <span style={{fontSize:9,fontWeight:700,color:o.urgency==="alta"?C.red:"#F59E0B",background:o.urgency==="alta"?`${C.red}15`:`#F59E0B15`,padding:"2px 8px",borderRadius:4}}>●{o.urgency}</span>
+              </div>
             </div>
-            <div style={{fontSize:11,color:C.muted,marginBottom:3}}>{o.why}</div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:12,fontWeight:600,color:C.green}}>{o.titleSuggestion}</span>
-              <button onClick={()=>cp(o.titleSuggestion)} style={{padding:"2px 8px",borderRadius:4,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,cursor:"pointer",fontSize:8}}>📋</button>
+            <div style={{fontSize:12,color:C.muted,marginBottom:6,lineHeight:1.6}}>{o.why}</div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",background:"rgba(255,255,255,.02)",borderRadius:6,marginBottom:4}}>
+              <span style={{fontSize:13,fontWeight:600,color:C.green}}>{o.titleSuggestion}</span>
+              <button onClick={()=>cp(o.titleSuggestion)} style={{padding:"4px 10px",borderRadius:4,border:`1px solid ${C.green}30`,background:`${C.green}08`,color:C.green,cursor:"pointer",fontSize:10}}>📋 Copiar</button>
             </div>
+            {o.hookIdea&&<div style={{fontSize:11,color:C.blue,marginBottom:2}}>🎣 Hook: "{o.hookIdea}"</div>}
+            {o.toolToUse&&<div style={{fontSize:10,color:C.dim}}>🔧 Usar: {o.toolToUse}</div>}
           </div>)}
-          {trends.insights.prediction&&<div style={{marginTop:8,fontSize:12,color:C.blue,fontWeight:600}}>🔮 {trends.insights.prediction}</div>}
+
+          {/* Patterns */}
+          {trends.insights.patterns?.length>0&&<div style={{marginTop:10,marginBottom:10}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.dim,marginBottom:6}}>📊 Padrões Detectados</div>
+            {trends.insights.patterns.map((p,i)=><div key={i} style={{fontSize:12,color:C.muted,padding:"4px 0",borderBottom:`1px solid ${C.border}`}}>📌 {p}</div>)}
+          </div>}
+
+          {/* Cross-niche */}
+          {trends.insights.crossNiche&&<div style={{background:`${C.purple}06`,borderRadius:10,border:`1px solid ${C.purple}20`,padding:12,marginBottom:10}}>
+            <div style={{fontWeight:700,fontSize:12,color:C.purple,marginBottom:4}}>🔄 Oportunidade Cross-Nicho</div>
+            <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>{trends.insights.crossNiche}</div>
+          </div>}
+
+          {/* Shorts combos */}
+          {trends.insights.shortsCombos?.length>0&&<div style={{marginBottom:10}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.orange,marginBottom:6}}>📱 Ideias de Shorts (surfar agora)</div>
+            {trends.insights.shortsCombos.map((s,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${C.border}`,alignItems:"center"}}>
+              <div><span style={{fontSize:10,color:C.dim}}>{s.trend}</span><div style={{fontSize:12,color:C.text}}>{s.shortIdea}</div></div>
+              <button onClick={()=>cp(s.shortIdea)} style={{padding:"2px 8px",borderRadius:4,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,cursor:"pointer",fontSize:8,flexShrink:0}}>📋</button>
+            </div>)}
+          </div>}
+
+          {/* Action plan */}
+          {trends.insights.actionPlan&&<div style={{background:`${C.green}06`,borderRadius:10,border:`1px solid ${C.green}20`,padding:12,marginBottom:10}}>
+            <div style={{fontWeight:700,fontSize:12,color:C.green,marginBottom:4}}>⚡ Plano de Ação (próximos 3 dias)</div>
+            <div style={{fontSize:12,color:C.muted,lineHeight:1.7}}>{trends.insights.actionPlan}</div>
+          </div>}
+
+          {/* Avoid + Prediction */}
+          {trends.insights.avoidTopics?.length>0&&<div style={{marginBottom:8}}>{trends.insights.avoidTopics.map((t,i)=><div key={i} style={{fontSize:11,color:C.red,padding:"2px 0"}}>⛔ {t}</div>)}</div>}
+          {trends.insights.prediction&&<div style={{fontSize:12,color:C.blue,fontWeight:600}}>🔮 {trends.insights.prediction}</div>}
         </div>}
 
         {/* Trending + Niche */}

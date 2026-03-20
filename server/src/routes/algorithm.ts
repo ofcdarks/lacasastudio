@@ -777,6 +777,29 @@ router.post("/streak/log", async (req: any, res: Response, next: NextFunction) =
 
 router.get("/streak/data", async (req: any, res: Response, next: NextFunction) => {
   try {
+    // Auto-sync: pull actual uploads from YouTube API
+    const ytKey = await getYtKey();
+    const oauthToken = await (prisma as any).oAuthToken.findFirst({ where: { userId: req.userId }, orderBy: { createdAt: "desc" } });
+    if (ytKey && oauthToken?.channelId) {
+      try {
+        const chData = await ytFetch(`channels?part=contentDetails&id=${oauthToken.channelId}`, ytKey);
+        const uploads = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+        if (uploads) {
+          const pl = await ytFetch(`playlistItems?part=snippet&playlistId=${uploads}&maxResults=50`, ytKey);
+          for (const item of (pl.items || [])) {
+            const pubDate = item.snippet?.publishedAt?.split("T")[0];
+            const title = item.snippet?.title || "";
+            if (pubDate && title) {
+              const exists = await (prisma as any).uploadStreak.findFirst({ where: { userId: req.userId, date: pubDate, videoTitle: title } });
+              if (!exists) {
+                await (prisma as any).uploadStreak.create({ data: { userId: req.userId, date: pubDate, videoTitle: title, type: "long" } }).catch(() => {});
+              }
+            }
+          }
+        }
+      } catch {} // Don't fail if sync fails
+    }
+
     const entries = await (prisma as any).uploadStreak.findMany({
       where: { userId: req.userId }, orderBy: { date: "desc" }, take: 365,
     });
@@ -908,59 +931,57 @@ router.post("/catalog/scan", async (req: any, res: Response, next: NextFunction)
   try {
     const ytKey = await getYtKey();
     if (!ytKey) { res.status(400).json({ error: "Configure YouTube API Key" }); return; }
-    const at = await getAccessToken(req.userId);
-    const oauthToken = await (prisma as any).oAuthToken.findUnique({ where: { userId: req.userId } });
+    const oauthToken = await (prisma as any).oAuthToken.findFirst({ where: { userId: req.userId }, orderBy: { createdAt: "desc" } });
     const channelId = oauthToken?.channelId;
     if (!channelId) { res.status(400).json({ error: "Conecte YouTube primeiro" }); return; }
 
-    // Get channel's uploads playlist
     const chData = await ytFetch(`channels?part=contentDetails&id=${channelId}`, ytKey);
     const uploads = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
     if (!uploads) { res.status(400).json({ error: "Canal não encontrado" }); return; }
 
-    // Get last 50 videos
     const pl = await ytFetch(`playlistItems?part=contentDetails&playlistId=${uploads}&maxResults=50`, ytKey);
     const videoIds = (pl.items || []).map((i: any) => i.contentDetails?.videoId).filter(Boolean);
-    if (!videoIds.length) { res.json({ videos: [] }); return; }
+    if (!videoIds.length) { res.json({ videos: [], totalScanned: 0, needsWork: 0 }); return; }
 
     const vData = await ytFetch(`videos?part=snippet,statistics&id=${videoIds.join(",")}`, ytKey);
-    const results = [];
+    const results: any[] = [];
 
     for (const v of (vData.items || [])) {
       const title = v.snippet?.title || "";
       const desc = v.snippet?.description || "";
       const tags = v.snippet?.tags || [];
       const views = Number(v.statistics?.viewCount || 0);
-      const issues = [];
+      const likes = Number(v.statistics?.likeCount || 0);
+      const comments = Number(v.statistics?.commentCount || 0);
+      const issues: string[] = [];
 
       if (title.length < 30) issues.push("Título muito curto (<30 chars)");
       if (title.length > 70) issues.push("Título muito longo (>70 chars)");
-      if (desc.split(/\s+/).length < 50) issues.push("Descrição muito curta (<50 palavras)");
+      if (desc.split(/\s+/).length < 50) issues.push("Descrição curta (<50 palavras)");
       if (tags.length < 3) issues.push("Poucas tags (<3)");
+      if (tags.length > 0 && tags.length < 8) issues.push("Poucas tags (ideal: 8-15)");
       if (!/\d{1,2}:\d{2}/.test(desc)) issues.push("Sem timestamps");
       if (!/#\w+/.test(desc)) issues.push("Sem hashtags");
       if (!/https?:\/\//.test(desc)) issues.push("Sem links");
+      if (!/inscreva|subscribe|suscri/i.test(desc)) issues.push("Sem CTA na descrição");
 
-      const seoScore = Math.max(0, 100 - issues.length * 15);
+      const seoScore = Math.max(0, 100 - issues.length * 12);
 
-      if (issues.length > 0) {
-        results.push({
-          videoId: v.id, title, views, tagCount: tags.length, descWordCount: desc.split(/\s+/).length,
-          seoScore, issues, thumbnail: v.snippet?.thumbnails?.medium?.url,
-        });
+      results.push({
+        videoId: v.id, title, views, likes, comments, tagCount: tags.length,
+        descWordCount: desc.split(/\s+/).length, seoScore, issues,
+        thumbnail: v.snippet?.thumbnails?.medium?.url,
+        publishedAt: v.snippet?.publishedAt,
+      });
 
-        await (prisma as any).catalogAudit.upsert({
-          where: { id: 0 }, // Dummy — will create
-          create: { ytVideoId: v.id, title, seoScore, issues: JSON.stringify(issues), userId: req.userId },
-          update: {},
-        }).catch(() => {
-          (prisma as any).catalogAudit.create({ data: { ytVideoId: v.id, title, seoScore, issues: JSON.stringify(issues), userId: req.userId } });
-        });
-      }
+      // Save audit (simple create, ignore duplicates)
+      await (prisma as any).catalogAudit.create({
+        data: { ytVideoId: v.id, title, seoScore, issues: JSON.stringify(issues), userId: req.userId }
+      }).catch(() => {});
     }
 
-    results.sort((a, b) => a.seoScore - b.seoScore);
-    res.json({ totalScanned: vData.items?.length || 0, needsWork: results.length, videos: results });
+    results.sort((a: any, b: any) => a.seoScore - b.seoScore);
+    res.json({ totalScanned: vData.items?.length || 0, needsWork: results.filter((r: any) => r.seoScore < 70).length, videos: results });
   } catch (err) { next(err); }
 });
 

@@ -1331,18 +1331,41 @@ router.post("/trend-detector", async (req: any, res: Response, next: NextFunctio
       publishedAt: v.snippet?.publishedAt,
     }));
 
-    // AI analysis of trends
+    // AI analysis of trends — DEEP analysis with user context
     let aiInsights = null;
     if (aiKey) {
       try {
-        const titles = [...trendingList, ...nicheVirals].slice(0, 15).map(v => v.title).join(" | ");
-        aiInsights = await fetchAI(aiKey, await getModel(),
-          "Expert em trends YouTube. " + LANG_RULE,
-          `RESPONDA EM PORTUGUÊS BR. Analise estas tendências e dê oportunidades:
-Trending agora: ${titles}
-Nicho: ${niche || "geral"}, País: ${country || "BR"}
+        const titles = [...trendingList, ...nicheVirals].slice(0, 15).map(v => `"${v.title}" (${v.views > 1e6 ? (v.views/1e6).toFixed(1)+"M" : v.views > 1e3 ? (v.views/1e3).toFixed(0)+"K" : v.views} views)`).join("\n");
+        
+        // Get user's channels for context
+        const userChannels = await (prisma as any).oAuthToken.findMany({ where: { userId: req.userId } });
+        const channelContext = userChannels.length ? `Canais do creator: ${userChannels.map((c: any) => c.channelName).join(", ")}` : "";
+        const savedChannels = await prisma.savedChannel.findMany({ where: { userId: req.userId }, take: 5 });
+        const savedContext = savedChannels.length ? `Nichos monitorados: ${savedChannels.map(s => s.niche || s.name).join(", ")}` : "";
 
-JSON: {"patterns":["Padrão 1 que está viralizando","Padrão 2","Padrão 3"],"opportunities":[{"topic":"Tópico pra criar AGORA","why":"Por que vai viralizar","titleSuggestion":"Título pronto pra usar","urgency":"alta/média"},{"topic":"2","why":"...","titleSuggestion":"...","urgency":"..."},{"topic":"3","why":"...","titleSuggestion":"...","urgency":"..."},{"topic":"4","why":"...","titleSuggestion":"...","urgency":"..."},{"topic":"5","why":"...","titleSuggestion":"...","urgency":"..."}],"avoidTopics":["Tópico saturado 1","2"],"prediction":"Previsão do que vai viralizar nos próximos 7 dias"}`, 1500);
+        aiInsights = await fetchAI(aiKey, await getModel(),
+          `Expert AGRESSIVO em trends YouTube. Analise trending data e dê estratégia de DOMINAÇÃO. NUNCA recomende ferramentas externas — APENAS ferramentas do LaCasaStudio: Keywords, Tag Spy, SEO Audit, Retenção, Shorts Optimizer, Command Center, A/B Testing, Community Planner, Ideias do Dia, DNA Viral, Repurpose, Roteiro Completo, Preditor Viral. ` + LANG_RULE,
+          `TRENDING ${country || "BR"} AGORA:
+${titles}
+
+${channelContext}
+${savedContext}
+Nicho buscado: ${niche || "geral"}
+
+Analise e retorne JSON:
+{"patterns":["Padrão 1 que está viralizando com dados","Padrão 2","Padrão 3"],
+"opportunities":[
+  {"topic":"Tópico ESPECÍFICO pra criar AGORA","why":"Por que vai viralizar — cite views e dados reais","titleSuggestion":"Título otimizado pronto pra usar","urgency":"alta","format":"long/short/both","estimatedViews":"50K-200K","hookIdea":"Primeiros 5s do vídeo","toolToUse":"Ferramenta do LaCasaStudio"},
+  {"topic":"2","why":"...","titleSuggestion":"...","urgency":"alta","format":"...","estimatedViews":"...","hookIdea":"...","toolToUse":"..."},
+  {"topic":"3","why":"...","titleSuggestion":"...","urgency":"média","format":"...","estimatedViews":"...","hookIdea":"...","toolToUse":"..."},
+  {"topic":"4","why":"...","titleSuggestion":"...","urgency":"média","format":"...","estimatedViews":"...","hookIdea":"...","toolToUse":"..."},
+  {"topic":"5","why":"...","titleSuggestion":"...","urgency":"média","format":"...","estimatedViews":"...","hookIdea":"...","toolToUse":"..."}
+],
+"avoidTopics":["Tópico saturado — por que evitar","2"],
+"prediction":"Previsão DETALHADA do que vai viralizar nos próximos 7 dias",
+"shortsCombos":[{"trend":"Trend","shortIdea":"Ideia de Short de 30s surfando isso"},{"trend":"...","shortIdea":"..."}],
+"crossNiche":"Como combinar essas trends com os nichos do creator pra criar algo único",
+"actionPlan":"Nos próximos 3 dias faça: 1) ... 2) ... 3) ... usando ferramentas do LaCasaStudio"}`, 2500);
       } catch {}
     }
 

@@ -324,6 +324,9 @@ router.post("/seo-audit", async (req: any, res: Response, next: NextFunction) =>
     const urlMatch = videoUrl.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/);
     if (urlMatch) videoId = urlMatch[1];
 
+    // Bust cache so re-audit gets FRESH data after user updates on YouTube
+    for (const [k] of cache) { if (k.includes(videoId)) cache.delete(k); }
+
     const vData = await ytFetch(`videos?part=snippet,statistics,contentDetails&id=${videoId}`, ytKey);
     const video = vData.items?.[0];
     if (!video) { res.status(404).json({ error: "Vídeo não encontrado" }); return; }
