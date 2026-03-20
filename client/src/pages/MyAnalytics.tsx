@@ -48,7 +48,11 @@ export default function MyAnalytics() {
     setTab(t); setLoading(true);
     pg?.start("📊 Carregando", ["YouTube Analytics", "Processando"]);
     try {
-      if (t === "overview" || !overview) { const o = await api.overview(days); setOverview(o); }
+      if (t === "overview" || !overview) {
+        const o = await api.overview(days); setOverview(o);
+        // Refresh channel list to pick up updated subscribers
+        api.status().then(s => { if (s.channels?.length) setChannels(s.channels); }).catch(() => {});
+      }
       if (t === "videos" || !videos.length) { const v = await api.videos(days); setVideos(Array.isArray(v.videos) ? v.videos : []); }
       if (t === "satisfaction") { const s = await api.satisfaction(); setSatisfaction(s); }
       if (t === "devices") { const d = await api.devices(); setDevices(d); }
@@ -117,11 +121,17 @@ export default function MyAnalytics() {
 
     {/* ── OVERVIEW ── */}
     {tab === "overview" && overview && <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 8, marginBottom: 20 }}>
+      {/* Channel stats bar */}
+      {overview.channelInfo?.subscribers > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 12 }}>
+        <Stat label="Inscritos" value={fmt(overview.channelInfo.subscribers)} color={C.red} />
+        <Stat label="Views Totais" value={fmt(overview.channelInfo.totalViews)} color={C.blue} />
+        <Stat label="Vídeos" value={fmt(overview.channelInfo.videoCount)} color={C.purple} />
+      </div>}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 8, marginBottom: 12 }}>
         <Stat label="Views" value={fmt(t.views)} color={C.green} /><Stat label="Watch Time" value={`${fmt(Math.round(t.watchTime))}min`} color={C.blue} /><Stat label="AVD" value={`${Math.round(t.avgDuration)}s`} color={C.purple} /><Stat label="Retenção" value={`${Math.round(t.avgPct)}%`} color={t.avgPct >= 50 ? C.green : C.red} /><Stat label="Satisfaction" value={`${t.satisfaction}%`} color={t.satisfaction >= 90 ? C.green : C.red} /><Stat label="Net Subs" value={`+${fmt(t.netSubs)}`} color={t.netSubs > 0 ? C.green : C.red} />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 20 }}>
-        <Stat label="Likes" value={fmt(t.likes)} color={C.green} /><Stat label="Comments" value={fmt(t.comments)} color={C.blue} /><Stat label="Shares" value={fmt(t.shares)} color={C.purple} /><Stat label="Subs Gained" value={fmt(t.subsGained)} color={C.orange} sub={`-${fmt(t.subsLost)} lost`} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8, marginBottom: 20 }}>
+        <Stat label="Likes" value={fmt(t.likes)} color={C.green} /><Stat label="Comments" value={fmt(t.comments)} color={C.blue} /><Stat label="Shares" value={fmt(t.shares)} color={C.purple} /><Stat label="Engajamento" value={`${t.engagementRate || 0}%`} color={(t.engagementRate || 0) >= 5 ? C.green : C.red} sub="likes+comments+shares/views" /><Stat label="Views/dia" value={fmt(t.viewsPerDay || 0)} color={C.orange} />
       </div>
       {/* Quick AI button */}
       <div style={{ background: `linear-gradient(135deg,${C.red}08,${C.purple}08)`, borderRadius: 16, border: `1px solid ${C.red}20`, padding: 20, marginBottom: 20, textAlign: "center" }}>
@@ -353,7 +363,7 @@ export default function MyAnalytics() {
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {channels.map(ch => <div key={ch.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, background: C.bgCard, border: `1px solid ${C.border}` }}>
           {ch.thumbnail && <img src={ch.thumbnail} style={{ width: 24, height: 24, borderRadius: "50%" }} />}
-          <div><div style={{ fontSize: 12, fontWeight: 600 }}>{ch.channelName}</div><div style={{ fontSize: 10, color: C.dim }}>{fmt(Number(ch.subscribers))} subs</div></div>
+          <div><div style={{ fontSize: 12, fontWeight: 600 }}>{ch.channelName}</div><div style={{ fontSize: 10, color: C.dim }}>{Number(ch.subscribers) > 0 ? fmt(Number(ch.subscribers)) + " subs" : "Conectado"}</div></div>
           <button onClick={() => removeChannel(ch.id)} style={{ padding: "2px 6px", borderRadius: 4, border: `1px solid ${C.red}30`, background: "transparent", color: C.red, cursor: "pointer", fontSize: 10 }}>✕</button>
         </div>)}
         <Btn onClick={connect} vr="ghost" style={{ fontSize: 11 }}>+ Adicionar Canal</Btn>

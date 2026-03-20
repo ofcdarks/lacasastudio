@@ -373,41 +373,63 @@ router.get("/my-channel/overview", async (req: any, res: Response, next: NextFun
     const base = `ids=channel==MINE&startDate=${start}&endDate=${end}`;
     const prevBase = `ids=channel==MINE&startDate=${prevStart}&endDate=${prevEnd}`;
 
-    // Pull ALL available metrics in parallel
-    const [daily, trafficSrc, deviceData, countryData, searchTerms, playbackLoc, prevPeriod, revenueData] = await Promise.allSettled([
-      // 1. Daily metrics (everything available)
-      ytAnalytics(at, `${base}&metrics=views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,likes,dislikes,comments,shares,subscribersGained,subscribersLost,cardClickRate,cardTeaserClickRate,annotationClickThroughRate&dimensions=day&sort=day`),
-      // 2. Traffic sources (where viewers come from)
+    // Pull ALL available metrics in parallel — ONLY metrics that work together
+    const [daily, trafficSrc, deviceData, countryData, searchTerms, playbackLoc, prevPeriod, revenueData, channelStats] = await Promise.allSettled([
+      // 1. Daily core metrics (NO card/annotation metrics — they break index alignment)
+      ytAnalytics(at, `${base}&metrics=views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,likes,dislikes,comments,shares,subscribersGained,subscribersLost&dimensions=day&sort=day`),
+      // 2. Traffic sources
       ytAnalytics(at, `${base}&metrics=views,estimatedMinutesWatched&dimensions=insightTrafficSourceType&sort=-views`),
       // 3. Device breakdown
       ytAnalytics(at, `${base}&metrics=views,estimatedMinutesWatched,averageViewDuration&dimensions=deviceType&sort=-views`),
       // 4. Country breakdown (top 15)
       ytAnalytics(at, `${base}&metrics=views,estimatedMinutesWatched,subscribersGained&dimensions=country&sort=-views&maxResults=15`),
-      // 5. Search terms that led to channel
+      // 5. Search terms
       ytAnalytics(at, `${base}&metrics=views&dimensions=insightTrafficSourceDetail&filters=insightTrafficSourceType==YT_SEARCH&sort=-views&maxResults=25`),
-      // 6. Playback locations (embedded, youtube page, etc)
+      // 6. Playback locations
       ytAnalytics(at, `${base}&metrics=views,estimatedMinutesWatched&dimensions=insightPlaybackLocationType&sort=-views`),
-      // 7. Previous period (for comparison)
+      // 7. Previous period
       ytAnalytics(at, `${prevBase}&metrics=views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,likes,dislikes,comments,shares,subscribersGained,subscribersLost`),
-      // 8. Revenue (if monetized)
+      // 8. Revenue (if monetized) — separate call, may fail
       ytAnalytics(at, `${base}&metrics=estimatedRevenue,estimatedAdRevenue,grossRevenue,monetizedPlaybacks,playbackBasedCpm,adImpressions`).catch(() => null),
+      // 9. Channel stats from YouTube Data API (subscribers, total views, video count)
+      fetch("https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&mine=true", { headers: { Authorization: `Bearer ${at}` } }).then(r => r.json()),
     ]);
 
+    // Parse channel stats (subscribers, total views)
+    const chStats = channelStats.status === "fulfilled" ? channelStats.value?.items?.[0] : null;
+    const channelInfo = {
+      subscribers: Number(chStats?.statistics?.subscriberCount || 0),
+      totalViews: Number(chStats?.statistics?.viewCount || 0),
+      videoCount: Number(chStats?.statistics?.videoCount || 0),
+      channelName: chStats?.snippet?.title || "",
+      thumbnail: chStats?.snippet?.thumbnails?.default?.url || "",
+    };
+
+    // Also update the OAuth record with fresh subscriber count
+    if (channelInfo.subscribers > 0) {
+      const oauthRecord = await (prisma as any).oAuthToken.findFirst({ where: { userId: req.userId, ...(chId ? { channelId: chId } : {}) }, orderBy: { createdAt: "desc" } });
+      if (oauthRecord) {
+        await (prisma as any).oAuthToken.update({ where: { id: oauthRecord.id }, data: { subscribers: String(channelInfo.subscribers), channelName: channelInfo.channelName || oauthRecord.channelName, thumbnail: channelInfo.thumbnail || oauthRecord.thumbnail } }).catch(() => {});
+      }
+    }
+
+    // Daily metrics: indices are now correct (0=date, 1=views, 2=watchTime, 3=avgDuration, 4=avgPct, 5=likes, 6=dislikes, 7=comments, 8=shares, 9=subsGained, 10=subsLost)
     const rows = daily.status === "fulfilled" ? (daily.value.rows || []) : [];
     const totals = rows.reduce((a: any, r: any) => ({
-      views: a.views + (r[1]||0), watchTime: a.watchTime + (r[2]||0), avgDuration: r[3]||0, avgPct: r[4]||0,
+      views: a.views + (r[1]||0), watchTime: a.watchTime + (r[2]||0),
       likes: a.likes + (r[5]||0), dislikes: a.dislikes + (r[6]||0), comments: a.comments + (r[7]||0),
       shares: a.shares + (r[8]||0), subsGained: a.subsGained + (r[9]||0), subsLost: a.subsLost + (r[10]||0),
-      cardClickRate: r[11]||0, cardTeaserRate: r[12]||0, ctr: r[13]||0,
-    }), { views: 0, watchTime: 0, avgDuration: 0, avgPct: 0, likes: 0, dislikes: 0, comments: 0, shares: 0, subsGained: 0, subsLost: 0, cardClickRate: 0, cardTeaserRate: 0, ctr: 0 });
+    }), { views: 0, watchTime: 0, likes: 0, dislikes: 0, comments: 0, shares: 0, subsGained: 0, subsLost: 0 });
 
     totals.avgDuration = rows.length ? Math.round(rows.reduce((a: number, r: any) => a + (r[3]||0), 0) / rows.length) : 0;
     totals.avgPct = rows.length ? Math.round(rows.reduce((a: number, r: any) => a + (r[4]||0), 0) / rows.length) : 0;
-    totals.ctr = rows.length ? +(rows.reduce((a: number, r: any) => a + (r[13]||0), 0) / rows.length).toFixed(2) : 0;
     totals.satisfaction = totals.likes + totals.dislikes > 0 ? Math.round((totals.likes / (totals.likes + totals.dislikes)) * 100) : 0;
     totals.netSubs = totals.subsGained - totals.subsLost;
     totals.engagementRate = totals.views > 0 ? +((totals.likes + totals.comments + totals.shares) / totals.views * 100).toFixed(2) : 0;
     totals.viewsPerDay = rows.length ? Math.round(totals.views / rows.length) : 0;
+    totals.likesPerView = totals.views > 0 ? +((totals.likes / totals.views) * 100).toFixed(2) : 0;
+    totals.commentsPerView = totals.views > 0 ? +((totals.comments / totals.views) * 100).toFixed(2) : 0;
+    totals.sharesPerView = totals.views > 0 ? +((totals.shares / totals.views) * 100).toFixed(2) : 0;
 
     // Previous period comparison
     const prevRows = prevPeriod.status === "fulfilled" ? (prevPeriod.value.rows || []) : [];
@@ -450,7 +472,7 @@ router.get("/my-channel/overview", async (req: any, res: Response, next: NextFun
 
     const dailyChart = rows.map((r: any) => ({ date: r[0], views: r[1], watchTime: Math.round(r[2]), avgDuration: Math.round(r[3]||0), avgPct: Math.round(r[4]||0), likes: r[5], comments: r[7], subsGained: r[9] }));
 
-    res.json({ totals, growth, traffic, devices, countries, searches, playback, revenue, daily: dailyChart, period: { start, end, days } });
+    res.json({ totals, growth, traffic, devices, countries, searches, playback, revenue, channelInfo, daily: dailyChart, period: { start, end, days } });
   } catch (err) { next(err); }
 });
 
@@ -462,12 +484,13 @@ router.get("/my-channel/videos", async (req: any, res: Response, next: NextFunct
     const end = new Date().toISOString().split("T")[0];
     const start = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
 
-    const data = await ytAnalytics(at, `ids=channel==MINE&startDate=${start}&endDate=${end}&metrics=views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,likes,comments,shares,subscribersGained,annotationClickThroughRate&dimensions=video&sort=-views&maxResults=50`);
+    const data = await ytAnalytics(at, `ids=channel==MINE&startDate=${start}&endDate=${end}&metrics=views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,likes,comments,shares,subscribersGained&dimensions=video&sort=-views&maxResults=50`);
 
     const videos = (data.rows || []).map((r: any) => ({
       videoId: r[0], views: r[1], watchTimeMin: Math.round(r[2]), avgDuration: Math.round(r[3]),
-      avgPct: Math.round(r[4]), likes: r[5], comments: r[6], shares: r[7], subsGained: r[8], ctr: r[9],
+      avgPct: Math.round(r[4]), likes: r[5], comments: r[6], shares: r[7], subsGained: r[8],
       satisfaction: r[5] > 0 ? Math.round((r[5] / (r[5] + 1)) * 100) : 0,
+      engagementRate: r[1] > 0 ? +((r[5] + r[6] + r[7]) / r[1] * 100).toFixed(1) : 0,
     }));
 
     // Enrich with titles
