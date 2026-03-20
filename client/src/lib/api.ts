@@ -190,5 +190,6 @@ export const researchApi = {
   blueprint: (data: any) => api.post<any>("/research/blueprint", data),
   monetization: (data: any) => api.post<any>("/research/monetization", data),
   generateTitles: (data: any) => api.post<any>("/research/generate-titles", data),
+  trending: (data: any) => api.post<any>("/research/trending", data),
   updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
 };

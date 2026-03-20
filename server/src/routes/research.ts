@@ -66,11 +66,14 @@ router.post("/search", async (req: any, res: Response, next: NextFunction) => {
         score, tier: getTier(score), topics,
         description: ch.snippet?.description?.slice(0, 200) || "",
         publishedAt: ch.snippet?.publishedAt || "",
+        channelAge: ch.snippet?.publishedAt ? Math.floor((Date.now() - new Date(ch.snippet.publishedAt).getTime()) / (86400000 * 30)) : 0,
       };
     });
 
-    channels.sort((a: any, b: any) => b.score - a.score);
-    res.json({ channels });
+    // Filter: only show channels worth modeling (score >= 40, min 5 videos)
+    const filtered = channels.filter((c: any) => c.score >= 40 && c.videoCount >= 5);
+    filtered.sort((a: any, b: any) => b.score - a.score);
+    res.json({ channels: filtered, totalFound: channels.length, filtered: channels.length - filtered.length });
   } catch (err) { next(err); }
 });
 
@@ -439,5 +442,47 @@ Gere 10 ideias de vídeo com título + prompt de thumbnail. JSON:
     const raw = aiData.choices?.[0]?.message?.content || "";
     const parsed = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
     res.json({ ideas: Array.isArray(parsed) ? parsed : [] });
+  } catch (err) { next(err); }
+});
+
+// 🔥 Trending/Hype videos
+router.post("/trending", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const ytKey = await getYtKey();
+    if (!ytKey) { res.status(400).json({ error: "Configure a YouTube API Key" }); return; }
+    const { period, regionCode } = req.body as { period?: string; regionCode?: string };
+    
+    // Get trending videos
+    const data = await ytFetch(`videos?part=snippet,statistics,contentDetails&chart=mostPopular&regionCode=${regionCode || "US"}&maxResults=20`, ytKey);
+    const videos = (data.items || []).map((v: any) => {
+      const dur = v.contentDetails?.duration || "PT0S";
+      const match = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      const secs = (Number(match?.[1]||0)*3600) + (Number(match?.[2]||0)*60) + Number(match?.[3]||0);
+      return {
+        id: v.id, title: v.snippet?.title, channelTitle: v.snippet?.channelTitle,
+        channelId: v.snippet?.channelId,
+        thumbnail: v.snippet?.thumbnails?.medium?.url || v.snippet?.thumbnails?.default?.url || "",
+        views: Number(v.statistics?.viewCount || 0),
+        likes: Number(v.statistics?.likeCount || 0),
+        comments: Number(v.statistics?.commentCount || 0),
+        publishedAt: v.snippet?.publishedAt,
+        durationSecs: secs,
+        category: v.snippet?.categoryId,
+      };
+    });
+
+    // Filter by period
+    const now = Date.now();
+    const filtered = videos.filter((v: any) => {
+      if (!v.publishedAt) return true;
+      const age = now - new Date(v.publishedAt).getTime();
+      const day = 86400000;
+      if (period === "day") return age < day;
+      if (period === "week") return age < day * 7;
+      if (period === "month") return age < day * 30;
+      return true;
+    });
+
+    res.json({ videos: filtered.length > 0 ? filtered : videos });
   } catch (err) { next(err); }
 });
