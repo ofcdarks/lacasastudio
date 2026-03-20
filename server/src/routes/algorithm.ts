@@ -77,23 +77,41 @@ router.get("/oauth/callback", async (req: Request, res: Response) => {
     });
     const tokens = await tokenRes.json() as any;
     if (tokens.error) { res.redirect("/?oauth=error&reason=" + encodeURIComponent(tokens.error)); return; }
+    const at = tokens.access_token;
 
-    // Get channel info with statistics
-    const chRes = await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true", {
-      headers: { Authorization: `Bearer ${tokens.access_token}` }
-    });
-    const chData = await chRes.json() as any;
-    const ch = chData.items?.[0];
-    const chId = ch?.id || "";
+    // Get ALL channels this Google account has access to (includes Brand Accounts)
+    const allChannels: any[] = [];
 
-    // Multi-channel: upsert by userId+channelId
-    const existing = await (prisma as any).oAuthToken.findFirst({ where: { userId, channelId: chId } });
-    if (existing) {
-      await (prisma as any).oAuthToken.update({ where: { id: existing.id }, data: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token || existing.refreshToken, expiresAt: String(Date.now() + (tokens.expires_in || 3600) * 1000), channelName: ch?.snippet?.title || "", thumbnail: ch?.snippet?.thumbnails?.default?.url || "", subscribers: String(ch?.statistics?.subscriberCount || "0") } });
-    } else {
-      await (prisma as any).oAuthToken.create({ data: { userId, accessToken: tokens.access_token, refreshToken: tokens.refresh_token || "", expiresAt: String(Date.now() + (tokens.expires_in || 3600) * 1000), scope: tokens.scope || "", channelId: chId, channelName: ch?.snippet?.title || "", thumbnail: ch?.snippet?.thumbnails?.default?.url || "", subscribers: String(ch?.statistics?.subscriberCount || "0") } });
+    // 1. Primary channel (mine=true)
+    const myRes = await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true", { headers: { Authorization: `Bearer ${at}` } });
+    const myData = await myRes.json() as any;
+    if (myData.items?.length) allChannels.push(...myData.items);
+
+    // 2. Brand accounts / managed channels (listByHandle doesn't work, but we can check managedByMe)
+    try {
+      const managedRes = await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&managedByMe=true&maxResults=50", { headers: { Authorization: `Bearer ${at}` } });
+      const managedData = await managedRes.json() as any;
+      if (managedData.items?.length) {
+        for (const ch of managedData.items) {
+          if (!allChannels.find((c: any) => c.id === ch.id)) allChannels.push(ch);
+        }
+      }
+    } catch {} // managedByMe may not be available for all account types
+
+    // Save each channel
+    let savedCount = 0;
+    for (const ch of allChannels) {
+      const chId = ch.id || "";
+      if (!chId) continue;
+      const existing = await (prisma as any).oAuthToken.findFirst({ where: { userId, channelId: chId } });
+      if (existing) {
+        await (prisma as any).oAuthToken.update({ where: { id: existing.id }, data: { accessToken: at, refreshToken: tokens.refresh_token || existing.refreshToken, expiresAt: String(Date.now() + (tokens.expires_in || 3600) * 1000), channelName: ch.snippet?.title || "", thumbnail: ch.snippet?.thumbnails?.default?.url || "", subscribers: String(ch.statistics?.subscriberCount || "0") } });
+      } else {
+        await (prisma as any).oAuthToken.create({ data: { userId, accessToken: at, refreshToken: tokens.refresh_token || "", expiresAt: String(Date.now() + (tokens.expires_in || 3600) * 1000), scope: tokens.scope || "", channelId: chId, channelName: ch.snippet?.title || "", thumbnail: ch.snippet?.thumbnails?.default?.url || "", subscribers: String(ch.statistics?.subscriberCount || "0") } });
+      }
+      savedCount++;
     }
-    res.redirect("/my-analytics?oauth=success");
+    res.redirect(`/my-analytics?oauth=success&channels=${savedCount}`);
   } catch (e: any) { res.redirect("/?oauth=error&reason=" + encodeURIComponent(e.message || "unknown")); }
 });
 
@@ -164,22 +182,108 @@ async function ytAnalytics(accessToken: string, params: string) {
 }
 
 // ═══════════════════════════════════════════
-// AI-POWERED INSIGHTS (analyzes real data)
+// AI-POWERED INSIGHTS — DEEP ANALYSIS
 // ═══════════════════════════════════════════
 router.post("/ai-insights", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const { totals, videos, channelName, period } = req.body;
+    const { totals, growth, traffic, devices, countries, searches, revenue, videos, channelName, period } = req.body;
     if (!totals) { res.status(400).json({ error: "Dados obrigatórios" }); return; }
     const result = await fetchAI(
-      "Você é um consultor de YouTube EXPERT que analisa dados reais do YouTube Analytics. Dê conselhos ACIONÁVEIS e ESPECÍFICOS baseados nos números. Cada dica deve referenciar dados concretos. " + LANG_RULE,
-      `Analise dados REAIS do canal "${channelName}" (últimos ${period || 28} dias):
+      `Você é o ESTRATEGISTA #1 de YouTube do Brasil. Você analisa dados REAIS do YouTube Analytics e dá um plano de guerra que coloca o canal à frente de TODOS os concorrentes. 
 
-MÉTRICAS: Views:${totals.views||0} WatchTime:${Math.round(totals.watchTime||0)}min AVD:${Math.round(totals.avgDuration||0)}s Retenção:${Math.round(totals.avgPct||0)}% Likes:${totals.likes||0} Dislikes:${totals.dislikes||0} Comments:${totals.comments||0} Shares:${totals.shares||0} SubsGained:${totals.subsGained||0} SubsLost:${totals.subsLost||0} Satisfaction:${totals.satisfaction||0}%
+REGRAS ABSOLUTAS:
+- NUNCA recomende ferramentas externas (TubeBuddy, vidIQ, Canva, Google Trends, etc)
+- APENAS referencie ferramentas do LaCasaStudio: "Keywords" (pesquisa palavras-chave), "Tag Spy" (espiar tags), "SEO Audit" (auditoria), "Retenção" (análise por cena), "Shorts Optimizer" (otimizar shorts), "Command Center 48h" (monitorar pós-publish), "A/B Testing" (testar thumbs/títulos), "Community Planner" (posts comunidade), "Hype Strategy" (boost 7 dias), "Re-Otimizar Catálogo" (SEO vídeos antigos), "Upload Streak" (consistência), "Comparador" (comparar concorrentes), "Ideias do Dia" (ideias personalizadas), "DNA Viral" (extrair fórmula), "Blueprint" (plano de canal), "Pipeline" (criar canal do zero), "Roteiro Completo" (scripts), "Preditor Viral" (prever viralização), "Repurpose" (repost multi-plataforma), "Meu Canal" (dados reais OAuth), "Shorts Clipper" (cortar shorts de roteiros)
+- Cada conselho DEVE citar um número real dos dados
+- Diga coisas que concorrentes NÃO sabem
+- Seja AGRESSIVO nas recomendações — o objetivo é DOMINAR o nicho
+` + LANG_RULE,
+      `DADOS REAIS DO CANAL "${channelName}" (últimos ${period || 28} dias):
 
-${videos?.length?`TOP VÍDEOS:\n${videos.slice(0,5).map((v:any,i:number)=>`${i+1}."${v.title}" ${v.views}views ${Math.round(v.avgPct||0)}%ret ${v.likes}likes`).join("\n")}`:""}
+═══ MÉTRICAS CORE ═══
+Views: ${totals.views||0} | Watch Time: ${Math.round(totals.watchTime||0)} min | AVD: ${totals.avgDuration||0}s
+Retenção: ${totals.avgPct||0}% | CTR: ${totals.ctr||0}% | Satisfaction: ${totals.satisfaction||0}%
+Likes: ${totals.likes||0} | Dislikes: ${totals.dislikes||0} | Comments: ${totals.comments||0}
+Shares: ${totals.shares||0} | Subs+: ${totals.subsGained||0} | Subs-: ${totals.subsLost||0}
+Engagement Rate: ${totals.engagementRate||0}% | Views/dia: ${totals.viewsPerDay||0}
 
-JSON: {"healthScore":75,"healthLabel":"Rótulo curto","diagnosis":"Diagnóstico 2-3 frases baseado nos números","urgentActions":[{"action":"Ação específica AGORA","why":"Por que baseado nos dados","impact":"alto","metric":"Qual métrica melhora"},{"action":"Segunda","why":"...","impact":"medio","metric":"..."}],"weeklyPlan":[{"day":"Segunda","task":"Tarefa específica","time":"30min","tool":"Ferramenta do LaCasaStudio a usar"},{"day":"Terça","task":"...","time":"...","tool":"..."},{"day":"Quarta","task":"...","time":"...","tool":"..."},{"day":"Quinta","task":"...","time":"...","tool":"..."},{"day":"Sexta","task":"...","time":"...","tool":"..."},{"day":"Sábado","task":"...","time":"...","tool":"..."},{"day":"Domingo","task":"Análise semanal","time":"20min","tool":"Comparador + Meu Canal"}],"contentStrategy":"3-4 frases: que tipo de vídeo, duração ideal, frequência","algorithmTips":["Dica 1 baseada nos dados","Dica 2","Dica 3"],"nextVideo":{"titleIdea":"Título sugerido","optimalDuration":"X-Y min","bestDay":"Dia","bestHour":"Horário","format":"long/short/both"},"warnings":["Alertas preocupantes"],"growth30d":"Previsão se seguir o plano","toolsToUse":["Lista de ferramentas do LaCasaStudio"]}`,
-      4000
+${growth ? `═══ VS PERÍODO ANTERIOR ═══
+Views: ${growth.viewsChange>0?"+":""}${growth.viewsChange}% | WatchTime: ${growth.watchTimeChange>0?"+":""}${growth.watchTimeChange}%
+Likes: ${growth.likesChange>0?"+":""}${growth.likesChange}% | Subs: ${growth.subsChange>0?"+":""}${growth.subsChange}%` : ""}
+
+${traffic?.length ? `═══ FONTES DE TRÁFEGO ═══\n${traffic.slice(0,8).map((t:any)=>`${t.source}: ${t.views} views (${t.pct}%) — ${t.watchTime}min`).join("\n")}` : ""}
+
+${devices?.length ? `═══ DISPOSITIVOS ═══\n${devices.map((d:any)=>`${d.device}: ${d.pct}% (${d.views} views, AVD ${d.avgDuration}s)`).join("\n")}` : ""}
+
+${countries?.length ? `═══ PAÍSES (top 10) ═══\n${countries.slice(0,10).map((c:any)=>`${c.country}: ${c.views} views, +${c.subsGained} subs`).join("\n")}` : ""}
+
+${searches?.length ? `═══ TERMOS DE BUSCA QUE TRAZEM VIEWERS ═══\n${searches.slice(0,15).map((s:any)=>`"${s.term}": ${s.views} views`).join("\n")}` : ""}
+
+${revenue ? `═══ RECEITA ═══\nEstimada: $${revenue.estimated?.toFixed(2)} | CPM: $${revenue.cpm?.toFixed(2)} | Playbacks monetizados: ${revenue.monetizedPlaybacks}` : "Canal não monetizado ou sem dados de receita"}
+
+${videos?.length ? `═══ TOP VÍDEOS ═══\n${videos.slice(0,8).map((v:any,i:number)=>`${i+1}. "${v.title}" — ${v.views} views, ${v.avgPct||0}% ret, ${v.avgDuration||0}s AVD, ${v.likes} likes, +${v.subsGained} subs, CTR ${v.ctr||0}%`).join("\n")}` : ""}
+
+RETORNE JSON (sem markdown, sem backticks):
+{
+  "healthScore": 0-100,
+  "healthLabel": "Frase curta tipo 'Canal forte com oportunidade explosiva em Shorts'",
+  "diagnosis": "Parágrafo de 4-5 frases CITANDO NÚMEROS REAIS. Ex: 'Seu CTR de X% está acima da média de nicho (3-5%), mas a retenção de Y% indica que viewers abandonam cedo. Os termos de busca mostram que Z é seu tópico mais forte...'",
+  
+  "urgentActions": [
+    {"action": "Ação ultra-específica", "why": "Explicação citando números reais do canal", "impact": "alto", "metric": "Qual métrica melhora e em quanto", "tool": "Nome exato da ferramenta no LaCasaStudio", "steps": "Passo 1 → Passo 2 → Passo 3"},
+    {"action": "...", "why": "...", "impact": "alto/medio", "metric": "...", "tool": "...", "steps": "..."},
+    {"action": "...", "why": "...", "impact": "medio", "metric": "...", "tool": "...", "steps": "..."}
+  ],
+  
+  "weeklyPlan": [
+    {"day": "Segunda", "task": "Tarefa específica com detalhes", "time": "Xmin", "tool": "Ferramenta LaCasaStudio exata", "why": "Por que neste dia"},
+    {"day": "Terça", "task": "...", "time": "...", "tool": "...", "why": "..."},
+    {"day": "Quarta", "task": "...", "time": "...", "tool": "...", "why": "..."},
+    {"day": "Quinta", "task": "...", "time": "...", "tool": "...", "why": "..."},
+    {"day": "Sexta", "task": "...", "time": "...", "tool": "...", "why": "..."},
+    {"day": "Sábado", "task": "...", "time": "...", "tool": "...", "why": "..."},
+    {"day": "Domingo", "task": "...", "time": "...", "tool": "...", "why": "..."}
+  ],
+
+  "trafficInsights": "Análise de 3-4 frases das fontes de tráfego citando os números. Ex: 'YT_SEARCH traz X% mas SUGGESTED só Y% — isso significa que seu SEO é bom mas o algoritmo não está recomendando. Use Tag Spy e Keywords para...'",
+
+  "deviceStrategy": "2-3 frases sobre como adaptar conteúdo baseado nos devices. Ex: 'Com X% mobile e Y% TV, crie versões curtas (8min) e longas (25min) do mesmo tema...'",
+
+  "searchTermGold": [
+    {"term": "termo de busca real que aparece nos dados", "views": 123, "opportunity": "Por que este termo é ouro e o que fazer com ele", "action": "Ação específica usando qual ferramenta do LaCasaStudio"}
+  ],
+
+  "contentStrategy": "Parágrafo de 5-6 frases: que tipo de vídeo fazer, duração ideal BASEADA nos dados de AVD, frequência, formato (long/short/mix), tom, estilo de thumbnail. Tudo citando números.",
+
+  "algorithmSecrets": [
+    "Insight profundo #1 que concorrentes não sabem — baseado nos SEUS dados reais",
+    "Insight #2 com ação específica",
+    "Insight #3 sobre timing/formato"
+  ],
+
+  "nextVideo": {
+    "titleIdea": "Título otimizado baseado nos termos de busca reais",
+    "whyThisTitle": "Explicação de por que este título vai funcionar baseado nos dados",
+    "optimalDuration": "X-Y min (baseado no AVD real)",
+    "bestDay": "Dia da semana",
+    "bestHour": "Horário estimado",
+    "format": "long/short/both",
+    "hook": "Sugestão de hook para os primeiros 5 segundos",
+    "seoKeywords": ["keyword1", "keyword2", "keyword3"],
+    "thumbnailTip": "Dica específica de thumbnail para este vídeo"
+  },
+
+  "shortsStrategy": "3-4 frases sobre estratégia de Shorts baseada nos dados (200B views/dia em Shorts 2026)",
+
+  "warnings": ["Alerta crítico citando dados reais", "Segundo alerta se houver"],
+  
+  "competitiveEdge": "2-3 frases sobre o que te diferencia e como usar o LaCasaStudio para sair na frente. Ex: 'Seus concorrentes não têm dados de search terms — use Keywords + Tag Spy para dominar esses termos antes deles'",
+
+  "growth30d": "Previsão detalhada com números: 'Se seguir este plano, estimo +X% views, +Y subs, e Z receita baseado na tendência atual de +W% do período anterior'",
+  
+  "monetization": "Conselho de monetização baseado nos dados de receita (se disponível) ou como alcançar monetização"
+}`,
+      4096
     );
     res.json(result);
   } catch (err) { next(err); }
@@ -200,35 +304,153 @@ JSON: {"status":"🟢/🟡/🔴 + label","diagnosis":"2-3 frases do que está ac
   } catch (err) { next(err); }
 });
 
+// Get latest video from connected channel
+router.get("/my-channel/latest-video", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const ytKey = await getYtKey();
+    if (!ytKey) { res.status(400).json({ error: "YouTube API Key não configurada" }); return; }
+    const oauthToken = await (prisma as any).oAuthToken.findFirst({ where: { userId: req.userId }, orderBy: { createdAt: "desc" } });
+    if (!oauthToken?.channelId) { res.status(400).json({ error: "Conecte YouTube primeiro" }); return; }
+    const chData = await ytFetch(`channels?part=contentDetails&id=${oauthToken.channelId}`, ytKey);
+    const uploads = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+    if (!uploads) { res.json({ video: null }); return; }
+    const pl = await ytFetch(`playlistItems?part=contentDetails,snippet&playlistId=${uploads}&maxResults=5`, ytKey);
+    const items = (pl.items || []).map((i: any) => ({ videoId: i.contentDetails?.videoId, title: i.snippet?.title, thumbnail: i.snippet?.thumbnails?.medium?.url, publishedAt: i.snippet?.publishedAt }));
+    res.json({ videos: items, latest: items[0] || null, channelName: oauthToken.channelName });
+  } catch (err) { next(err); }
+});
+
+// AI Fix for SEO Audit — generates corrected title/description/tags
+router.post("/seo-ai-fix", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { title, description, tags, checks, niche, views, channelTitle } = req.body;
+    const failedChecks = (checks || []).filter((c: any) => !c.pass);
+    const result = await fetchAI(
+      "Expert em YouTube SEO. Corrija TODOS os problemas e gere título, descrição e tags PRONTOS PARA COLAR. " + LANG_RULE,
+      `Vídeo: "${title}" do canal "${channelTitle}" (${views} views). Nicho: ${niche || "geral"}
+
+PROBLEMAS ENCONTRADOS NO AUDIT:
+${failedChecks.map((c: any) => `❌ ${c.label}: ${c.tip}`).join("\n")}
+
+TÍTULO ATUAL: ${title}
+DESCRIÇÃO ATUAL: ${(description||"").slice(0,500)}
+TAGS ATUAIS: ${(tags||[]).join(", ")}
+
+GERE VERSÕES CORRIGIDAS COMPLETAS (prontas pra copiar e colar no YouTube):
+JSON: {
+  "newTitle": "Título corrigido (40-65 chars, com gatilho emocional e número)",
+  "titleScore": 85,
+  "titleChanges": ["O que mudou e por quê"],
+  "newDescription": "Descrição COMPLETA com 200+ palavras, timestamps, hashtags, links placeholder, CTA, keywords naturais. Pronta pra colar.",
+  "descScore": 90,
+  "descChanges": ["O que mudou e por quê"],
+  "newTags": ["tag1","tag2","tag3","tag4","tag5","tag6","tag7","tag8","tag9","tag10","tag11","tag12","tag13","tag14","tag15"],
+  "tagScore": 95,
+  "tagChanges": ["O que mudou e por quê"],
+  "estimatedScoreAfter": 85,
+  "estimatedCTRBoost": "+15-25%"
+}`,
+      3000
+    );
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
 
 // ═══════════════════════════════════════════
-// 2. REAL CHANNEL ANALYTICS (requires OAuth)
+// 2. REAL CHANNEL ANALYTICS — FULL DATA PULL
 // ═══════════════════════════════════════════
 router.get("/my-channel/overview", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const at = await getAccessToken(req.userId);
-    if (!at) { res.status(401).json({ error: "Conecte sua conta YouTube nas Configurações" }); return; }
+    const chId = req.query.channelId as string | undefined;
+    const at = await getAccessToken(req.userId, chId);
+    if (!at) { res.status(401).json({ error: "Conecte sua conta YouTube" }); return; }
     const days = Number(req.query.days) || 28;
     const end = new Date().toISOString().split("T")[0];
     const start = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
+    const prevStart = new Date(Date.now() - days * 2 * 86400000).toISOString().split("T")[0];
+    const prevEnd = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
+    const base = `ids=channel==MINE&startDate=${start}&endDate=${end}`;
+    const prevBase = `ids=channel==MINE&startDate=${prevStart}&endDate=${prevEnd}`;
 
-    const data = await ytAnalytics(at, `ids=channel==MINE&startDate=${start}&endDate=${end}&metrics=views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,likes,dislikes,comments,shares,subscribersGained,subscribersLost,annotationClickThroughRate&dimensions=day&sort=day`);
+    // Pull ALL available metrics in parallel
+    const [daily, trafficSrc, deviceData, countryData, searchTerms, playbackLoc, prevPeriod, revenueData] = await Promise.allSettled([
+      // 1. Daily metrics (everything available)
+      ytAnalytics(at, `${base}&metrics=views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,likes,dislikes,comments,shares,subscribersGained,subscribersLost,cardClickRate,cardTeaserClickRate,annotationClickThroughRate&dimensions=day&sort=day`),
+      // 2. Traffic sources (where viewers come from)
+      ytAnalytics(at, `${base}&metrics=views,estimatedMinutesWatched&dimensions=insightTrafficSourceType&sort=-views`),
+      // 3. Device breakdown
+      ytAnalytics(at, `${base}&metrics=views,estimatedMinutesWatched,averageViewDuration&dimensions=deviceType&sort=-views`),
+      // 4. Country breakdown (top 15)
+      ytAnalytics(at, `${base}&metrics=views,estimatedMinutesWatched,subscribersGained&dimensions=country&sort=-views&maxResults=15`),
+      // 5. Search terms that led to channel
+      ytAnalytics(at, `${base}&metrics=views&dimensions=insightTrafficSourceDetail&filters=insightTrafficSourceType==YT_SEARCH&sort=-views&maxResults=25`),
+      // 6. Playback locations (embedded, youtube page, etc)
+      ytAnalytics(at, `${base}&metrics=views,estimatedMinutesWatched&dimensions=insightPlaybackLocationType&sort=-views`),
+      // 7. Previous period (for comparison)
+      ytAnalytics(at, `${prevBase}&metrics=views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,likes,dislikes,comments,shares,subscribersGained,subscribersLost`),
+      // 8. Revenue (if monetized)
+      ytAnalytics(at, `${base}&metrics=estimatedRevenue,estimatedAdRevenue,grossRevenue,monetizedPlaybacks,playbackBasedCpm,adImpressions`).catch(() => null),
+    ]);
 
-    const rows = data.rows || [];
+    const rows = daily.status === "fulfilled" ? (daily.value.rows || []) : [];
     const totals = rows.reduce((a: any, r: any) => ({
-      views: a.views + r[1], watchTime: a.watchTime + r[2], avgDuration: r[3], avgPct: r[4],
-      likes: a.likes + r[5], dislikes: a.dislikes + r[6], comments: a.comments + r[7],
-      shares: a.shares + r[8], subsGained: a.subsGained + r[9], subsLost: a.subsLost + r[10],
-    }), { views: 0, watchTime: 0, avgDuration: 0, avgPct: 0, likes: 0, dislikes: 0, comments: 0, shares: 0, subsGained: 0, subsLost: 0 });
+      views: a.views + (r[1]||0), watchTime: a.watchTime + (r[2]||0), avgDuration: r[3]||0, avgPct: r[4]||0,
+      likes: a.likes + (r[5]||0), dislikes: a.dislikes + (r[6]||0), comments: a.comments + (r[7]||0),
+      shares: a.shares + (r[8]||0), subsGained: a.subsGained + (r[9]||0), subsLost: a.subsLost + (r[10]||0),
+      cardClickRate: r[11]||0, cardTeaserRate: r[12]||0, ctr: r[13]||0,
+    }), { views: 0, watchTime: 0, avgDuration: 0, avgPct: 0, likes: 0, dislikes: 0, comments: 0, shares: 0, subsGained: 0, subsLost: 0, cardClickRate: 0, cardTeaserRate: 0, ctr: 0 });
 
-    totals.avgDuration = rows.length ? rows.reduce((a: number, r: any) => a + r[3], 0) / rows.length : 0;
-    totals.avgPct = rows.length ? rows.reduce((a: number, r: any) => a + r[4], 0) / rows.length : 0;
+    totals.avgDuration = rows.length ? Math.round(rows.reduce((a: number, r: any) => a + (r[3]||0), 0) / rows.length) : 0;
+    totals.avgPct = rows.length ? Math.round(rows.reduce((a: number, r: any) => a + (r[4]||0), 0) / rows.length) : 0;
+    totals.ctr = rows.length ? +(rows.reduce((a: number, r: any) => a + (r[13]||0), 0) / rows.length).toFixed(2) : 0;
     totals.satisfaction = totals.likes + totals.dislikes > 0 ? Math.round((totals.likes / (totals.likes + totals.dislikes)) * 100) : 0;
     totals.netSubs = totals.subsGained - totals.subsLost;
+    totals.engagementRate = totals.views > 0 ? +((totals.likes + totals.comments + totals.shares) / totals.views * 100).toFixed(2) : 0;
+    totals.viewsPerDay = rows.length ? Math.round(totals.views / rows.length) : 0;
 
-    const daily = rows.map((r: any) => ({ date: r[0], views: r[1], watchTime: r[2], avgDuration: Math.round(r[3]), likes: r[5], comments: r[7], subsGained: r[9] }));
+    // Previous period comparison
+    const prevRows = prevPeriod.status === "fulfilled" ? (prevPeriod.value.rows || []) : [];
+    const prev = prevRows.length ? { views: prevRows.reduce((a: number, r: any) => a + (r[1]||0), 0), watchTime: prevRows.reduce((a: number, r: any) => a + (r[2]||0), 0), likes: prevRows.reduce((a: number, r: any) => a + (r[5]||0), 0), subsGained: prevRows.reduce((a: number, r: any) => a + (r[9]||0), 0) } : null;
+    const growth = prev ? {
+      viewsChange: prev.views > 0 ? Math.round(((totals.views - prev.views) / prev.views) * 100) : 0,
+      watchTimeChange: prev.watchTime > 0 ? Math.round(((totals.watchTime - prev.watchTime) / prev.watchTime) * 100) : 0,
+      likesChange: prev.likes > 0 ? Math.round(((totals.likes - prev.likes) / prev.likes) * 100) : 0,
+      subsChange: prev.subsGained > 0 ? Math.round(((totals.subsGained - prev.subsGained) / prev.subsGained) * 100) : 0,
+    } : null;
 
-    res.json({ totals, daily, period: { start, end, days } });
+    // Traffic sources
+    const traffic = trafficSrc.status === "fulfilled" ? (trafficSrc.value.rows || []).map((r: any) => ({ source: r[0], views: r[1], watchTime: Math.round(r[2]) })) : [];
+    const totalTrafficViews = traffic.reduce((a: any, t: any) => a + t.views, 0) || 1;
+    traffic.forEach((t: any) => t.pct = Math.round((t.views / totalTrafficViews) * 100));
+
+    // Devices
+    const devices = deviceData.status === "fulfilled" ? (deviceData.value.rows || []).map((r: any) => ({ device: r[0], views: r[1], watchTime: Math.round(r[2]), avgDuration: Math.round(r[3]) })) : [];
+    const totalDevViews = devices.reduce((a: any, d: any) => a + d.views, 0) || 1;
+    devices.forEach((d: any) => d.pct = Math.round((d.views / totalDevViews) * 100));
+
+    // Countries
+    const countries = countryData.status === "fulfilled" ? (countryData.value.rows || []).map((r: any) => ({ country: r[0], views: r[1], watchTime: Math.round(r[2]), subsGained: r[3] })) : [];
+
+    // Search terms (what people search to find your videos)
+    const searches = searchTerms.status === "fulfilled" ? (searchTerms.value.rows || []).map((r: any) => ({ term: r[0], views: r[1] })) : [];
+
+    // Playback locations
+    const playback = playbackLoc.status === "fulfilled" ? (playbackLoc.value.rows || []).map((r: any) => ({ location: r[0], views: r[1], watchTime: Math.round(r[2]) })) : [];
+
+    // Revenue (if available)
+    const revenue = revenueData.status === "fulfilled" && revenueData.value ? {
+      estimated: revenueData.value.rows?.[0]?.[1] || 0,
+      adRevenue: revenueData.value.rows?.[0]?.[2] || 0,
+      gross: revenueData.value.rows?.[0]?.[3] || 0,
+      monetizedPlaybacks: revenueData.value.rows?.[0]?.[4] || 0,
+      cpm: revenueData.value.rows?.[0]?.[5] || 0,
+      adImpressions: revenueData.value.rows?.[0]?.[6] || 0,
+    } : null;
+
+    const dailyChart = rows.map((r: any) => ({ date: r[0], views: r[1], watchTime: Math.round(r[2]), avgDuration: Math.round(r[3]||0), avgPct: Math.round(r[4]||0), likes: r[5], comments: r[7], subsGained: r[9] }));
+
+    res.json({ totals, growth, traffic, devices, countries, searches, playback, revenue, daily: dailyChart, period: { start, end, days } });
   } catch (err) { next(err); }
 });
 

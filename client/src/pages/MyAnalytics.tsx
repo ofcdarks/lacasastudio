@@ -59,9 +59,14 @@ export default function MyAnalytics() {
   const loadInsights = async () => {
     if (!overview?.totals) { toast?.error("Carregue os dados primeiro"); return; }
     setInsightsLoading(true);
-    pg?.start("🧠 IA Analisando", ["Lendo métricas reais", "Cruzando com algoritmo 2026", "Gerando plano de ação", "Próximos passos"]);
+    pg?.start("🧠 IA Analisando Tudo", ["Lendo métricas reais", "Analisando fontes de tráfego", "Cruzando termos de busca", "Comparando com período anterior", "Gerando plano de guerra"]);
     try {
-      const d = await api.aiInsights({ totals: overview.totals, videos: videos.slice(0, 5), channelName: selChannel?.channelName, period: days });
+      const d = await api.aiInsights({
+        totals: overview.totals, growth: overview.growth, traffic: overview.traffic,
+        devices: overview.devices, countries: overview.countries, searches: overview.searches,
+        revenue: overview.revenue, videos: videos.slice(0, 8),
+        channelName: selChannel?.channelName, period: days
+      });
       if (d.error) throw new Error(d.error);
       pg?.done(); setInsights(d);
     } catch (e) { pg?.fail(e.message); } setInsightsLoading(false);
@@ -121,9 +126,46 @@ export default function MyAnalytics() {
       {/* Quick AI button */}
       <div style={{ background: `linear-gradient(135deg,${C.red}08,${C.purple}08)`, borderRadius: 16, border: `1px solid ${C.red}20`, padding: 20, marginBottom: 20, textAlign: "center" }}>
         <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>🧠 O que a IA recomenda baseado nesses dados?</div>
-        <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>A IA analisa suas métricas reais e cria um plano de ação personalizado</div>
+        <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>A IA analisa TODAS as métricas, tráfego, devices, termos de busca e receita — e cria plano de guerra</div>
         <Btn onClick={() => { setTab("ai"); if (!insights) loadInsights(); }}>{insightsLoading ? "⏳" : "🧠 Pedir Conselho da IA"}</Btn>
       </div>
+
+      {/* Growth vs previous period */}
+      {overview.growth && <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 20 }}>
+        {[["Views", overview.growth.viewsChange], ["Watch Time", overview.growth.watchTimeChange], ["Likes", overview.growth.likesChange], ["Subs", overview.growth.subsChange]].map(([label, val]) =>
+          <div key={label} style={{ background: C.bgCard, borderRadius: 10, border: `1px solid ${val >= 0 ? C.green : C.red}20`, padding: 12, textAlign: "center" }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: val >= 0 ? C.green : C.red }}>{val > 0 ? "+" : ""}{val}%</div>
+            <div style={{ fontSize: 10, color: C.dim }}>{label} vs período anterior</div>
+          </div>)}
+      </div>}
+
+      {/* Traffic sources + Top searches side by side */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+        {overview.traffic?.length > 0 && <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, padding: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>🔀 Fontes de Tráfego</div>
+          {overview.traffic.slice(0, 6).map((t, i) => <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: `1px solid ${C.border}`, fontSize: 11 }}>
+            <span style={{ color: C.muted }}>{t.source?.replace("YT_", "").replace("_", " ")}</span>
+            <span style={{ fontWeight: 700, color: C.blue }}>{t.pct}%</span>
+          </div>)}
+        </div>}
+        {overview.searches?.length > 0 && <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, padding: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>🔍 Termos de Busca (viewers reais)</div>
+          {overview.searches.slice(0, 8).map((s, i) => <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: `1px solid ${C.border}`, fontSize: 11 }}>
+            <span style={{ color: C.muted }}>"{s.term}"</span>
+            <span style={{ fontWeight: 700, color: C.green }}>{fmt(s.views)}</span>
+          </div>)}
+        </div>}
+      </div>
+
+      {/* Revenue if available */}
+      {overview.revenue && <div style={{ background: `#F59E0B08`, borderRadius: 14, border: `1px solid #F59E0B20`, padding: 16, marginBottom: 20 }}>
+        <div style={{ fontWeight: 700, fontSize: 13, color: "#F59E0B", marginBottom: 10 }}>💰 Receita</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
+          <div style={{ textAlign: "center" }}><div style={{ fontSize: 18, fontWeight: 800, color: "#F59E0B" }}>${overview.revenue.estimated?.toFixed(2)}</div><div style={{ fontSize: 10, color: C.dim }}>Estimada</div></div>
+          <div style={{ textAlign: "center" }}><div style={{ fontSize: 18, fontWeight: 800, color: C.green }}>${overview.revenue.cpm?.toFixed(2)}</div><div style={{ fontSize: 10, color: C.dim }}>CPM</div></div>
+          <div style={{ textAlign: "center" }}><div style={{ fontSize: 18, fontWeight: 800, color: C.blue }}>{fmt(overview.revenue.monetizedPlaybacks)}</div><div style={{ fontSize: 10, color: C.dim }}>Playbacks</div></div>
+        </div>
+      </div>}
       {overview.daily?.length > 0 && <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, padding: 16 }}>
         <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>📈 Views por Dia</div>
         <div style={{ display: "flex", gap: 2, height: 80, alignItems: "end" }}>
@@ -156,7 +198,11 @@ export default function MyAnalytics() {
               <span style={{ fontSize: 9, fontWeight: 700, color: imp.c, background: imp.bg, padding: "3px 10px", borderRadius: 6 }}>{a.impact} impacto</span>
             </div>
             <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6 }}>📋 {a.why}</div>
-            <div style={{ fontSize: 11, color: C.blue, marginTop: 4 }}>📊 Métrica que melhora: {a.metric}</div>
+            {a.steps && <div style={{ fontSize: 11, color: C.text, marginTop: 6, padding: "6px 10px", background: "rgba(255,255,255,.03)", borderRadius: 6, lineHeight: 1.7 }}>📌 {a.steps}</div>}
+            <div style={{ display: "flex", gap: 12, marginTop: 6, fontSize: 11 }}>
+              <span style={{ color: C.blue }}>📊 {a.metric}</span>
+              {a.tool && <span style={{ color: C.green }}>🔧 {a.tool}</span>}
+            </div>
           </div>; })}
         </div>}
 
@@ -164,9 +210,9 @@ export default function MyAnalytics() {
         {insights.weeklyPlan?.length > 0 && <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.green}20`, padding: 20, marginBottom: 20 }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: C.green, marginBottom: 12 }}>📅 Plano da Semana — Dia por Dia</div>
           <div style={{ display: "grid", gap: 6 }}>
-            {insights.weeklyPlan.map((d, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "80px 1fr 60px 140px", gap: 10, padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,.02)", border: `1px solid ${C.border}`, alignItems: "center" }}>
-              <span style={{ fontWeight: 700, fontSize: 13, color: C.green }}>{d.day}</span>
-              <span style={{ fontSize: 12, color: C.text }}>{d.task}</span>
+            {insights.weeklyPlan.map((d, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "70px 1fr 50px 130px", gap: 8, padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,.02)", border: `1px solid ${C.border}`, alignItems: "center" }}>
+              <span style={{ fontWeight: 700, fontSize: 12, color: C.green }}>{d.day}</span>
+              <div><div style={{ fontSize: 12, color: C.text }}>{d.task}</div>{d.why && <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>{d.why}</div>}</div>
               <span style={{ fontSize: 10, color: C.dim }}>{d.time}</span>
               <span style={{ fontSize: 10, color: C.blue, fontWeight: 600 }}>🔧 {d.tool}</span>
             </div>)}
@@ -182,18 +228,59 @@ export default function MyAnalytics() {
         {/* Next Video */}
         {insights.nextVideo && <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.purple}20`, padding: 20, marginBottom: 20 }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: C.purple, marginBottom: 10 }}>🎯 Próximo Vídeo Recomendado</div>
-          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>"{insights.nextVideo.titleIdea}"</div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>"{insights.nextVideo.titleIdea}"</div>
+          {insights.nextVideo.whyThisTitle && <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.6 }}>{insights.nextVideo.whyThisTitle}</div>}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
             <span style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, background: `${C.blue}12`, color: C.blue }}>⏱️ {insights.nextVideo.optimalDuration}</span>
             <span style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, background: `${C.green}12`, color: C.green }}>📅 {insights.nextVideo.bestDay} {insights.nextVideo.bestHour}</span>
             <span style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, background: `${C.purple}12`, color: C.purple }}>🎬 {insights.nextVideo.format}</span>
           </div>
+          {insights.nextVideo.hook && <div style={{ fontSize: 12, color: C.red, marginBottom: 6 }}>🎣 Hook: "{insights.nextVideo.hook}"</div>}
+          {insights.nextVideo.seoKeywords?.length > 0 && <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>{insights.nextVideo.seoKeywords.map((k, i) => <span key={i} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 4, background: `${C.green}12`, color: C.green }}>{k}</span>)}</div>}
+          {insights.nextVideo.thumbnailTip && <div style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>🖼️ Thumb: {insights.nextVideo.thumbnailTip}</div>}
         </div>}
 
         {/* Algorithm Tips */}
-        {insights.algorithmTips?.length > 0 && <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, padding: 20, marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10 }}>🧠 Dicas do Algoritmo 2026</div>
-          {insights.algorithmTips.map((t, i) => <div key={i} style={{ fontSize: 13, color: C.muted, padding: "6px 0", borderBottom: `1px solid ${C.border}`, lineHeight: 1.6 }}>🔥 {t}</div>)}
+        {insights.algorithmSecrets?.length > 0 && <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10 }}>🧠 Segredos do Algoritmo (seus concorrentes NÃO sabem)</div>
+          {insights.algorithmSecrets.map((t, i) => <div key={i} style={{ fontSize: 13, color: C.muted, padding: "8px 0", borderBottom: `1px solid ${C.border}`, lineHeight: 1.7 }}>🔥 {t}</div>)}
+        </div>}
+
+        {/* Traffic Insights */}
+        {insights.trafficInsights && <div style={{ background: `${C.blue}06`, borderRadius: 14, border: `1px solid ${C.blue}20`, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: C.blue, marginBottom: 8 }}>🔀 Análise de Tráfego</div>
+          <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.8 }}>{insights.trafficInsights}</div>
+        </div>}
+
+        {/* Search Term Gold */}
+        {insights.searchTermGold?.length > 0 && <div style={{ background: `#F59E0B08`, borderRadius: 14, border: `1px solid #F59E0B20`, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "#F59E0B", marginBottom: 10 }}>🔑 Termos de Busca OURO (viewers reais buscam isso)</div>
+          {insights.searchTermGold.map((s, i) => <div key={i} style={{ padding: 12, marginBottom: 6, background: "rgba(255,255,255,.02)", borderRadius: 10, border: `1px solid ${C.border}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>"{s.term}"</span>
+              <span style={{ fontSize: 11, color: C.green, fontWeight: 700 }}>{s.views} views</span>
+            </div>
+            <div style={{ fontSize: 12, color: C.muted, marginTop: 4, lineHeight: 1.6 }}>💡 {s.opportunity}</div>
+            <div style={{ fontSize: 11, color: C.blue, marginTop: 4 }}>🔧 {s.action}</div>
+          </div>)}
+        </div>}
+
+        {/* Device Strategy */}
+        {insights.deviceStrategy && <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.purple}20`, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: C.purple, marginBottom: 8 }}>📱 Estratégia por Dispositivo</div>
+          <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.8 }}>{insights.deviceStrategy}</div>
+        </div>}
+
+        {/* Shorts Strategy */}
+        {insights.shortsStrategy && <div style={{ background: `${C.orange}06`, borderRadius: 14, border: `1px solid ${C.orange}20`, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: C.orange, marginBottom: 8 }}>📱 Estratégia de Shorts (200B views/dia)</div>
+          <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.8 }}>{insights.shortsStrategy}</div>
+        </div>}
+
+        {/* Competitive Edge */}
+        {insights.competitiveEdge && <div style={{ background: `linear-gradient(135deg,${C.red}06,${C.purple}06)`, borderRadius: 14, border: `1px solid ${C.red}20`, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: C.red, marginBottom: 8 }}>⚔️ Sua Vantagem Competitiva</div>
+          <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.8 }}>{insights.competitiveEdge}</div>
         </div>}
 
         {/* Warnings */}
@@ -201,15 +288,15 @@ export default function MyAnalytics() {
           {insights.warnings.map((w, i) => <div key={i} style={{ fontSize: 12, color: C.red, padding: "4px 0" }}>⚠️ {w}</div>)}
         </div>}
 
-        {/* Growth + Tools */}
+        {/* Growth + Monetization */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
           {insights.growth30d && <div style={{ background: `${C.green}06`, borderRadius: 12, border: `1px solid ${C.green}20`, padding: 14 }}>
             <div style={{ fontWeight: 700, fontSize: 13, color: C.green, marginBottom: 4 }}>📈 Previsão 30 dias</div>
             <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6 }}>{insights.growth30d}</div>
           </div>}
-          {insights.toolsToUse?.length > 0 && <div style={{ background: `${C.purple}06`, borderRadius: 12, border: `1px solid ${C.purple}20`, padding: 14 }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: C.purple, marginBottom: 4 }}>🔧 Ferramentas pra usar</div>
-            {insights.toolsToUse.map((t, i) => <div key={i} style={{ fontSize: 12, color: C.muted, padding: "2px 0" }}>• {t}</div>)}
+          {insights.monetization && <div style={{ background: `#F59E0B08`, borderRadius: 12, border: `1px solid #F59E0B20`, padding: 14 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: "#F59E0B", marginBottom: 4 }}>💰 Monetização</div>
+            <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6 }}>{insights.monetization}</div>
           </div>}
         </div>
 
