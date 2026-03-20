@@ -52,15 +52,10 @@ export default function Orcamento() {
   const confirm = useConfirm();
   const toast = useToast();
   const [items, setItems] = useState([]);
-  const toast = useToast();
   const [showF, setShowF] = useState(false);
-  const toast = useToast();
   const [editItem, setEditItem] = useState(null);
-  const toast = useToast();
   const [viewMode, setViewMode] = useState("month");
-  const toast = useToast();
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
-  const toast = useToast();
   const [form, setForm] = useState({ category: "outros", desc: "", value: "", type: "expense", recurring: false, notes: "" });
 
   useEffect(() => { budgetApi.list().then(setItems).catch(() => {}); }, []);
