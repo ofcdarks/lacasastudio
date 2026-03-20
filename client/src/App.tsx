@@ -24,6 +24,10 @@ const Research = lazy(() => import("./pages/Research"));
 const Shorts = lazy(() => import("./pages/Shorts"));
 const ThumbEditor = lazy(() => import("./pages/ThumbEditor"));
 const Analyzer = lazy(() => import("./pages/Analyzer"));
+const Hooks = lazy(() => import("./pages/Hooks"));
+const PrePublish = lazy(() => import("./pages/PrePublish"));
+const MultiLang = lazy(() => import("./pages/MultiLang"));
+const Pipeline = lazy(() => import("./pages/Pipeline"));
 const Orcamento = lazy(() => import("./pages/Orcamento"));
 const Ativos = lazy(() => import("./pages/Ativos"));
 const Equipe = lazy(() => import("./pages/Equipe"));
@@ -67,6 +71,10 @@ export default function App() {
       <Route path="/shorts" element={<Layout><Shorts /></Layout>} />
       <Route path="/thumbs" element={<Layout><ThumbEditor /></Layout>} />
       <Route path="/analyzer" element={<Layout><Analyzer /></Layout>} />
+      <Route path="/hooks" element={<Layout><Hooks /></Layout>} />
+      <Route path="/score" element={<Layout><PrePublish /></Layout>} />
+      <Route path="/multilang" element={<Layout><MultiLang /></Layout>} />
+      <Route path="/pipeline" element={<Layout><Pipeline /></Layout>} />
       <Route path="/orcamento" element={<Layout><Orcamento /></Layout>} />
       <Route path="/ativos" element={<Layout><Ativos /></Layout>} />
       <Route path="/equipe" element={<Layout><Equipe /></Layout>} />

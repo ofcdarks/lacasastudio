@@ -198,6 +198,9 @@ export const researchApi = {
   channelMockup: (data: any) => api.post<any>("/research/channel-mockup", data),
   smartCompare: (channels: any[]) => api.post<any>("/research/smart-compare", { channels }),
   analyzeScreenshots: (images: string[], context?: string) => api.post<any>("/research/analyze-screenshots", { images, context }),
+  prePublishScore: (data: any) => api.post<any>("/research/pre-publish-score", data),
+  multiLanguage: (data: any) => api.post<any>("/research/multi-language", data),
+  pipeline: (data: any) => api.post<any>("/research/pipeline", data),
   updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
 };
 

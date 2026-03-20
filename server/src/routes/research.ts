@@ -823,4 +823,92 @@ JSON: {"winner":"Canal","comparison":[{"metric":"M","analysis":"Quem ganha"}],"g
   } catch (err) { next(err); }
 });
 
+
+// 💎 Score Pré-Publicação
+router.post("/pre-publish-score", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { title, description, tags, thumbnailPrompt, niche } = req.body;
+    const model = await getModel();
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({ model, temperature: 0.3, max_tokens: 1500,
+        messages: [{ role: "system", content: "Expert em SEO YouTube. Pontue vídeos antes de publicar. APENAS JSON." },
+          { role: "user", content: `Analise este vídeo ANTES de publicar. Nicho: ${niche||"geral"}
+Título: "${title}"
+Descrição: "${description||""}"
+Tags: ${tags||""}
+Thumb: ${thumbnailPrompt||"não fornecido"}
+
+JSON: {"overallScore":85,"titleScore":{"score":90,"feedback":"Feedback","improved":"Versão melhorada"},"descriptionScore":{"score":70,"feedback":"Feedback","improved":"Versão otimizada SEO com links"},"tagsScore":{"score":80,"feedback":"Feedback","suggested":["tag1","tag2","tag3","tag4","tag5"]},"thumbnailScore":{"score":75,"feedback":"Feedback do conceito"},"seoChecklist":[{"item":"Check 1","pass":true,"tip":"Dica"},{"item":"Check 2","pass":false,"tip":"Como corrigir"}],"improvements":["Melhoria 1 específica","Melhoria 2","Melhoria 3"],"viralPotential":"alto/médio/baixo","estimatedCTR":"3-5%"}` }]
+      })
+    });
+    if (!aiRes.ok) { res.status(500).json({ error: "AI error" }); return; }
+    const data = await aiRes.json() as any;
+    const raw = data.choices?.[0]?.message?.content || "{}";
+    try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
+    catch { res.status(500).json({ error: "Formato inválido" }); }
+  } catch (err) { next(err); }
+});
+
+// 🌐 Multi-Idioma
+router.post("/multi-language", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { title, description, tags, languages } = req.body;
+    const model = await getModel();
+    const langs = languages || ["en","es","pt","fr","de"];
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({ model, temperature: 0.3, max_tokens: 2500,
+        messages: [{ role: "system", content: "Tradutor expert em SEO YouTube para múltiplos idiomas. APENAS JSON." },
+          { role: "user", content: `Traduza e OTIMIZE para SEO YouTube em ${langs.length} idiomas:
+Título: "${title}"
+Descrição: "${description||""}"
+Tags: ${tags||""}
+
+Para CADA idioma, otimize pra viralizar naquele mercado. JSON:
+{${langs.map(l => `"${l}":{"title":"Título otimizado","description":"Descrição SEO","tags":["tag1","tag2","tag3","tag4","tag5"],"hashtags":["#hash1","#hash2"]}`).join(",")}}` }]
+      })
+    });
+    if (!aiRes.ok) { res.status(500).json({ error: "AI error" }); return; }
+    const data = await aiRes.json() as any;
+    const raw = data.choices?.[0]?.message?.content || "{}";
+    try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
+    catch { res.status(500).json({ error: "Formato inválido" }); }
+  } catch (err) { next(err); }
+});
+
+// 🎬 Pipeline Wizard
+router.post("/pipeline", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { niche, subNiche, style, country, language, step, context } = req.body;
+    const model = await getModel();
+    
+    const prompts: any = {
+      identity: `Crie identidade de canal YouTube: Nicho: ${niche}>${subNiche}, Estilo: ${style}, País: ${country}, Idioma: ${language}. JSON: {"channelName":"Nome","tagline":"Slogan","description":"Bio SEO 200 palavras","logoPrompt":"Prompt ImageFX logo circular","bannerPrompt":"Prompt ImageFX banner 2560x1440","colors":{"primary":"#hex","secondary":"#hex"},"keywords":["k1","k2","k3","k4","k5"]}`,
+      scripts: `Crie 10 roteiros para canal "${context?.channelName}" (${niche}>${subNiche}, ${style}). JSON array: [{"number":1,"title":"Título viral","hook":"Hook 5s","outline":["Seção 1: descrição","Seção 2","Seção 3","CTA"],"duration":"12:00","thumbnailPrompt":"Prompt thumb 16:9","tags":["t1","t2","t3"]}]`,
+      calendar: `Crie calendário 30 dias para "${context?.channelName}" (${niche}, ${style}, ${country}). 3 vídeos/semana. JSON array: [{"day":1,"weekday":"Seg","title":"Título","hook":"Hook","uploadTime":"14:00","thumbnailPrompt":"Prompt"}]`,
+    };
+    
+    const prompt = prompts[step] || prompts.identity;
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({ model, temperature: 0.6, max_tokens: 4000,
+        messages: [{ role: "system", content: "Expert em criação de canais YouTube do zero. APENAS JSON sem markdown." },
+          { role: "user", content: prompt }]
+      })
+    });
+    if (!aiRes.ok) { res.status(500).json({ error: "AI error" }); return; }
+    const data = await aiRes.json() as any;
+    const raw = data.choices?.[0]?.message?.content || "{}";
+    try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
+    catch { res.status(500).json({ error: "Formato inválido. Tente novamente." }); }
+  } catch (err) { next(err); }
+});
+
 export default router;
