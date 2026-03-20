@@ -13,26 +13,21 @@ import Dashboard from "./pages/Dashboard";
 // Lazy load heavy pages
 const Planner = lazy(() => import("./pages/Planner"));
 const Storyboard = lazy(() => import("./pages/Storyboard"));
-const Editor = lazy(() => import("./pages/Editor"));
 const Checklist = lazy(() => import("./pages/Checklist"));
 const Seo = lazy(() => import("./pages/Seo"));
 const Metas = lazy(() => import("./pages/Metas"));
 const Templates = lazy(() => import("./pages/Templates"));
-const Calendario = lazy(() => import("./pages/Calendario"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Research = lazy(() => import("./pages/Research"));
 const Shorts = lazy(() => import("./pages/Shorts"));
 const ThumbEditor = lazy(() => import("./pages/ThumbEditor"));
 const Analyzer = lazy(() => import("./pages/Analyzer"));
 const Hooks = lazy(() => import("./pages/Hooks"));
-const PrePublish = lazy(() => import("./pages/PrePublish"));
-const MultiLang = lazy(() => import("./pages/MultiLang"));
 const Pipeline = lazy(() => import("./pages/Pipeline"));
 const FullScript = lazy(() => import("./pages/FullScript"));
 const ViralPredict = lazy(() => import("./pages/ViralPredict"));
 const Monetize360 = lazy(() => import("./pages/Monetize360"));
 const Repurpose = lazy(() => import("./pages/Repurpose"));
-const Orcamento = lazy(() => import("./pages/Orcamento"));
 const Ativos = lazy(() => import("./pages/Ativos"));
 const Equipe = lazy(() => import("./pages/Equipe"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -64,26 +59,21 @@ export default function App() {
       <Route path="/" element={<Layout><Dashboard /></Layout>} />
       <Route path="/planner" element={<Layout><Planner /></Layout>} />
       <Route path="/storyboard" element={<Layout><Storyboard /></Layout>} />
-      <Route path="/editor" element={<Layout><Editor /></Layout>} />
       <Route path="/checklist" element={<Layout><Checklist /></Layout>} />
       <Route path="/seo" element={<Layout><Seo /></Layout>} />
       <Route path="/metas" element={<Layout><Metas /></Layout>} />
       <Route path="/templates" element={<Layout><Templates /></Layout>} />
-      <Route path="/calendario" element={<Layout><Calendario /></Layout>} />
       <Route path="/analytics" element={<Layout><Analytics /></Layout>} />
       <Route path="/research" element={<Layout><Research /></Layout>} />
       <Route path="/shorts" element={<Layout><Shorts /></Layout>} />
       <Route path="/thumbs" element={<Layout><ThumbEditor /></Layout>} />
       <Route path="/analyzer" element={<Layout><Analyzer /></Layout>} />
       <Route path="/hooks" element={<Layout><Hooks /></Layout>} />
-      <Route path="/score" element={<Layout><PrePublish /></Layout>} />
-      <Route path="/multilang" element={<Layout><MultiLang /></Layout>} />
       <Route path="/pipeline" element={<Layout><Pipeline /></Layout>} />
       <Route path="/roteiro" element={<Layout><FullScript /></Layout>} />
       <Route path="/preditor" element={<Layout><ViralPredict /></Layout>} />
       <Route path="/monetizar" element={<Layout><Monetize360 /></Layout>} />
       <Route path="/repurpose" element={<Layout><Repurpose /></Layout>} />
-      <Route path="/orcamento" element={<Layout><Orcamento /></Layout>} />
       <Route path="/ativos" element={<Layout><Ativos /></Layout>} />
       <Route path="/equipe" element={<Layout><Equipe /></Layout>} />
       <Route path="/settings" element={<Layout><Settings /></Layout>} />

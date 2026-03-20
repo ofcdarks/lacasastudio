@@ -75,36 +75,46 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
         </div>
         <div style={{ flex: 1, padding: "4px 8px" }}>
           <Sec title="Produção" />
-          <SItem icon="▣" label="Dashboard" path="/" onClick={closeMobile} />
-          <SItem icon="▦" label="Planner Kanban" path="/planner" badge={pending} onClick={closeMobile} />
-          <SItem icon="▤" label="Storyboard" path="/storyboard" onClick={closeMobile} />
-          <SItem icon="¶" label="Editor de Roteiro" path="/editor" onClick={closeMobile} />
-          <SItem icon="✓" label="Checklist Pub." path="/checklist" onClick={closeMobile} />
-          <Sec title="Estratégia" />
-          <SItem icon="💡" label="Banco de Ideias" path="/ideas" onClick={closeMobile} />
-          <SItem icon="✦" label="Gerador SEO + IA" path="/seo" onClick={closeMobile} />
-          <SItem icon="📱" label="Shorts/Reels" path="/shorts" onClick={closeMobile} />
-          <SItem icon="🖼️" label="Thumbnails" path="/thumbs" onClick={closeMobile} />
-          <SItem icon="📸" label="Analisador" path="/analyzer" onClick={closeMobile} />
+        {/* PRINCIPAL */}
+        <div style={{padding:"0 16px",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>PRINCIPAL</div></div>
+          <SItem icon="🏠" label="Dashboard" path="/" onClick={closeMobile} />
+          <SItem icon="📋" label="Planner Kanban" path="/planner" onClick={closeMobile} />
+          <SItem icon="📊" label="Analytics" path="/analytics" onClick={closeMobile} />
+
+        {/* CRIAÇÃO */}
+        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>CRIAÇÃO</div></div>
           <SItem icon="🎬" label="Pipeline" path="/pipeline" onClick={closeMobile} />
-          <SItem icon="🧠" label="Hooks Virais" path="/hooks" onClick={closeMobile} />
-          <SItem icon="💎" label="Score Pub." path="/score" onClick={closeMobile} />
-          <SItem icon="🌐" label="Multi-Idioma" path="/multilang" onClick={closeMobile} />
-          <SItem icon="📜" label="Roteiro" path="/roteiro" onClick={closeMobile} />
-          <SItem icon="🔮" label="Preditor" path="/preditor" onClick={closeMobile} />
-          <SItem icon="💸" label="Monetizar" path="/monetizar" onClick={closeMobile} />
+          <SItem icon="📜" label="Roteiro Completo" path="/roteiro" onClick={closeMobile} />
+          <SItem icon="🖼️" label="Thumbnails" path="/thumbs" onClick={closeMobile} />
+          <SItem icon="📱" label="Shorts/Reels" path="/shorts" onClick={closeMobile} />
           <SItem icon="♻️" label="Repurpose" path="/repurpose" onClick={closeMobile} />
-          <SItem icon="🔥" label="Inteligência" path="/research" onClick={closeMobile} />
-          <SItem icon="◎" label="Metas & OKRs" path="/metas" onClick={closeMobile} />
-          <SItem icon="◆" label="Templates de Série" path="/templates" onClick={closeMobile} />
-          <Sec title="Gestão" />
-          <SItem icon="▥" label="Calendário" path="/calendario" onClick={closeMobile} />
-          <SItem icon="▲" label="Analytics" path="/analytics" onClick={closeMobile} />
-          <SItem icon="$" label="Orçamento" path="/orcamento" onClick={closeMobile} />
-          <SItem icon="◉" label="Banco de Ativos" path="/ativos" onClick={closeMobile} />
-          <SItem icon="◑" label="Equipe" path="/equipe" onClick={closeMobile} />
-          <SItem icon="⚙" label="Configurações" path="/settings" onClick={closeMobile} />
-          {user?.isAdmin && <SItem icon="🛡" label="Admin" path="/admin" onClick={closeMobile} />}
+
+        {/* INTELIGÊNCIA */}
+        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>INTELIGÊNCIA</div></div>
+          <SItem icon="🔍" label="Pesquisa de Mercado" path="/research" onClick={closeMobile} />
+          <SItem icon="📸" label="Analisador" path="/analyzer" onClick={closeMobile} />
+          <SItem icon="🔮" label="Preditor Viral" path="/preditor" onClick={closeMobile} />
+          <SItem icon="🧠" label="Hooks Virais" path="/hooks" onClick={closeMobile} />
+
+        {/* OTIMIZAÇÃO */}
+        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>OTIMIZAÇÃO</div></div>
+          <SItem icon="🚀" label="SEO Viral" path="/seo" onClick={closeMobile} />
+          <SItem icon="💸" label="Monetização 360°" path="/monetizar" onClick={closeMobile} />
+
+        {/* PRODUÇÃO */}
+        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>PRODUÇÃO</div></div>
+          <SItem icon="🎨" label="Storyboard" path="/storyboard" onClick={closeMobile} />
+          <SItem icon="💡" label="Banco de Ideias" path="/ideas" onClick={closeMobile} />
+          <SItem icon="✅" label="Checklist Pub." path="/checklist" onClick={closeMobile} />
+          <SItem icon="🎯" label="Metas & OKRs" path="/metas" onClick={closeMobile} />
+          <SItem icon="📦" label="Banco de Ativos" path="/ativos" onClick={closeMobile} />
+          <SItem icon="📋" label="Templates" path="/templates" onClick={closeMobile} />
+
+        {/* GESTÃO */}
+        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>GESTÃO</div></div>
+          <SItem icon="👥" label="Equipe" path="/equipe" onClick={closeMobile} />
+          <SItem icon="⚙️" label="Configurações" path="/settings" onClick={closeMobile} />
+          <SItem icon="🔐" label="Admin" path="/admin" onClick={closeMobile} />
           <Sec title="Canais" />
           {channels.map((ch: any) => (
             <ChDot key={ch.id} ch={ch} active={selChannel === ch.id && loc.pathname === "/planner"}
