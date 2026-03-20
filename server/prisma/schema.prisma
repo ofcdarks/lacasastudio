@@ -360,15 +360,19 @@ model RevenueEntry {
 
 model OAuthToken {
   id           Int      @id @default(autoincrement())
-  userId       Int      @unique
+  userId       Int
   accessToken  String   @default("")
   refreshToken String   @default("")
   expiresAt    String   @default("")
   scope        String   @default("")
   channelId    String   @default("")
   channelName  String   @default("")
+  thumbnail    String   @default("")
+  subscribers  String   @default("0")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@unique([userId, channelId])
 }
 
 model ABTest {

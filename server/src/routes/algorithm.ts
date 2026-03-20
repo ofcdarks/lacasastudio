@@ -78,18 +78,21 @@ router.get("/oauth/callback", async (req: Request, res: Response) => {
     const tokens = await tokenRes.json() as any;
     if (tokens.error) { res.redirect("/?oauth=error&reason=" + encodeURIComponent(tokens.error)); return; }
 
-    // Get channel info
-    const chRes = await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true", {
+    // Get channel info with statistics
+    const chRes = await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true", {
       headers: { Authorization: `Bearer ${tokens.access_token}` }
     });
     const chData = await chRes.json() as any;
     const ch = chData.items?.[0];
+    const chId = ch?.id || "";
 
-    await (prisma as any).oAuthToken.upsert({
-      where: { userId },
-      create: { userId, accessToken: tokens.access_token, refreshToken: tokens.refresh_token || "", expiresAt: String(Date.now() + (tokens.expires_in || 3600) * 1000), scope: tokens.scope || "", channelId: ch?.id || "", channelName: ch?.snippet?.title || "" },
-      update: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token || undefined, expiresAt: String(Date.now() + (tokens.expires_in || 3600) * 1000), channelId: ch?.id || "", channelName: ch?.snippet?.title || "" },
-    });
+    // Multi-channel: upsert by userId+channelId
+    const existing = await (prisma as any).oAuthToken.findFirst({ where: { userId, channelId: chId } });
+    if (existing) {
+      await (prisma as any).oAuthToken.update({ where: { id: existing.id }, data: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token || existing.refreshToken, expiresAt: String(Date.now() + (tokens.expires_in || 3600) * 1000), channelName: ch?.snippet?.title || "", thumbnail: ch?.snippet?.thumbnails?.default?.url || "", subscribers: String(ch?.statistics?.subscriberCount || "0") } });
+    } else {
+      await (prisma as any).oAuthToken.create({ data: { userId, accessToken: tokens.access_token, refreshToken: tokens.refresh_token || "", expiresAt: String(Date.now() + (tokens.expires_in || 3600) * 1000), scope: tokens.scope || "", channelId: chId, channelName: ch?.snippet?.title || "", thumbnail: ch?.snippet?.thumbnails?.default?.url || "", subscribers: String(ch?.statistics?.subscriberCount || "0") } });
+    }
     res.redirect("/my-analytics?oauth=success");
   } catch (e: any) { res.redirect("/?oauth=error&reason=" + encodeURIComponent(e.message || "unknown")); }
 });
@@ -110,15 +113,32 @@ router.get("/oauth/url", async (req: any, res: Response) => {
 });
 
 router.get("/oauth/status", async (req: any, res: Response) => {
-  const token = await (prisma as any).oAuthToken.findUnique({ where: { userId: req.userId } });
-  res.json({ connected: !!token, channelName: token?.channelName || "", channelId: token?.channelId || "" });
+  const channels = await (prisma as any).oAuthToken.findMany({ where: { userId: req.userId } });
+  const first = channels[0];
+  res.json({ connected: channels.length > 0, channelCount: channels.length, channelName: first?.channelName || "", channelId: first?.channelId || "", channels: channels.map((c: any) => ({ id: c.id, channelId: c.channelId, channelName: c.channelName, thumbnail: c.thumbnail || "", subscribers: c.subscribers || "0" })) });
 });
 
-async function getAccessToken(userId: number): Promise<string | null> {
-  const token = await (prisma as any).oAuthToken.findUnique({ where: { userId } });
+// List all connected channels
+router.get("/oauth/channels", async (req: any, res: Response) => {
+  const channels = await (prisma as any).oAuthToken.findMany({ where: { userId: req.userId }, orderBy: { createdAt: "desc" } });
+  res.json(channels.map((c: any) => ({ id: c.id, channelId: c.channelId, channelName: c.channelName, thumbnail: c.thumbnail || "", subscribers: c.subscribers || "0" })));
+});
+
+// Remove a connected channel
+router.delete("/oauth/channel/:id", async (req: any, res: Response) => {
+  await (prisma as any).oAuthToken.deleteMany({ where: { id: Number(req.params.id), userId: req.userId } });
+  res.json({ ok: true });
+});
+
+async function getAccessToken(userId: number, channelId?: string): Promise<string | null> {
+  let token: any;
+  if (channelId) {
+    token = await (prisma as any).oAuthToken.findFirst({ where: { userId, channelId } });
+  } else {
+    token = await (prisma as any).oAuthToken.findFirst({ where: { userId }, orderBy: { createdAt: "desc" } });
+  }
   if (!token) return null;
   if (Date.now() > Number(token.expiresAt) - 60000) {
-    // Refresh
     try {
       const res = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -126,7 +146,7 @@ async function getAccessToken(userId: number): Promise<string | null> {
       });
       const data = await res.json() as any;
       if (data.access_token) {
-        await (prisma as any).oAuthToken.update({ where: { userId }, data: { accessToken: data.access_token, expiresAt: String(Date.now() + (data.expires_in || 3600) * 1000) } });
+        await (prisma as any).oAuthToken.update({ where: { id: token.id }, data: { accessToken: data.access_token, expiresAt: String(Date.now() + (data.expires_in || 3600) * 1000) } });
         return data.access_token;
       }
     } catch {}
@@ -142,6 +162,43 @@ async function ytAnalytics(accessToken: string, params: string) {
   if (!res.ok) throw new Error(`YT Analytics: ${res.status}`);
   return await res.json() as any;
 }
+
+// ═══════════════════════════════════════════
+// AI-POWERED INSIGHTS (analyzes real data)
+// ═══════════════════════════════════════════
+router.post("/ai-insights", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { totals, videos, channelName, period } = req.body;
+    if (!totals) { res.status(400).json({ error: "Dados obrigatórios" }); return; }
+    const result = await fetchAI(
+      "Você é um consultor de YouTube EXPERT que analisa dados reais do YouTube Analytics. Dê conselhos ACIONÁVEIS e ESPECÍFICOS baseados nos números. Cada dica deve referenciar dados concretos. " + LANG_RULE,
+      `Analise dados REAIS do canal "${channelName}" (últimos ${period || 28} dias):
+
+MÉTRICAS: Views:${totals.views||0} WatchTime:${Math.round(totals.watchTime||0)}min AVD:${Math.round(totals.avgDuration||0)}s Retenção:${Math.round(totals.avgPct||0)}% Likes:${totals.likes||0} Dislikes:${totals.dislikes||0} Comments:${totals.comments||0} Shares:${totals.shares||0} SubsGained:${totals.subsGained||0} SubsLost:${totals.subsLost||0} Satisfaction:${totals.satisfaction||0}%
+
+${videos?.length?`TOP VÍDEOS:\n${videos.slice(0,5).map((v:any,i:number)=>`${i+1}."${v.title}" ${v.views}views ${Math.round(v.avgPct||0)}%ret ${v.likes}likes`).join("\n")}`:""}
+
+JSON: {"healthScore":75,"healthLabel":"Rótulo curto","diagnosis":"Diagnóstico 2-3 frases baseado nos números","urgentActions":[{"action":"Ação específica AGORA","why":"Por que baseado nos dados","impact":"alto","metric":"Qual métrica melhora"},{"action":"Segunda","why":"...","impact":"medio","metric":"..."}],"weeklyPlan":[{"day":"Segunda","task":"Tarefa específica","time":"30min","tool":"Ferramenta do LaCasaStudio a usar"},{"day":"Terça","task":"...","time":"...","tool":"..."},{"day":"Quarta","task":"...","time":"...","tool":"..."},{"day":"Quinta","task":"...","time":"...","tool":"..."},{"day":"Sexta","task":"...","time":"...","tool":"..."},{"day":"Sábado","task":"...","time":"...","tool":"..."},{"day":"Domingo","task":"Análise semanal","time":"20min","tool":"Comparador + Meu Canal"}],"contentStrategy":"3-4 frases: que tipo de vídeo, duração ideal, frequência","algorithmTips":["Dica 1 baseada nos dados","Dica 2","Dica 3"],"nextVideo":{"titleIdea":"Título sugerido","optimalDuration":"X-Y min","bestDay":"Dia","bestHour":"Horário","format":"long/short/both"},"warnings":["Alertas preocupantes"],"growth30d":"Previsão se seguir o plano","toolsToUse":["Lista de ferramentas do LaCasaStudio"]}`,
+      4000
+    );
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
+// AI insights for Command Center (post-publish)
+router.post("/command-center/insights", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { video, layer, vsChannel, channelName } = req.body;
+    const result = await fetchAI(
+      "Expert em primeiras 48h pós-publicação YouTube. Analise dados reais e diga o que fazer AGORA. " + LANG_RULE,
+      `Vídeo no canal "${channelName}": Views:${video?.views||0} AVD:${Math.round(video?.avgDuration||0)}s(avg canal:${vsChannel?.avgDuration||0}s) ViewsVsCanal:${vsChannel?.viewsVsAvg||0}% Satisfaction:${video?.satisfaction||0}% Likes:${video?.likes} Comments:${video?.comments} Shares:${video?.shares} Camada:${layer||"testing"}
+
+JSON: {"status":"🟢/🟡/🔴 + label","diagnosis":"2-3 frases do que está acontecendo","immediateActions":[{"action":"O que fazer AGORA","priority":"urgente","timeNeeded":"5min"},{"action":"Segunda ação","priority":"importante","timeNeeded":"10min"}],"thumbChange":false,"thumbReason":"Motivo","titleChange":false,"titleSuggestion":"","layerPrediction":"Para onde vai e quando","whatToPost":"O que postar agora","nextCheckIn":"Quando checar de novo"}`,
+      2000
+    );
+    res.json(result);
+  } catch (err) { next(err); }
+});
 
 
 // ═══════════════════════════════════════════
