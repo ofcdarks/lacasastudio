@@ -104,16 +104,28 @@ router.post("/storyboard", async (req: any, res: Response, next: NextFunction) =
     const apiKey = await getApiKey();
     if (!apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
     const model = await getModel();
-    const { title, duration, style } = req.body as { title: string; duration?: string; style?: string };
+    const { title, duration, style } = req.body as any;
 
-    const raw = await callAI(apiKey, model, VIRAL_SYSTEM,
-      `Storyboard para vídeo viral: "${title}" (${duration || "12:00"}, ${style || "tutorial"}). 8-12 cenas. Array JSON sem markdown:
-[{"type":"hook","title":"Nome","duration":"0:00-0:08","notes":"Descrição","camera":"Shot","audio":"Audio","color":"#EF4444","retention":"Técnica"}]`
+    const raw = await callAI(apiKey, model,
+      "Você é um diretor cinematográfico de Hollywood e Netflix. Cria storyboards profissionais com direção de fotografia, narração, animação, efeitos sonoros e música para cada cena. Responda APENAS JSON válido sem markdown.",
+      `Crie um storyboard cinematográfico COMPLETO e DETALHADO para: "${title}"
+Duração: ${duration || "10:00"}
+Estilo: ${style || "cinematográfico viral com alta retenção"}
+
+Crie 8-12 cenas. RETORNE APENAS um array JSON:
+[{"type":"hook","title":"NOME DA CENA","duration":"~5s","notes":"Narração completa que será falada pelo apresentador nesta cena. Escreva 2-3 frases detalhadas.","camera":"Direção de câmera: movimento, enquadramento, transição de entrada. Ex: Extreme close-up -> zoom out lento, corte seco para wide shot","audio":"Trilha + SFX: descreva a música de fundo e efeitos sonoros. Ex: Bass drop + reverse cymbal, trilha tensa em Dm menor","color":"#EF4444"}]
+
+Tipos válidos: hook, intro, problem, content, demo, reveal, transition, cta, outro, broll
+Cores sugeridas: hook=#EF4444, intro=#A855F7, problem=#F59E0B, content=#3B82F6, demo=#06B6D4, reveal=#EC4899, transition=#8B5CF6, cta=#F59E0B, outro=#22C55E, broll=#14B8A6
+
+SEJA EXTREMAMENTE DETALHADO na narração (notes), direção de câmera (camera) e trilha/SFX (audio). Cada campo deve ter pelo menos 2 frases. Isso será usado para produção profissional cinematográfica.`
     );
     await NotifService.aiGenerated(req.userId, "storyboard");
-    res.json({ scenes: parseJSON(raw) });
+    const parsed = parseJSON(raw);
+    const scenes = Array.isArray(parsed) ? parsed : (parsed as any).scenes || parsed;
+    res.json({ scenes });
   } catch (err: any) {
-    if (err.message?.includes("JSON")) { res.status(500).json({ error: "IA retornou formato inválido." }); return; }
+    if (err.message?.includes("JSON")) { res.status(500).json({ error: "IA retornou formato inválido. Tente novamente." }); return; }
     next(err);
   }
 });

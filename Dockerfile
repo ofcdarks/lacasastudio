@@ -1,5 +1,5 @@
 # ============================================================
-# LaCasaStudio V2.3 — TypeScript Production Build
+# LaCasaStudio V2.3 — Production Build
 # ============================================================
 
 FROM node:20-slim AS client-build
@@ -35,10 +35,12 @@ COPY --from=server-build /app/server/dist ./server/dist
 COPY server/prisma ./server/prisma/
 COPY --from=client-build /app/client/dist ./server/public
 
-RUN mkdir -p /app/server/uploads && chown -R appuser:appgroup /app
+# Create persistent data directory
+RUN mkdir -p /app/data /app/server/uploads && chown -R appuser:appgroup /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV DATABASE_URL=file:/app/data/lacasastudio.db
 EXPOSE 3000
 USER appuser
 
