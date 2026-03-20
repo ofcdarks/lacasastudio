@@ -52,13 +52,13 @@ function render(ctx,el,sel){
   else if(el.type==="ellipse"){ctx.beginPath();ctx.ellipse(el.x+el.w/2,el.y+el.h/2,Math.abs(el.w/2)||1,Math.abs(el.h/2)||1,0,0,Math.PI*2);if(hf){ctx.fillStyle=(el.color||"#fff")+"25";ctx.fill();}ctx.stroke();}
   else if(el.type==="diamond"){const cx=el.x+el.w/2,cy=el.y+el.h/2;ctx.beginPath();ctx.moveTo(cx,el.y);ctx.lineTo(el.x+el.w,cy);ctx.lineTo(cx,el.y+el.h);ctx.lineTo(el.x,cy);ctx.closePath();if(hf){ctx.fillStyle=(el.color||"#fff")+"25";ctx.fill();}ctx.stroke();}
   else if(el.type==="line"){ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(el.x+el.w,el.y+el.h);ctx.stroke();}
-  else if(el.type==="arrow"){const ex=el.x+el.w,ey=el.y+el.h,at=el.arrowType||"straight",hl=Math.max(12,el.sw*4),a=Math.atan2(el.h,el.w);
+  else if(el.type==="arrow"){const ex=el.x+el.w,ey=el.y+el.h,at=el.arrowType||"straight",hl=Math.max(16,el.sw*5),a=Math.atan2(el.h,el.w);
     if(el.dash)ctx.setLineDash(el.dash);
     if(at==="curved"||at==="curveUp"||at==="curveDown"){const curveAmt=Math.max(60,Math.abs(el.w)*0.4);const cp1x=el.x+el.w*.4,cp1y=at==="curveUp"?Math.min(el.y,ey)-curveAmt:at==="curveDown"?Math.max(el.y,ey)+curveAmt:el.y-curveAmt,cp2x=el.x+el.w*.6,cp2y=cp1y;ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,ex,ey);ctx.stroke();const dt=.98,tx=Math.pow(1-dt,3)*el.x+3*Math.pow(1-dt,2)*dt*cp1x+3*(1-dt)*dt*dt*cp2x+dt*dt*dt*ex,ty=Math.pow(1-dt,3)*el.y+3*Math.pow(1-dt,2)*dt*cp1y+3*(1-dt)*dt*dt*cp2y+dt*dt*dt*ey,ca=Math.atan2(ey-ty,ex-tx);ctx.fillStyle=el.color;ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(ca-.4),ey-hl*Math.sin(ca-.4));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(ca+.4),ey-hl*Math.sin(ca+.4));ctx.closePath();ctx.fill();ctx.stroke();}
-    else if(at==="double"){ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(ex,ey);ctx.stroke();ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(a-.4),ey-hl*Math.sin(a-.4));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(a+.4),ey-hl*Math.sin(a+.4));ctx.stroke();const ra=a+Math.PI;ctx.beginPath();ctx.moveTo(el.x-hl*Math.cos(ra-.4),el.y-hl*Math.sin(ra-.4));ctx.lineTo(el.x,el.y);ctx.lineTo(el.x-hl*Math.cos(ra+.4),el.y-hl*Math.sin(ra+.4));ctx.stroke();}
+    else if(at==="double"){ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(ex,ey);ctx.stroke();ctx.fillStyle=el.color;ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(a-.4),ey-hl*Math.sin(a-.4));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(a+.4),ey-hl*Math.sin(a+.4));ctx.closePath();ctx.fill();const ra=a+Math.PI;ctx.beginPath();ctx.moveTo(el.x-hl*Math.cos(ra-.4),el.y-hl*Math.sin(ra-.4));ctx.lineTo(el.x,el.y);ctx.lineTo(el.x-hl*Math.cos(ra+.4),el.y-hl*Math.sin(ra+.4));ctx.closePath();ctx.fill();}
     else if(at==="filled"){ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(ex,ey);ctx.stroke();ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(a-.35),ey-hl*Math.sin(a-.35));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(a+.35),ey-hl*Math.sin(a+.35));ctx.closePath();ctx.fillStyle=el.color;ctx.fill();}
-    else if(at==="elbow"){const mx=el.x+el.w/2;ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(mx,el.y);ctx.lineTo(mx,ey);ctx.lineTo(ex,ey);ctx.stroke();const ea=el.w>0?0:Math.PI;ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(ea-.4),ey-hl*Math.sin(ea-.4));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(ea+.4),ey-hl*Math.sin(ea+.4));ctx.stroke();}
-    else{ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(ex,ey);ctx.stroke();ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(a-.4),ey-hl*Math.sin(a-.4));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(a+.4),ey-hl*Math.sin(a+.4));ctx.stroke();}
+    else if(at==="elbow"){const mx=el.x+el.w/2;ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(mx,el.y);ctx.lineTo(mx,ey);ctx.lineTo(ex,ey);ctx.stroke();const ea=el.w>0?0:Math.PI;ctx.fillStyle=el.color;ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(ea-.4),ey-hl*Math.sin(ea-.4));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(ea+.4),ey-hl*Math.sin(ea+.4));ctx.closePath();ctx.fill();}
+    else{ctx.beginPath();ctx.moveTo(el.x,el.y);ctx.lineTo(ex,ey);ctx.stroke();ctx.fillStyle=el.color;ctx.beginPath();ctx.moveTo(ex-hl*Math.cos(a-.4),ey-hl*Math.sin(a-.4));ctx.lineTo(ex,ey);ctx.lineTo(ex-hl*Math.cos(a+.4),ey-hl*Math.sin(a+.4));ctx.closePath();ctx.fill();}
     if(el.dash)ctx.setLineDash([]);}
   else if(el.type==="draw"){const p=el.points||[];if(p.length>=2){ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)ctx.lineTo(p[i][0],p[i][1]);ctx.stroke();}}
   else if(el.type==="text"){const fs=el.fontSize||24;ctx.font=`${el.bold?"bold ":""}${el.italic?"italic ":""}${fs}px ${el.fontFamily||FONTS[1].f}`;ctx.fillStyle=el.color||"#fff";ctx.textAlign=el.align||"left";const lines=(el.text||"").split("\n");lines.forEach((l,i)=>ctx.fillText(l,el.x,el.y+i*(fs*1.4)));}
@@ -146,6 +146,7 @@ export default function Ideas(){
   const toast=useToast();const cvs=useRef(null),box=useRef(null),fileRef=useRef(null);
   const[boards,setBoards]=useState([]);const[curBoard,setCurBoard]=useState(null);const[boardName,setBoardName]=useState("");const[showList,setShowList]=useState(true);
   const[els,setEls]=useState([]);const[tool,setTool]=useState("select");const[color,setColor]=useState("#ffffff");const[swV,setSwV]=useState(2);const[fillV,setFillV]=useState("none");
+  const[arrowTypeV,setArrowTypeV]=useState("straight");const[arrowDashV,setArrowDashV]=useState(null);const[showArrowModal,setShowArrowModal]=useState(false);
   const[fontIdx,setFontIdx]=useState(0);const[sizeKey,setSizeKey]=useState("M");const[alignV,setAlignV]=useState("left");const[opV,setOpV]=useState(100);const[selId,setSelId]=useState(null);
   const[multiSel,setMultiSel]=useState(new Set());
   const[stickyC,setStickyC]=useState("#FEF08A");const[mrkIdx,setMrkIdx]=useState(0);const[boldV,setBoldV]=useState(false);const[italicV,setItalicV]=useState(false);
@@ -253,7 +254,7 @@ export default function Ideas(){
     if(tool==="marker"){const el={id:uid(),type:"marker",x:p.x,y:p.y,icon:MARKERS[mrkIdx],label:"",color,sw:1,opacity:100,fill:"none"};const n=[...els,el];setEls(n);push(n);return;}
     if(tool==="image"){fileRef.current?.click();return;}
     setDrawing(true);
-    const el={id:uid(),type:tool,x:p.x,y:p.y,w:0,h:0,color,sw:swV,fill:fillV,opacity:opV,...(tool==="draw"?{points:[[p.x,p.y]]}:{})};
+    const el={id:uid(),type:tool,x:p.x,y:p.y,w:0,h:0,color,sw:swV,fill:fillV,opacity:opV,...(tool==="draw"?{points:[[p.x,p.y]]}:{}),...(tool==="arrow"?{arrowType:arrowTypeV,dash:arrowDashV}:{})};
     drawRef.current=el;setEls(p=>[...p,el]);
   };
 
@@ -388,7 +389,7 @@ export default function Ideas(){
       {!zenMode&&<div style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",background:C.bgCard,borderBottom:`1px solid ${C.border}`,zIndex:10,flexWrap:"wrap",minHeight:44}}>
         <Btn vr="ghost" onClick={()=>setShowList(true)} style={{padding:"4px 8px",fontSize:10}}>← Quadros</Btn>
         <div style={{width:1,height:20,background:C.border}}/>
-        {Object.entries(TOOLS).map(([k,v])=><button key={k} onClick={()=>{setTool(k);if(k==="image")fileRef.current?.click();setSelId(null);}} title={v.l} style={{width:30,height:30,borderRadius:6,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:k==="sticky"||k==="marker"||k==="image"?13:14,background:tool===k?`${C.red}22`:"transparent",color:tool===k?C.red:C.muted}}>{v.i}</button>)}
+        {Object.entries(TOOLS).map(([k,v])=><button key={k} onClick={()=>{setTool(k);if(k==="image")fileRef.current?.click();if(k==="arrow")setShowArrowModal(p=>!p);else setShowArrowModal(false);setSelId(null);}} title={v.l} style={{width:30,height:30,borderRadius:6,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:k==="sticky"||k==="marker"||k==="image"?13:14,background:tool===k?`${C.red}22`:"transparent",color:tool===k?C.red:C.muted}}>{v.i}</button>)}
         <div style={{flex:1}}/>
         <div style={{width:1,height:20,background:C.border}}/>
         <Btn vr="ghost" onClick={()=>setShowTemplates(true)} style={{padding:"3px 8px",fontSize:10}}>📋 Templates</Btn>
@@ -417,6 +418,32 @@ export default function Ideas(){
       <div style={{display:"flex",flex:1,overflow:"hidden"}}>
         {/* Canvas */}
         <div ref={box} style={{flex:1,position:"relative",cursor:resizing?({"nw":"nwse-resize","ne":"nesw-resize","sw":"nesw-resize","se":"nwse-resize","n":"ns-resize","s":"ns-resize","e":"ew-resize","w":"ew-resize"}[resizing.dir]||"move"):isPan?"grab":TOOLS[tool]?.c||"default",overflow:"hidden"}}>
+          {/* Arrow Config Modal */}
+          {showArrowModal&&tool==="arrow"&&<div style={{position:"absolute",top:50,left:"50%",transform:"translateX(-50%)",zIndex:100,background:C.bgCard,borderRadius:14,border:`1px solid ${C.border}`,padding:16,minWidth:340,boxShadow:"0 8px 32px rgba(0,0,0,.5)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><div style={{fontWeight:700,fontSize:13}}>🏹 Configurar Seta</div><button onClick={()=>setShowArrowModal(false)} style={{background:"none",border:"none",color:C.dim,cursor:"pointer",fontSize:16}}>✕</button></div>
+            <div style={{fontSize:10,color:C.dim,marginBottom:6}}>Tipo</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:4,marginBottom:10}}>
+              {[["straight","→ Reta"],["filled","▶ Cheia"],["double","↔ Dupla"],["curveUp","⤴ Curva ↑"],["curveDown","⤵ Curva ↓"],["curved","↗ Diag"],["elbow","↳ Cotov."]].map(([v,l])=><button key={v} onClick={()=>setArrowTypeV(v)} style={{padding:"8px 4px",borderRadius:6,border:`1px solid ${arrowTypeV===v?C.blue:C.border}`,background:arrowTypeV===v?`${C.blue}15`:"rgba(255,255,255,.03)",color:arrowTypeV===v?C.blue:C.muted,cursor:"pointer",fontSize:10,fontWeight:600}}>{l}</button>)}
+            </div>
+            <div style={{fontSize:10,color:C.dim,marginBottom:6}}>Espessura</div>
+            <div style={{display:"flex",gap:4,marginBottom:10}}>
+              {[1,2,3,5,8].map(w=><button key={w} onClick={()=>setSwV(w)} style={{flex:1,padding:"8px",borderRadius:6,border:`1px solid ${swV===w?C.blue:C.border}`,background:swV===w?`${C.blue}15`:"rgba(255,255,255,.03)",color:swV===w?C.blue:C.muted,cursor:"pointer",fontSize:11,fontWeight:700}}>{w}px</button>)}
+            </div>
+            <div style={{fontSize:10,color:C.dim,marginBottom:6}}>Traço</div>
+            <div style={{display:"flex",gap:4,marginBottom:10}}>
+              {[["Sólido",null],["Tracej.",[8,4]],["Pontilh.",[3,5]],["Misto",[10,4,3,4]]].map(([l,v])=><button key={l} onClick={()=>setArrowDashV(v)} style={{flex:1,padding:"8px",borderRadius:6,border:`1px solid ${JSON.stringify(arrowDashV)===JSON.stringify(v)?C.blue:C.border}`,background:JSON.stringify(arrowDashV)===JSON.stringify(v)?`${C.blue}15`:"rgba(255,255,255,.03)",color:JSON.stringify(arrowDashV)===JSON.stringify(v)?C.blue:C.muted,cursor:"pointer",fontSize:10}}>{l}</button>)}
+            </div>
+            <div style={{fontSize:10,color:C.dim,marginBottom:6}}>Cor</div>
+            <div style={{display:"flex",gap:4,marginBottom:12}}>
+              {["#ffffff","#EF4444","#F59E0B","#22C55E","#3B82F6","#A855F7","#EC4899","#94A3B8"].map(c=><button key={c} onClick={()=>setColor(c)} style={{width:28,height:28,borderRadius:"50%",border:`2px solid ${color===c?"#fff":C.border}`,background:c,cursor:"pointer"}}/>)}
+            </div>
+            <div style={{background:"rgba(255,255,255,.03)",borderRadius:8,padding:12,textAlign:"center",marginBottom:8}}>
+              <svg width="200" height="40" viewBox="0 0 200 40"><line x1="10" y1="20" x2="170" y2="20" stroke={color} strokeWidth={swV} strokeDasharray={arrowDashV?.join(" ")||"none"}/>{arrowTypeV==="filled"?<polygon points="170,20 155,12 155,28" fill={color}/>:<polyline points={`160,12 170,20 160,28`} fill="none" stroke={color} strokeWidth={swV}/>}{arrowTypeV==="double"&&<polyline points={`20,12 10,20 20,28`} fill="none" stroke={color} strokeWidth={swV}/>}</svg>
+              <div style={{fontSize:9,color:C.dim,marginTop:4}}>Preview — desenhe no canvas</div>
+            </div>
+            <button onClick={()=>setShowArrowModal(false)} style={{width:"100%",padding:"8px",borderRadius:8,border:"none",background:C.blue,color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>✓ Pronto — Desenhar Seta</button>
+          </div>}
+
           <canvas ref={cvs} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp} onWheel={onWheel} style={{display:"block",width:"100%",height:"100%",background:canvasBg,pointerEvents:(textEditor||stickyEditor)?"none":"auto"}}/>
 
           {/* TEXT EDITOR - positioned using screen coordinates */}
