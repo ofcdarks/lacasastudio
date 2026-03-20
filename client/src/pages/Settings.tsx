@@ -17,7 +17,7 @@ const MODELS = [
 ];
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const [laoKey, setLaoKey] = useState("");
   const [ytKey, setYtKey] = useState("");
   const [model, setModel] = useState("claude-sonnet-4-6");
@@ -28,6 +28,7 @@ export default function Settings() {
   const [testing, setTesting] = useState(false);
 
   useEffect(() => {
+    refresh(); // refresh user data to get latest isAdmin
     settingsApi.get().then(s => {
       if (s.ai_model) setModel(s.ai_model);
     }).catch(() => {});
@@ -183,9 +184,9 @@ export default function Settings() {
               <Btn onClick={async () => {
                 setPromoting(true);
                 try {
-                  await api.post("/auth/promote-admin", {}, true);
-                  alert("Você agora é admin! A página vai recarregar.");
-                  window.location.reload();
+                  await api.post("/auth/promote-admin", {});
+                  await refresh();
+                  alert("Você agora é admin! O link Admin apareceu no menu lateral.");
                 } catch (err) {
                   alert(err.message || "Já existe um administrador no sistema");
                 }
