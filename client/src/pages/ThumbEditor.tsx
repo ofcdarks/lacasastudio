@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useProgress } from "../components/shared/ProgressModal";
 import { useState, useRef, useEffect } from "react";
 import { aiApi } from "../lib/api";
 import { C, Btn, Hdr, Label, Input } from "../components/shared/UI";
@@ -15,6 +16,7 @@ const TEMPLATES = [
 
 export default function ThumbEditor() {
   const toast = useToast();
+  const pg = useProgress();
   const cvs = useRef(null);
   const [title, setTitle] = useState("SEU TÍTULO AQUI");
   const [subtitle, setSubtitle] = useState("");
@@ -92,9 +94,10 @@ export default function ThumbEditor() {
   const genBg = async () => {
     if (!aiPrompt.trim()) { toast?.error("Escreva um prompt"); return; }
     setGenLoading(true);
+    pg?.start("🎨 Gerando Background", ["Enviando prompt ao ImageFX", "Imagen 3.5 processando", "Aplicando no canvas"]);
     try {
       const r = await aiApi.generateAsset({ prompt: aiPrompt + ", YouTube thumbnail background, 16:9, cinematic, high quality" });
-      if (r.url) { setAiBg(r.url); toast?.success("Background gerado!"); }
+      if (r.url) { setAiBg(r.url); pg?.done(); toast?.success("Background gerado!"); }
     } catch (e) { toast?.error(e.message); }
     setGenLoading(false);
   };

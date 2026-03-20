@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useProgress } from "../components/shared/ProgressModal";
 import { useState, useEffect } from "react";
 import { researchApi, aiApi } from "../lib/api";
 import { C, Btn, Hdr, Input, Select } from "../components/shared/UI";
@@ -20,7 +21,7 @@ function ChCard({ch,onAnalyze,onSave,saved,busy}){const t=TIERS[ch.tier]||TIERS.
   <div style={{display:"flex",gap:6}}><button onClick={()=>onAnalyze(ch.ytChannelId)} disabled={busy} style={{flex:1,padding:"7px",borderRadius:8,border:"none",background:`${C.blue}20`,color:C.blue,cursor:"pointer",fontSize:11,fontWeight:600}}>{busy?"⏳":"🔍 Analisar"}</button><button onClick={()=>saved?null:onSave(ch)} disabled={saved} style={{flex:1,padding:"7px",borderRadius:8,border:"none",background:saved?`${C.green}20`:"rgba(255,255,255,.04)",color:saved?C.green:C.muted,cursor:saved?"default":"pointer",fontSize:11,fontWeight:600}}>{saved?"✅":"♡ Salvar"}</button></div>
 </div>}
 
-function AnalysisPanel({data,onClose,onSave,saved,toast}){
+function AnalysisPanel({data,onClose,onSave,saved,toast,pg}){
   if(!data)return null;const t=TIERS[data.tier]||TIERS.INICIANTE;
   const[sub,setSub]=useState("overview");
   const[dna,setDna]=useState(null);const[dnaL,setDnaL]=useState(false);
@@ -31,7 +32,7 @@ function AnalysisPanel({data,onClose,onSave,saved,toast}){
   const[mockup,setMockup]=useState(null);const[mockL,setMockL]=useState(false);
   const[mockImgs,setMockImgs]=useState({});const[genImg,setGenImg]=useState(null);
 
-  const ld=async(k,fn,set,setL,dep)=>{if(fn)return;setL(true);try{set(await dep());}catch(e){toast?.error(e.message);}setL(false);};
+  const ld=async(k,fn,set,setL,dep,title)=>{if(fn)return;setL(true);if(pg&&title)pg.start(title,["Processando","IA gerando","Finalizando"]);try{if(pg)pg.update(1);const r=await dep();if(pg)pg.done();set(r);}catch(e){if(pg)pg.fail(e.message);toast?.error(e.message);}setL(false);};
   const cp=txt=>{try{const ta=document.createElement("textarea");ta.value=txt;ta.style.cssText="position:fixed;left:-9999px";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);toast?.success("Copiado!");}catch{}};
 
   const genImage=async(key,prompt)=>{setGenImg(key);try{const r=await aiApi.generateAsset({prompt});if(r.url)setMockImgs(p=>({...p,[key]:r.url}));else toast?.error("Falha");}catch(e){toast?.error(e.message);}setGenImg(null);};
@@ -47,12 +48,12 @@ function AnalysisPanel({data,onClose,onSave,saved,toast}){
       </div>
       <div style={{display:"flex",gap:1,padding:"6px 20px",borderBottom:`1px solid ${C.border}`,overflowX:"auto"}}>
         {TABS.map(([k,ic,lb])=><button key={k} onClick={()=>{setSub(k);
-          if(k==="dna")ld(k,dna,setDna,setDnaL,()=>researchApi.dna({channelName:data.name,topVideos:data.topVideos,avgDuration:data.avgDuration,subscribers:data.subscribers,niche:data.niche}));
-          if(k==="blueprint")ld(k,bp,setBp,setBpL,()=>researchApi.blueprint(data));
-          if(k==="money")ld(k,money,setMoney,setMoneyL,()=>researchApi.monetization({niche:data.niche,country:data.country,videosPerWeek:data.uploadsPerWeek||3,avgViews:data.avgViews||10000,subscribers:data.subscribers}));
-          if(k==="titles")ld(k,titles,setTitles,setTitlesL,()=>researchApi.generateTitles({channelName:data.name,niche:data.niche,topVideoTitles:data.topVideos?.map(v=>v.title),targetCountry:data.country,language:data.language}).then(r=>r.ideas||[]));
-          if(k==="calendar")ld(k,cal,setCal,setCalL,()=>researchApi.calendar({niche:data.niche,subNiche:data.subNiche,videosPerWeek:data.uploadsPerWeek||3,style:data.contentType,targetCountry:data.country,language:data.language}).then(r=>r.calendar||[]));
-          if(k==="mockup")ld(k,mockup,setMockup,setMockL,()=>researchApi.channelMockup({originalChannel:data.name,niche:data.niche,subNiche:data.subNiche,style:data.contentType,targetCountry:data.country,language:data.language}));
+          if(k==="dna")ld(k,dna,setDna,setDnaL,()=>researchApi.dna({channelName:data.name,topVideos:data.topVideos,avgDuration:data.avgDuration,subscribers:data.subscribers,niche:data.niche}),"🧬 Extraindo DNA Viral");
+          if(k==="blueprint")ld(k,bp,setBp,setBpL,()=>researchApi.blueprint(data),"📐 Gerando Blueprint");
+          if(k==="money")ld(k,money,setMoney,setMoneyL,()=>researchApi.monetization({niche:data.niche,country:data.country,videosPerWeek:data.uploadsPerWeek||3,avgViews:data.avgViews||10000,subscribers:data.subscribers}),"💰 Calculando Monetização");
+          if(k==="titles")ld(k,titles,setTitles,setTitlesL,()=>researchApi.generateTitles({channelName:data.name,niche:data.niche,topVideoTitles:data.topVideos?.map(v=>v.title),targetCountry:data.country,language:data.language}).then(r=>r.ideas||[]),"🎯 Gerando Títulos Virais");
+          if(k==="calendar")ld(k,cal,setCal,setCalL,()=>researchApi.calendar({niche:data.niche,subNiche:data.subNiche,videosPerWeek:data.uploadsPerWeek||3,style:data.contentType,targetCountry:data.country,language:data.language}).then(r=>r.calendar||[]),"🗓️ Planejando 30 Dias");
+          if(k==="mockup")ld(k,mockup,setMockup,setMockL,()=>researchApi.channelMockup({originalChannel:data.name,niche:data.niche,subNiche:data.subNiche,style:data.contentType,targetCountry:data.country,language:data.language}),"📺 Criando Identidade Visual");
         }} style={{padding:"8px 12px",borderRadius:6,border:"none",cursor:"pointer",fontSize:13,background:sub===k?`${C.red}15`:"transparent",color:sub===k?C.red:C.muted}}>{ic}<span style={{fontSize:9,marginLeft:3}}>{lb}</span></button>)}
       </div>
       <div style={{padding:"14px 20px"}}>
@@ -163,6 +164,7 @@ function AnalysisPanel({data,onClose,onSave,saved,toast}){
 
 export default function Research(){
   const toast=useToast();
+  const pg=useProgress();
   const[tab,setTab]=useState("search");const[query,setQuery]=useState("");const[results,setResults]=useState([]);const[fc,setFc]=useState(0);
   const[loading,setLoading]=useState(false);const[azing,setAzing]=useState(null);const[analysis,setAnalysis]=useState(null);
   const[saved,setSaved]=useState([]);const[filterTier,setFilterTier]=useState("Todos");
@@ -174,15 +176,15 @@ export default function Research(){
 
   useEffect(()=>{researchApi.listSaved().then(setSaved).catch(()=>{});},[]);
 
-  const search=async q=>{const s=q||query;if(!s.trim())return;setLoading(true);try{const d=await researchApi.search(s);setResults(d.channels||[]);setFc(d.filtered||0);}catch(e){toast?.error(e.message);}setLoading(false);};
-  const analyze=async id=>{setAzing(id);try{setAnalysis(await researchApi.analyze(id));}catch(e){toast?.error(e.message);}setAzing(null);};
+  const search=async q=>{const s=q||query;if(!s.trim())return;setLoading(true);pg?.start("🔍 Buscando Canais",["Pesquisando","Filtrando","Pontuando"]);try{pg?.update(1);const d=await researchApi.search(s);setResults(d.channels||[]);setFc(d.filtered||0);pg?.done();}catch(e){pg?.fail(e.message);toast?.error(e.message);}setLoading(false);};
+  const analyze=async id=>{setAzing(id);pg?.start("Analisando Canal",["Buscando dados do YouTube","Analisando vídeos recentes","Calculando métricas","IA analisando nicho"]);try{pg?.update(1,"Buscando dados do canal...");const r=await researchApi.analyze(id);pg?.done();setAnalysis(r);}catch(e){pg?.fail(e.message);toast?.error(e.message);}setAzing(null);};
   const saveC=async ch=>{try{const s=await researchApi.save(ch);setSaved(p=>[...p,s]);toast?.success("Salvo!");}catch(e){toast?.error(e.message);}};
   const delS=async id=>{try{await researchApi.deleteSaved(id);setSaved(p=>p.filter(s=>s.id!==id));}catch(e){toast?.error(e.message);}};
   const cp=txt=>{try{const ta=document.createElement("textarea");ta.value=txt;ta.style.cssText="position:fixed;left:-9999px";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);toast?.success("Copiado!");}catch{}};
-  const loadTrend=async(p,r)=>{setTLoad(true);try{setTrending((await researchApi.trending({period:p||tPeriod,regionCode:r||tRegion})).videos||[]);}catch(e){toast?.error(e.message);}setTLoad(false);};
-  const loadEmerging=async()=>{setELoad(true);try{setEmerging(await researchApi.emerging());}catch(e){toast?.error(e.message);}setELoad(false);};
-  const loadSpy=async()=>{if(!saved.length){toast?.error("Salve canais primeiro");return;}setSpyLoad(true);try{setSpyData(await researchApi.spy(saved.map(s=>s.ytChannelId)));}catch(e){toast?.error(e.message);}setSpyLoad(false);};
-  const runAB=async()=>{if(!abTitles.trim())return;setAbLoad(true);try{const ts=abTitles.split("\n").filter(t=>t.trim());setAbResults((await researchApi.abTest({titles:ts,niche:abNiche})).results||[]);}catch(e){toast?.error(e.message);}setAbLoad(false);};
+  const loadTrend=async(p,r)=>{setTLoad(true);pg?.start("Carregando Hype",["Buscando trending","Filtrando"]);try{pg?.update(1);setTrending((await researchApi.trending({period:p||tPeriod,regionCode:r||tRegion})).videos||[]);pg?.done();}catch(e){pg?.fail(e.message);toast?.error(e.message);}setTLoad(false);};
+  const loadEmerging=async()=>{setELoad(true);pg?.start("Detectando Tendências",["Coletando trending US","Coletando trending BR","Coletando trending IN,GB","Coletando trending DE,JP,KR,MX","IA cruzando dados de 8 países"]);try{pg?.update(2,"Buscando dados de 8 países...");const r=await researchApi.emerging();pg?.update(4,"IA analisando padrões...");pg?.done();setEmerging(r);}catch(e){pg?.fail(e.message);toast?.error(e.message);}setELoad(false);};
+  const loadSpy=async()=>{if(!saved.length){toast?.error("Salve canais primeiro");return;}setSpyLoad(true);pg?.start("Espiando Canais",saved.map(s=>s.name));try{const r=await researchApi.spy(saved.map(s=>s.ytChannelId));pg?.done();setSpyData(r);}catch(e){pg?.fail(e.message);toast?.error(e.message);}setSpyLoad(false);};
+  const runAB=async()=>{if(!abTitles.trim())return;setAbLoad(true);pg?.start("🧪 Testando CTR",["Analisando títulos","IA pontuando","Gerando melhorias"]);try{pg?.update(1);const ts=abTitles.split("\n").filter(t=>t.trim());setAbResults((await researchApi.abTest({titles:ts,niche:abNiche})).results||[]);pg?.done();}catch(e){pg?.fail(e.message);toast?.error(e.message);}setAbLoad(false);};
   const isSaved=id=>saved.some(s=>s.ytChannelId===id);
   const dR=filterTier==="Todos"?results:results.filter(r=>r.tier===filterTier);
 

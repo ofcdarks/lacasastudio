@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useProgress } from "../components/shared/ProgressModal";
 import { useState } from "react";
 import { chatApi } from "../lib/api";
 import { C, Btn, Hdr, Label, Input, Select } from "../components/shared/UI";
@@ -6,6 +7,7 @@ import { useToast } from "../components/shared/Toast";
 
 export default function Shorts() {
   const toast = useToast();
+  const pg = useProgress();
   const [script, setScript] = useState("");
   const [count, setCount] = useState(5);
   const [style, setStyle] = useState("dinâmico com cortes rápidos");
@@ -15,11 +17,12 @@ export default function Shorts() {
   const generate = async () => {
     if (!script.trim()) { toast?.error("Cole um roteiro"); return; }
     setLoading(true);
+    pg?.start("🚀 Gerando Shorts", ["Analisando roteiro", "Extraindo melhores momentos", "Criando " + count + " shorts", "Gerando hooks e hashtags"]);
     try {
       const r = await chatApi.shorts({ script, count, style });
       setShorts(r.shorts || []);
-      toast?.success(`${(r.shorts || []).length} shorts gerados!`);
-    } catch (e) { toast?.error(e.message); }
+      pg?.done(); toast?.success(`${(r.shorts || []).length} shorts gerados!`);
+    } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setLoading(false);
   };
 

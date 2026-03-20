@@ -4,26 +4,48 @@ import { authenticate } from "../middleware/auth";
 const router = Router();
 router.use(authenticate);
 
+// Simple in-memory cache (5 min TTL)
+const cache = new Map<string, { data: any; exp: number }>();
+function cached(key: string, ttl = 300000): any | null {
+  const c = cache.get(key);
+  if (c && c.exp > Date.now()) return c.data;
+  cache.delete(key);
+  return null;
+}
+function setCache(key: string, data: any, ttl = 300000) {
+  cache.set(key, { data, exp: Date.now() + ttl });
+  // Cleanup old entries
+  if (cache.size > 200) { const now = Date.now(); for (const [k, v] of cache) { if (v.exp < now) cache.delete(k); } }
+}
+
 async function getYtKey(): Promise<string> {
+  const c = cached("ytkey", 60000); if (c) return c;
   const s = await prisma.setting.findUnique({ where: { key: "youtube_api_key" } });
-  return s?.value || "";
+  const v = s?.value || ""; setCache("ytkey", v, 60000); return v;
 }
 
 async function getAiKey(): Promise<string> {
+  const c = cached("aikey", 60000); if (c) return c;
   const s = await prisma.setting.findUnique({ where: { key: "laozhang_api_key" } });
-  return s?.value || "";
+  const v = s?.value || ""; setCache("aikey", v, 60000); return v;
 }
 
 async function getModel(): Promise<string> {
+  const c = cached("model", 60000); if (c) return c;
   const s = await prisma.setting.findUnique({ where: { key: "ai_model" } });
-  return s?.value || "claude-sonnet-4-6";
+  const v = s?.value || "claude-sonnet-4-6"; setCache("model", v, 60000); return v;
 }
 
 async function ytFetch(path: string, ytKey: string) {
+  const ck = "yt:" + path;
+  const c = cached(ck);
+  if (c) return c;
   const sep = path.includes("?") ? "&" : "?";
   const res = await fetch(`https://www.googleapis.com/youtube/v3/${path}${sep}key=${ytKey}`);
   if (!res.ok) throw new Error(`YouTube API: ${res.status}`);
-  return res.json() as any;
+  const data = await res.json() as any;
+  setCache(ck, data);
+  return data;
 }
 
 function calcScore(subs: number, views: number, vids: number): number {

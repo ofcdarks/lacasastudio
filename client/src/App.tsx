@@ -1,32 +1,34 @@
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { Spinner, C } from "./components/shared/UI";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
 import AiChat from "./components/shared/AiChat";
+import { ProgressProvider } from "./components/shared/ProgressModal";
 import Sidebar from "./components/shared/Sidebar";
 import TopBar from "./components/shared/TopBar";
 import LoginPage from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import Planner from "./pages/Planner";
-import Storyboard from "./pages/Storyboard";
-import Editor from "./pages/Editor";
-import Checklist from "./pages/Checklist";
-import Seo from "./pages/Seo";
-import Metas from "./pages/Metas";
-import Templates from "./pages/Templates";
-import Calendario from "./pages/Calendario";
-import Analytics from "./pages/Analytics";
-import Research from "./pages/Research";
-import Shorts from "./pages/Shorts";
-import ThumbEditor from "./pages/ThumbEditor";
-import Orcamento from "./pages/Orcamento";
-import Ativos from "./pages/Ativos";
-import Equipe from "./pages/Equipe";
-import Settings from "./pages/Settings";
-import Admin from "./pages/Admin";
-import Ideas from "./pages/Ideas";
 
+// Lazy load heavy pages
+const Planner = lazy(() => import("./pages/Planner"));
+const Storyboard = lazy(() => import("./pages/Storyboard"));
+const Editor = lazy(() => import("./pages/Editor"));
+const Checklist = lazy(() => import("./pages/Checklist"));
+const Seo = lazy(() => import("./pages/Seo"));
+const Metas = lazy(() => import("./pages/Metas"));
+const Templates = lazy(() => import("./pages/Templates"));
+const Calendario = lazy(() => import("./pages/Calendario"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const Research = lazy(() => import("./pages/Research"));
+const Shorts = lazy(() => import("./pages/Shorts"));
+const ThumbEditor = lazy(() => import("./pages/ThumbEditor"));
+const Orcamento = lazy(() => import("./pages/Orcamento"));
+const Ativos = lazy(() => import("./pages/Ativos"));
+const Equipe = lazy(() => import("./pages/Equipe"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Ideas = lazy(() => import("./pages/Ideas"));
+const Admin = lazy(() => import("./pages/Admin"));
 function Layout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
@@ -35,7 +37,7 @@ function Layout({ children }: { children: ReactNode }) {
       <main className="main-content" style={{ marginLeft: 220, flex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", transition: "margin 0.2s" }}>
         <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <div className="page-padding" style={{ padding: "24px 32px", flex: 1, background: `radial-gradient(ellipse at 30% 0%, rgba(239,68,68,0.03) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(59,130,246,0.02) 0%, transparent 60%)` }}>
-          <ErrorBoundary>{children}</ErrorBoundary>
+          <ProgressProvider><Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",flex:1,padding:40}}><Spinner/></div>}><ErrorBoundary>{children}</ErrorBoundary></Suspense></ProgressProvider>
         </div>
       </main>
       <AiChat />
