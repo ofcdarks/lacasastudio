@@ -23,9 +23,9 @@ export default function Pipeline(){
     try{
       const r=await researchApi.pipeline({niche,subNiche,style,country,language,step:s,context:identity?{channelName:identity.channelName}:undefined});
       pg?.done();
-      if(s==="identity"){setIdentity(r);setStep(2);}
-      else if(s==="scripts"){setScripts(Array.isArray(r)?r:r.scripts||[r]);setStep(3);}
-      else if(s==="calendar"){setCalendar(Array.isArray(r)?r:r.calendar||[r]);setStep(4);}
+      if(s==="identity"){setIdentity(r);setStep(1);}
+      else if(s==="scripts"){setScripts(Array.isArray(r)?r:r.scripts||[r]);setStep(2);}
+      else if(s==="calendar"){setCalendar(Array.isArray(r)?r:r.calendar||[r]);setStep(3);}
     }catch(e){pg?.fail(e.message);toast?.error(e.message);}
     setLoading(false);
   };
@@ -71,16 +71,22 @@ export default function Pipeline(){
       
       {/* Banner + Logo */}
       <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:12,marginBottom:12}}>
-        <div style={{aspectRatio:"16/4",borderRadius:10,background:genImgs.banner?`url(${genImgs.banner}) center/cover`:`linear-gradient(135deg,${identity.colors?.primary||"#1a1a2e"},${identity.colors?.secondary||"#16213e"})`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          {!genImgs.banner&&<button onClick={()=>genImg("banner",identity.bannerPrompt)} disabled={!!genningKey} style={{padding:"8px 16px",borderRadius:8,border:"1px solid rgba(255,255,255,.3)",background:"rgba(0,0,0,.5)",color:"#fff",cursor:"pointer",fontSize:11}}>{genningKey==="banner"?"⏳":"🎨 Gerar Banner"}</button>}
+        <div style={{position:"relative",aspectRatio:"16/4",borderRadius:10,overflow:"hidden",background:genImgs.banner?`url(${genImgs.banner}) center/cover`:`linear-gradient(135deg,${identity.colors?.primary||"#1a1a2e"},${identity.colors?.secondary||"#16213e"})`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          {!genImgs.banner?<button onClick={()=>genImg("banner",identity.bannerPrompt)} disabled={!!genningKey} style={{padding:"8px 16px",borderRadius:8,border:"1px solid rgba(255,255,255,.3)",background:"rgba(0,0,0,.5)",color:"#fff",cursor:"pointer",fontSize:11}}>{genningKey==="banner"?"⏳":"🎨 Gerar Banner"}</button>
+          :<div style={{position:"absolute",top:6,right:6,display:"flex",gap:4}}><a href={genImgs.banner} download="banner.png" style={{padding:"4px 10px",borderRadius:6,background:"rgba(0,0,0,.7)",color:"#fff",fontSize:10,textDecoration:"none"}}>📥</a><button onClick={()=>{setGenImgs(p=>({...p,banner:undefined}));genImg("banner",identity.bannerPrompt);}} disabled={!!genningKey} style={{padding:"4px 10px",borderRadius:6,background:"rgba(0,0,0,.7)",color:"#fff",border:"none",cursor:"pointer",fontSize:10}}>🔄</button></div>}
         </div>
-        <div style={{width:80,height:80,borderRadius:"50%",background:genImgs.logo?`url(${genImgs.logo}) center/cover`:`linear-gradient(135deg,${identity.colors?.primary||"#EF4444"},${identity.colors?.secondary||"#F59E0B"})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:"#fff",cursor:"pointer"}} onClick={()=>!genImgs.logo&&genImg("logo",identity.logoPrompt)}>
-          {!genImgs.logo&&identity.channelName?.[0]}
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+          <div style={{width:80,height:80,borderRadius:"50%",background:genImgs.logo?`url(${genImgs.logo}) center/cover`:`linear-gradient(135deg,${identity.colors?.primary||"#EF4444"},${identity.colors?.secondary||"#F59E0B"})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:"#fff",cursor:"pointer",border:"3px solid rgba(255,255,255,.1)"}} onClick={()=>!genImgs.logo&&genImg("logo",identity.logoPrompt)}>
+            {!genImgs.logo&&(identity.channelName?.[0]||"C")}
+          </div>
+          {genImgs.logo?<div style={{display:"flex",gap:3,marginTop:4}}><a href={genImgs.logo} download="logo.png" style={{padding:"2px 6px",borderRadius:4,background:"rgba(255,255,255,.06)",color:C.blue,fontSize:8,textDecoration:"none"}}>📥</a><button onClick={()=>{setGenImgs(p=>({...p,logo:undefined}));genImg("logo",identity.logoPrompt);}} disabled={!!genningKey} style={{padding:"2px 6px",borderRadius:4,background:"rgba(255,255,255,.06)",color:C.muted,border:"none",cursor:"pointer",fontSize:8}}>🔄</button></div>
+          :<div style={{fontSize:8,color:C.dim,textAlign:"center",marginTop:3}}>Clique pra gerar</div>}
         </div>
       </div>
+      <button onClick={async()=>{setGenningKey("all");for(const[k,p] of [["logo",identity.logoPrompt],["banner",identity.bannerPrompt]]){if(!genImgs[k]&&p){try{const r=await aiApi.generateAsset({prompt:p});if(r.url)setGenImgs(prev=>({...prev,[k]:r.url}));}catch{}}}setGenningKey(null);}} disabled={!!genningKey} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${C.red}30`,background:`${C.red}08`,color:C.red,cursor:"pointer",fontSize:11,fontWeight:600,marginBottom:8,width:"100%"}}>{genningKey?"⏳ Gerando...":"🎨 Gerar Logo + Banner de uma vez"}</button>
       <div style={{fontSize:12,color:C.muted,lineHeight:1.6,marginBottom:8}}>{identity.description?.slice(0,200)}...</div>
       <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{identity.keywords?.map(k=><span key={k} style={{fontSize:10,padding:"2px 6px",borderRadius:4,background:`${C.blue}10`,color:C.blue}}>#{k}</span>)}</div>
-      {step===1&&<div style={{display:"flex",gap:8,marginTop:12}}><Btn onClick={()=>genStep("identity")} disabled={loading} style={{fontSize:11}}>🔄 Regenerar</Btn><Btn onClick={()=>{setStep(2);genStep("scripts");}} disabled={loading}>📝 Próximo: Roteiros →</Btn></div>}
+      {step===1&&<div style={{display:"flex",gap:8,marginTop:12}}><Btn onClick={()=>{setIdentity(null);genStep("identity");}} disabled={loading} style={{fontSize:11}}>🔄 Regenerar</Btn><Btn onClick={()=>genStep("scripts")} disabled={loading}>📝 Próximo: Roteiros →</Btn></div>}
     </div>}
 
     {/* Step 2: Scripts */}
@@ -99,7 +105,7 @@ export default function Pipeline(){
           </div>
         </div>)}
       </div>
-      {step===2&&<div style={{display:"flex",gap:8,marginTop:12}}><Btn onClick={()=>genStep("scripts")} disabled={loading} style={{fontSize:11}}>🔄 Regenerar</Btn><Btn onClick={()=>{setStep(3);genStep("calendar");}} disabled={loading}>📅 Próximo: Calendário →</Btn></div>}
+      {step===2&&<div style={{display:"flex",gap:8,marginTop:12}}><Btn onClick={()=>{setScripts(null);genStep("scripts");}} disabled={loading} style={{fontSize:11}}>🔄 Regenerar</Btn><Btn onClick={()=>genStep("calendar")} disabled={loading}>📅 Próximo: Calendário →</Btn></div>}
     </div>}
 
     {/* Step 3: Calendar */}
