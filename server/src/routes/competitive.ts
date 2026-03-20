@@ -509,24 +509,94 @@ router.post("/daily-ideas/generate", async (req: any, res: Response, next: NextF
     const niches: string[] = Array.from(new Set(saved.map((s: any) => String(s.niche)).filter(Boolean)));
     const channelNames = saved.map(s => s.name).slice(0, 5);
     
-    // Get trending videos
-    const trending = await ytFetch("videos?part=snippet,statistics&chart=mostPopular&regionCode=BR&maxResults=10", ytKey);
-    const trendingTitles = (trending.items || []).map((v: any) => v.snippet?.title).slice(0, 5);
+    // Get OAuth connected channels for country detection
+    const oauthChannels = await (prisma as any).oAuthToken.findMany({ where: { userId: req.userId } });
+    const connectedNames = oauthChannels.map((c: any) => c.channelName).filter(Boolean);
+
+    // Detect countries from OAuth channels (pull trending from each)
+    const countries = ["BR"]; // Default Brazil
+    // Check channel names/languages to add countries
+    for (const ch of oauthChannels) {
+      const name = (ch.channelName || "").toLowerCase();
+      if (/english|usa|american|us\b/i.test(name)) countries.push("US");
+      if (/español|spanish|latino|latin/i.test(name)) countries.push("MX");
+      if (/portugal|português|pt\b/i.test(name) && !countries.includes("PT")) countries.push("PT");
+    }
+    // Also add from req.body if user specifies
+    if (req.body.countries?.length) {
+      for (const c of req.body.countries) if (!countries.includes(c)) countries.push(c);
+    }
+    const uniqueCountries = Array.from(new Set(countries)).slice(0, 4);
+
+    // Pull trending from EACH country in parallel
+    const trendingPromises = uniqueCountries.map(cc =>
+      ytFetch(`videos?part=snippet,statistics&chart=mostPopular&regionCode=${cc}&maxResults=8`, ytKey)
+        .then(d => ({ country: cc, videos: (d.items || []).map((v: any) => ({ title: v.snippet?.title, views: Number(v.statistics?.viewCount || 0), channel: v.snippet?.channelTitle, category: v.snippet?.categoryId })) }))
+        .catch(() => ({ country: cc, videos: [] }))
+    );
+
+    // Pull niche-specific videos (search by niches)
+    const nichePromises = niches.slice(0, 3).map(niche =>
+      ytFetch(`search?part=snippet&q=${encodeURIComponent(niche)}&type=video&order=viewCount&publishedAfter=${new Date(Date.now() - 7 * 86400000).toISOString()}&maxResults=5`, ytKey)
+        .then(d => ({ niche, videos: (d.items || []).map((v: any) => ({ title: v.snippet?.title, channel: v.snippet?.channelTitle, videoId: v.id?.videoId })) }))
+        .catch(() => ({ niche, videos: [] }))
+    );
+
+    const [trendingResults, nicheResults] = await Promise.all([
+      Promise.all(trendingPromises),
+      Promise.all(nichePromises),
+    ]);
+
+    // Build context strings
+    const trendingByCountry = trendingResults.map(t =>
+      `${t.country}: ${t.videos.slice(0, 5).map(v => `"${v.title}" (${v.views > 1e6 ? (v.views / 1e6).toFixed(1) + "M" : v.views > 1e3 ? (v.views / 1e3).toFixed(0) + "K" : v.views} views)`).join(", ")}`
+    ).join("\n");
+
+    const nicheVids = nicheResults.map(n =>
+      `[${n.niche}]: ${n.videos.map(v => `"${v.title}" by ${v.channel}`).join(", ")}`
+    ).join("\n");
 
     const model = await getModel();
     const ideas = await fetchAI(aiKey, model,
-      "Expert em estratégia YouTube. Gere ideias de vídeo personalizadas baseadas no contexto do creator. " + LANG_RULE,
-      `Gere 10 ideias de vídeo para HOJE baseado neste contexto:
-Nichos do creator: ${niches.join(", ") || "geral"}
+      `Expert #1 em estratégia YouTube. Gere ideias que DOMINAM o algoritmo.
+REGRAS: Ideias devem combinar tendências reais com nichos do creator. Cada ideia tem score de viral, estimativa de views, e análise de por que funciona AGORA. Considere algoritmo 2026: satisfaction > watch time, Shorts separados, CTR é rei. ` + LANG_RULE,
+      `CONTEXTO DO CREATOR:
+Nichos: ${niches.join(", ") || "geral"}
 Canais monitorados: ${channelNames.join(", ") || "nenhum"}
-Trending no Brasil hoje: ${trendingTitles.join(" | ")}
+Canais OAuth: ${connectedNames.join(", ") || "nenhum"}
+Países: ${uniqueCountries.join(", ")}
 
-Para CADA ideia retorne JSON array:
-[{"title":"Título do vídeo sugerido","potential":"high","niche":"nicho","reasoning":"Por que essa ideia funciona AGORA (2-3 frases)","tags":"tag1, tag2, tag3","thumbnailIdea":"Conceito de thumbnail","estimatedViews":"10K-50K","urgency":"alta"}]
+TRENDING POR PAÍS:
+${trendingByCountry}
 
-Potenciais: very_high, high, medium, low. Urgência: alta (publicar hoje), média (esta semana), baixa (qualquer momento).
-Priorize ideias que surfam tendências ATUAIS e que combinem com os nichos do creator.`,
-      3000
+VÍDEOS RECENTES NOS NICHOS:
+${nicheVids || "Sem dados de nicho"}
+
+Gere 10 ideias. Para CADA ideia retorne:
+[{
+  "title": "Título otimizado pro algoritmo (40-65 chars, gatilho emocional + número se possível)",
+  "viralScore": 85,
+  "potential": "very_high",
+  "category": "trending_surf|niche_deep|cross_niche|shorts|evergreen",
+  "niche": "nicho principal",
+  "reasoning": "3-4 frases DETALHADAS de por que funciona: qual trend surfa, dados de views dos concorrentes, gap de mercado",
+  "tags": "tag1, tag2, tag3, tag4, tag5",
+  "thumbnailIdea": "Conceito detalhado de thumbnail com cores e expressão",
+  "hookIdea": "Primeiros 5 segundos exatos do vídeo",
+  "estimatedViews": "10K-50K",
+  "bestFormat": "long (8-12min)|short (30-60s)|both",
+  "urgency": "AGORA|esta semana|qualquer momento",
+  "country": "BR|US|MX|global",
+  "competitorGap": "O que concorrentes estão fazendo errado neste tema e como você pode fazer melhor",
+  "seoKeywords": ["keyword1", "keyword2", "keyword3"]
+}]
+
+PRIORIZE:
+1. Ideias que surfam trends dos dados acima (urgência AGORA)
+2. Ideias de nicho com gap de mercado (competitor gap)
+3. Mix de formatos (long + shorts)
+4. Pelo menos 2 ideias internacionais se o creator tem canais fora do BR`,
+      4096
     );
 
     // Save to DB
@@ -544,7 +614,12 @@ Priorize ideias que surfam tendências ATUAIS e que combinem com os nichos do cr
       });
     }
 
-    res.json({ ideas: ideaList, generatedAt: new Date().toISOString(), niches, trendingContext: trendingTitles });
+    res.json({
+      ideas: ideaList, generatedAt: new Date().toISOString(), niches,
+      countries: uniqueCountries,
+      trendingByCountry: trendingResults,
+      nicheVideos: nicheResults,
+    });
   } catch (err) { next(err); }
 });
 
