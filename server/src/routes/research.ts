@@ -769,3 +769,86 @@ Retorne JSON:
     catch { res.status(500).json({ error: "Formato inválido" }); }
   } catch (err) { next(err); }
 });
+
+// 📸 Analyze screenshots of channels
+router.post("/analyze-screenshots", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const aiKey = await getAiKey();
+    if (!aiKey) { res.status(400).json({ error: "Configure API Key" }); return; }
+    const { images, context } = req.body as { images: string[]; context?: string };
+    if (!images?.length) { res.status(400).json({ error: "Envie pelo menos 1 print" }); return; }
+
+    const model = await getModel();
+    
+    // Build message with images
+    const content: any[] = [];
+    images.forEach((img, i) => {
+      content.push({ type: "image_url", image_url: { url: img.startsWith("data:") ? img : `data:image/png;base64,${img}` } });
+    });
+    content.push({ type: "text", text: `Analise ${images.length} prints de canais/vídeos do YouTube. ${context || ""}
+
+Extraia e retorne JSON:
+{
+  "channelsDetected": [{"name":"Nome do canal se visível","subscribers":"Se visível","niche":"Nicho estimado"}],
+  "titlePatterns": {
+    "patterns": ["Padrão 1 usado nos títulos", "Padrão 2", "Padrão 3"],
+    "strengths": ["Ponto forte 1", "Ponto forte 2"],
+    "weaknesses": ["Fraqueza 1", "Fraqueza 2"],
+    "ctrEstimate": "alta/média/baixa"
+  },
+  "thumbnailAnalysis": {
+    "style": "Descrição do estilo visual das thumbnails",
+    "colors": "Paleta de cores dominante",
+    "elements": ["Elemento visual 1", "Elemento 2", "Elemento 3"],
+    "textUsage": "Como usam texto nas thumbs",
+    "emotionalTrigger": "Gatilho emocional principal",
+    "strengths": ["Força 1", "Força 2"],
+    "weaknesses": ["Fraqueza 1", "Fraqueza 2"]
+  },
+  "optimizedTitles": [
+    {"title": "Título otimizado 1 baseado nos padrões analisados", "improvement": "O que melhora vs originais", "ctrScore": 85},
+    {"title": "Título 2", "improvement": "...", "ctrScore": 90},
+    {"title": "Título 3", "improvement": "...", "ctrScore": 88},
+    {"title": "Título 4", "improvement": "...", "ctrScore": 82},
+    {"title": "Título 5", "improvement": "...", "ctrScore": 87},
+    {"title": "Título 6", "improvement": "...", "ctrScore": 84},
+    {"title": "Título 7", "improvement": "...", "ctrScore": 91},
+    {"title": "Título 8", "improvement": "...", "ctrScore": 86},
+    {"title": "Título 9", "improvement": "...", "ctrScore": 89},
+    {"title": "Título 10", "improvement": "...", "ctrScore": 83}
+  ],
+  "thumbnailPrompts": [
+    {"description": "Prompt detalhado para thumbnail otimizada 1", "style": "Estilo recomendado"},
+    {"description": "Prompt 2", "style": "..."},
+    {"description": "Prompt 3", "style": "..."},
+    {"description": "Prompt 4", "style": "..."},
+    {"description": "Prompt 5", "style": "..."}
+  ],
+  "insights": [
+    {"insight": "Oportunidade 1 que os canais NÃO estão fazendo e daria resultado", "impact": "alto/médio", "actionable": "Como implementar"},
+    {"insight": "Oportunidade 2", "impact": "...", "actionable": "..."},
+    {"insight": "Oportunidade 3", "impact": "...", "actionable": "..."},
+    {"insight": "Oportunidade 4", "impact": "...", "actionable": "..."},
+    {"insight": "Oportunidade 5", "impact": "...", "actionable": "..."}
+  ],
+  "strategy": "Estratégia completa em 3-4 frases: como usar essas análises pra sair na frente"
+}` });
+
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${aiKey}` },
+      body: JSON.stringify({
+        model, temperature: 0.4, max_tokens: 4000,
+        messages: [
+          { role: "system", content: "Expert em análise visual de canais YouTube. Analise screenshots de canais, títulos e thumbnails. APENAS JSON válido sem markdown." },
+          { role: "user", content }
+        ]
+      })
+    });
+    if (!aiRes.ok) { const err = await aiRes.text(); res.status(500).json({ error: `IA: ${aiRes.status} - ${err.slice(0, 200)}` }); return; }
+    const data = await aiRes.json() as any;
+    const raw = (data.choices?.[0]?.message?.content || "{}").trim();
+    try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
+    catch { res.status(500).json({ error: "IA retornou formato inválido. Tente com menos imagens." }); }
+  } catch (err) { next(err); }
+});

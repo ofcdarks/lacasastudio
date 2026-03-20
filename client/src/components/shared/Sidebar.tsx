@@ -85,6 +85,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
           <SItem icon="✦" label="Gerador SEO + IA" path="/seo" onClick={closeMobile} />
           <SItem icon="📱" label="Shorts/Reels" path="/shorts" onClick={closeMobile} />
           <SItem icon="🖼️" label="Thumbnails" path="/thumbs" onClick={closeMobile} />
+          <SItem icon="📸" label="Analisador" path="/analyzer" onClick={closeMobile} />
           <SItem icon="🔥" label="Inteligência" path="/research" onClick={closeMobile} />
           <SItem icon="◎" label="Metas & OKRs" path="/metas" onClick={closeMobile} />
           <SItem icon="◆" label="Templates de Série" path="/templates" onClick={closeMobile} />

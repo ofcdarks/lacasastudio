@@ -23,6 +23,7 @@ const Analytics = lazy(() => import("./pages/Analytics"));
 const Research = lazy(() => import("./pages/Research"));
 const Shorts = lazy(() => import("./pages/Shorts"));
 const ThumbEditor = lazy(() => import("./pages/ThumbEditor"));
+const Analyzer = lazy(() => import("./pages/Analyzer"));
 const Orcamento = lazy(() => import("./pages/Orcamento"));
 const Ativos = lazy(() => import("./pages/Ativos"));
 const Equipe = lazy(() => import("./pages/Equipe"));
@@ -65,6 +66,7 @@ export default function App() {
       <Route path="/research" element={<Layout><Research /></Layout>} />
       <Route path="/shorts" element={<Layout><Shorts /></Layout>} />
       <Route path="/thumbs" element={<Layout><ThumbEditor /></Layout>} />
+      <Route path="/analyzer" element={<Layout><Analyzer /></Layout>} />
       <Route path="/orcamento" element={<Layout><Orcamento /></Layout>} />
       <Route path="/ativos" element={<Layout><Ativos /></Layout>} />
       <Route path="/equipe" element={<Layout><Equipe /></Layout>} />
