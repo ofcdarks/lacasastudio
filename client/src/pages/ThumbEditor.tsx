@@ -24,6 +24,7 @@ export default function ThumbEditor() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiBg, setAiBg] = useState(null);
   const [genLoading, setGenLoading] = useState(false);
+  const [imageOnly, setImageOnly] = useState(false);
   const [elements, setElements] = useState([]);
   const [badge, setBadge] = useState("");
   const [emoji, setEmoji] = useState("");
@@ -43,9 +44,9 @@ export default function ThumbEditor() {
     // Background
     if (aiBg) {
       const img = new Image(); img.crossOrigin = "anonymous"; img.src = aiBg;
-      img.onload = () => { ctx.drawImage(img, 0, 0, W, H); drawOverlay(ctx, t); };
-      img.onerror = () => { fillGradient(ctx, t); drawOverlay(ctx, t); };
-    } else { fillGradient(ctx, t); drawOverlay(ctx, t); }
+      img.onload = () => { ctx.drawImage(img, 0, 0, W, H); if(!imageOnly) drawOverlay(ctx, t); };
+      img.onerror = () => { fillGradient(ctx, t); if(!imageOnly) drawOverlay(ctx, t); };
+    } else { fillGradient(ctx, t); if(!imageOnly) drawOverlay(ctx, t); }
   };
 
   const fillGradient = (ctx, t) => {
@@ -90,11 +91,11 @@ export default function ThumbEditor() {
     // Emoji
     if (emoji) { ctx.font = "120px Arial"; ctx.textAlign = "left"; ctx.fillText(emoji, 40, H - 60); }
 
-    // Accent line
-    ctx.fillStyle = t.accentColor; ctx.fillRect(W / 2 - 60, H / 2 + 100, 120, 4);
+    // Accent line (only if title exists)
+    if (title || subtitle) { ctx.fillStyle = t.accentColor; ctx.fillRect(W / 2 - 60, H / 2 + 100, 120, 4); }
   };
 
-  useEffect(() => { draw(); }, [title, subtitle, template, aiBg, badge, emoji]);
+  useEffect(() => { draw(); }, [title, subtitle, template, aiBg, badge, emoji, imageOnly]);
 
   const genBg = async () => {
     if (!aiPrompt.trim()) { toast?.error("Escreva um prompt"); return; }
@@ -134,7 +135,7 @@ Regras: SEM clickbait, máximo impacto visual, texto curto e legível, contraste
 
   return (
     <div className="page-enter" style={{ maxWidth: 1200, margin: "0 auto" }}>
-      <Hdr title="Editor de Thumbnails" sub="Crie thumbnails profissionais com IA" action={<Btn onClick={exportPng}>📥 Exportar PNG</Btn>} />
+      <Hdr title="Editor de Thumbnails" sub="Crie thumbnails profissionais com IA" action={<div style={{display:"flex",gap:6}}><Btn onClick={exportPng}>📥 1280x720</Btn><Btn onClick={() => { const c = cvs.current; if (!c) return; const hd = document.createElement("canvas"); hd.width = 2560; hd.height = 1440; hd.getContext("2d").drawImage(c, 0, 0, 2560, 1440); const l = document.createElement("a"); l.download = "thumb-2K.png"; l.href = hd.toDataURL("image/png"); l.click(); toast?.success("2K exportado!"); }} style={{background:`${C.blue}20`,color:C.blue}}>📐 2K HD</Btn></div>} />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 20 }}>
         {/* Canvas */}
@@ -146,6 +147,17 @@ Regras: SEM clickbait, máximo impacto visual, texto curto e legível, contraste
 
         {/* Controls */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ background: C.bgCard, borderRadius: 12, border: `1px solid ${C.border}`, padding: 14 }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <button onClick={() => setImageOnly(!imageOnly)} style={{ flex: 1, padding: "8px", borderRadius: 8, border: `1px solid ${imageOnly ? C.green : C.border}`, background: imageOnly ? `${C.green}15` : "transparent", color: imageOnly ? C.green : C.dim, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                {imageOnly ? "🖼️ Só Imagem ✓" : "📝 Com Texto"}
+              </button>
+              <button onClick={() => { const c = cvs.current; if (!c) return; const hd = document.createElement("canvas"); hd.width = 2560; hd.height = 1440; const hctx = hd.getContext("2d"); hctx.drawImage(c, 0, 0, 2560, 1440); const link = document.createElement("a"); link.download = "thumbnail-HD.png"; link.href = hd.toDataURL("image/png"); link.click(); toast?.success("Exportado em 2560x1440 HD!"); }} style={{ flex: 1, padding: "8px", borderRadius: 8, border: `1px solid ${C.blue}30`, background: `${C.blue}08`, color: C.blue, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                📐 Export 2K HD
+              </button>
+            </div>
+          </div>
+
           <div style={{ background: C.bgCard, borderRadius: 12, border: `1px solid ${C.border}`, padding: 14 }}>
             <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>📝 Texto</div>
             <Label t="Título principal" />
