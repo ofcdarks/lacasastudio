@@ -139,7 +139,7 @@ export default function Ideas(){
   const[resizing,setResizing]=useState(null); // {id, dir, startX, startY, origBounds}
   const[pan,setPan]=useState({x:0,y:0});const[zoom,setZoom]=useState(1);const[isPan,setIsPan]=useState(false);const[panSt,setPanSt]=useState(null);
   // TEXT: separate state for the floating text editor
-  const[textEditor,setTextEditor]=useState(null); // {id?, x, y, screenX, screenY, value, fontSize}
+  const[textEditor,setTextEditor]=useState(null); // {id?, canvasX, canvasY, value, fontSize}
   const[stickyEditor,setStickyEditor]=useState(null);
   const drawRef=useRef(null);const imgCache=useRef({});
 
@@ -198,6 +198,7 @@ export default function Ideas(){
 
   /* ── Mouse handlers ──────────────────── */
   const onDown=e=>{
+    if(textEditor||stickyEditor)return;
     if(viewMode)return;
     if(e.button===1||isPan){setPanSt({x:e.clientX-pan.x,y:e.clientY-pan.y});return;}
     const p=toC(e);
@@ -208,14 +209,13 @@ export default function Ideas(){
       const h=[...els].reverse().find(el=>hit(el,p.x,p.y));
       setSelId(h?.id||null);
       if(h){
-        if(e.detail===2){if(h.type==="text"){const sc=toScreen(h.x,h.y);setTextEditor({id:h.id,value:h.text||"",screenX:sc.sx,screenY:sc.sy-(h.fontSize||24),fontSize:h.fontSize||24});} else if(h.type==="sticky")setStickyEditor({id:h.id,title:h.title||"",text:h.text||"",stickyColor:h.stickyColor||"#FEF08A"});return;}
+        if(e.detail===2){if(h.type==="text"){setTextEditor({id:h.id,value:h.text||"",canvasX:h.x,canvasY:h.y,fontSize:h.fontSize||24});} else if(h.type==="sticky")setStickyEditor({id:h.id,title:h.title||"",text:h.text||"",stickyColor:h.stickyColor||"#FEF08A"});return;}
         setDragSt({x:p.x-h.x,y:p.y-h.y,id:h.id});
       }return;
     }
     if(tool==="eraser"){const h=[...els].reverse().find(el=>hit(el,p.x,p.y));if(h){const n=els.filter(el=>el.id!==h.id);setEls(n);push(n);}return;}
     if(tool==="text"){
-      const sc=toScreen(p.x,p.y);
-      setTextEditor({value:"",screenX:sc.sx,screenY:sc.sy,canvasX:p.x,canvasY:p.y,fontSize:SIZES[sizeKey]});
+      setTextEditor({value:"",canvasX:p.x,canvasY:p.y,fontSize:SIZES[sizeKey]});
       return;
     }
     if(tool==="sticky"){const el={id:uid(),type:"sticky",x:p.x,y:p.y,w:220,h:160,title:"Post-it",text:"",stickyColor:stickyC,color:"#000",sw:1,opacity:100,fill:"none"};const n=[...els,el];setEls(n);setStickyEditor({id:el.id,title:"Post-it",text:"",stickyColor:stickyC});return;}
@@ -372,15 +372,22 @@ export default function Ideas(){
       <div style={{display:"flex",flex:1,overflow:"hidden"}}>
         {/* Canvas */}
         <div ref={box} style={{flex:1,position:"relative",cursor:resizing?`${resizing.dir}-resize`:isPan?"grab":TOOLS[tool]?.c||"default",overflow:"hidden"}}>
-          <canvas ref={cvs} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp} onWheel={onWheel} style={{display:"block",width:"100%",height:"100%",background:canvasBg}}/>
+          <canvas ref={cvs} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp} onWheel={onWheel} style={{display:"block",width:"100%",height:"100%",background:canvasBg,pointerEvents:(textEditor||stickyEditor)?"none":"auto"}}/>
 
           {/* TEXT EDITOR - positioned using screen coordinates */}
-          {textEditor&&<div style={{position:"absolute",left:textEditor.screenX,top:textEditor.screenY,zIndex:20}}>
-            <textarea autoFocus value={textEditor.value} onChange={e=>setTextEditor(p=>({...p,value:e.target.value}))}
-              onKeyDown={e=>{if(e.key==="Escape"){setTextEditor(null);return;}if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();confirmText();}}}
-              onBlur={confirmText}
-              style={{background:"rgba(0,0,0,.9)",border:`2px solid ${C.blue}`,borderRadius:8,padding:"10px 14px",color,fontSize:textEditor.fontSize||SIZES[sizeKey],fontFamily:FONTS[fontIdx].f,fontWeight:boldV?"bold":"normal",fontStyle:italicV?"italic":"normal",outline:"none",minWidth:260,minHeight:80,resize:"both",lineHeight:1.4,whiteSpace:"pre-wrap"}}
-              placeholder="Digite aqui... (Shift+Enter = nova linha)"/>
+          {textEditor&&<div onClick={e=>e.stopPropagation()} style={{position:"absolute",inset:0,background:"rgba(0,0,0,.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:40}}>
+            <div style={{background:C.bgCard,borderRadius:14,border:`1px solid ${C.border}`,padding:22,width:420,boxShadow:"0 20px 60px rgba(0,0,0,.5)"}}>
+              <div style={{fontWeight:700,fontSize:15,marginBottom:4}}>Adicionar Texto</div>
+              <div style={{fontSize:11,color:C.dim,marginBottom:12}}>Fonte: {FONTS[fontIdx].n} · Tamanho: {sizeKey} · {boldV?"Bold ":""}{ italicV?"Itálico":""}</div>
+              <textarea autoFocus value={textEditor.value} onChange={e=>setTextEditor(p=>({...p,value:e.target.value}))}
+                onKeyDown={e=>{if(e.key==="Escape"){e.preventDefault();setTextEditor(null);return;}}}
+                style={{width:"100%",background:"rgba(255,255,255,.06)",border:`1px solid ${C.border}`,borderRadius:8,padding:"14px",color,fontSize:Math.min(textEditor.fontSize||SIZES[sizeKey],36),fontFamily:FONTS[fontIdx].f,fontWeight:boldV?"bold":"normal",fontStyle:italicV?"italic":"normal",outline:"none",minHeight:120,resize:"vertical",lineHeight:1.5,whiteSpace:"pre-wrap"}}
+                placeholder="Digite seu texto aqui..."/>
+              <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:12}}>
+                <Btn vr="ghost" onClick={()=>setTextEditor(null)}>Cancelar</Btn>
+                <Btn onClick={confirmText}>Adicionar</Btn>
+              </div>
+            </div>
           </div>}
 
           {/* STICKY EDITOR */}
@@ -483,7 +490,7 @@ Ex: Roteiro de reels sobre produtividade" style={{width:"100%",background:"rgba(
           <PS label="Modo de desenho"><div style={{display:"flex",gap:3}}><button onClick={()=>setDrawMode("clean")} style={{flex:1,padding:"5px 0",borderRadius:6,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,background:drawMode==="clean"?`${C.blue}20`:"rgba(255,255,255,.04)",color:drawMode==="clean"?C.blue:C.dim}}>▬ Limpo</button><button onClick={()=>setDrawMode("hand")} style={{flex:1,padding:"5px 0",borderRadius:6,border:"none",cursor:"pointer",fontSize:10,fontWeight:600,background:drawMode==="hand"?`${C.purple}20`:"rgba(255,255,255,.04)",color:drawMode==="hand"?C.purple:C.dim}}>✎ Rabisco</button></div></PS>
           {tool==="marker"&&<PS label="Marcadores"><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{MARKERS.map((m,i)=><button key={i} onClick={()=>setMrkIdx(i)} style={{width:32,height:32,borderRadius:6,border:"none",cursor:"pointer",fontSize:16,background:mrkIdx===i?`${C.blue}20`:"rgba(255,255,255,.04)"}}>{m}</button>)}</div></PS>}
           {tool==="sticky"&&<PS label="Cor do Post-it"><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{STICKY_C.map(sc=><div key={sc} onClick={()=>setStickyC(sc)} style={{width:28,height:28,borderRadius:6,cursor:"pointer",background:sc,border:stickyC===sc?"2px solid #fff":`1px solid ${C.border}`}}/>)}</div></PS>}
-          {selEl&&<PS label="Selecionado"><div style={{fontSize:11,color:C.muted,marginBottom:8}}>{selEl.type}</div>{(selEl.type==="text"||selEl.type==="sticky")&&<Btn vr="ghost" onClick={()=>{if(selEl.type==="text"){const sc=toScreen(selEl.x,selEl.y);setTextEditor({id:selEl.id,value:selEl.text,screenX:sc.sx,screenY:sc.sy-(selEl.fontSize||24),fontSize:selEl.fontSize});}else setStickyEditor({id:selEl.id,title:selEl.title,text:selEl.text,stickyColor:selEl.stickyColor});}} style={{width:"100%",marginBottom:6,fontSize:11}}>Editar</Btn>}<Btn vr="ghost" onClick={()=>{const n=els.filter(e=>e.id!==selId);setEls(n);push(n);setSelId(null);}} style={{width:"100%",fontSize:11,color:C.red}}>Deletar</Btn></PS>}
+          {selEl&&<PS label="Selecionado"><div style={{fontSize:11,color:C.muted,marginBottom:8}}>{selEl.type}</div>{(selEl.type==="text"||selEl.type==="sticky")&&<Btn vr="ghost" onClick={()=>{if(selEl.type==="text"){setTextEditor({id:selEl.id,value:selEl.text||"",canvasX:selEl.x,canvasY:selEl.y,fontSize:selEl.fontSize||24});}else setStickyEditor({id:selEl.id,title:selEl.title,text:selEl.text,stickyColor:selEl.stickyColor});}} style={{width:"100%",marginBottom:6,fontSize:11}}>Editar</Btn>}<Btn vr="ghost" onClick={()=>{const n=els.filter(e=>e.id!==selId);setEls(n);push(n);setSelId(null);}} style={{width:"100%",fontSize:11,color:C.red}}>Deletar</Btn></PS>}
         </div>}
       </div></div>);
 }
