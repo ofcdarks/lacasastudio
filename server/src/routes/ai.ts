@@ -224,3 +224,64 @@ router.post("/generate-asset", async (req: any, res: Response, next: NextFunctio
 });
 
 export default router;
+
+// 🔥 SSE Streaming AI Response
+router.post("/stream", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const apiKey = await getApiKey();
+    if (!apiKey) { res.status(400).json({ error: "Configure sua API Key" }); return; }
+    const model = await getModel();
+    const { prompt, systemPrompt } = req.body;
+
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    });
+
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model, stream: true, max_tokens: 4000,
+        messages: [
+          { role: "system", content: systemPrompt || VIRAL_SYSTEM },
+          { role: "user", content: prompt }
+        ]
+      })
+    });
+
+    if (!aiRes.ok || !aiRes.body) {
+      res.write(`data: {"error":"AI error ${aiRes.status}"}\n\n`);
+      res.end();
+      return;
+    }
+
+    const reader = aiRes.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") { res.write("data: [DONE]\n\n"); continue; }
+          try {
+            const j = JSON.parse(data);
+            const token = j.choices?.[0]?.delta?.content;
+            if (token) res.write(`data: ${JSON.stringify({ token })}\n\n`);
+          } catch {}
+        }
+      }
+    }
+    res.end();
+  } catch (err: any) {
+    try { res.write(`data: {"error":"${err.message}"}\n\n`); res.end(); } catch {}
+  }
+});

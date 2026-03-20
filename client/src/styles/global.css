@@ -163,3 +163,31 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
   0% { transform: translateX(-100%); }
   100% { transform: translateX(200%); }
 }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .page-enter { padding: 12px !important; }
+  .page-enter h1, .page-enter [style*="fontSize:28"], .page-enter [style*="font-size:28"] { font-size: 20px !important; }
+}
+
+@media (max-width: 640px) {
+  /* Stack grids */
+  [style*="gridTemplateColumns: repeat(5"] { grid-template-columns: repeat(2, 1fr) !important; }
+  [style*="gridTemplateColumns: repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; }
+  [style*="gridTemplateColumns: 1fr 1fr 1fr 1fr 1fr"],
+  [style*="grid-template-columns: repeat(5"] { grid-template-columns: repeat(2, 1fr) !important; }
+  [style*="grid-template-columns: 1fr 1fr 1fr 1fr"] { grid-template-columns: 1fr 1fr !important; }
+  [style*="grid-template-columns: 1fr 1fr 1fr"] { grid-template-columns: 1fr !important; }
+  [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+  [style*="gridTemplateColumns: 180px 1fr 1fr"] { grid-template-columns: 1fr !important; }
+}
+
+/* Sidebar mobile */
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+  /* Force single column on small screens */
+  .page-enter > div[style*="grid"] { grid-template-columns: 1fr !important; }
+  /* Stat cards wrap */
+  .page-enter > div > div[style*="repeat(5"] { grid-template-columns: repeat(2, 1fr) !important; }
+  .page-enter > div > div[style*="repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; }
+}

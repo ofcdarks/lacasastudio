@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
+import Onboarding from "../components/shared/Onboarding";
 import { researchApi } from "../lib/api";
 import { C, Btn } from "../components/shared/UI";
 
@@ -18,6 +19,7 @@ export default function Dashboard(){
   const{videos,channels}=useApp();
   const[saved,setSaved]=useState([]);
   const[identities,setIdentities]=useState([]);
+  const[showOnboarding,setShowOnboarding]=useState(()=>!localStorage.getItem("lcs_onboarded"));
 
   useEffect(()=>{
     researchApi.listSaved().then(s=>{setSaved(s);setIdentities(s.filter(ch=>{try{return JSON.parse(ch.notes||"{}").mockup;}catch{return false;}}));}).catch(()=>{});
@@ -27,6 +29,7 @@ export default function Dashboard(){
   const totalViews=saved.reduce((a,c)=>a+c.totalViews,0);
 
   return<div className="page-enter">
+    {showOnboarding&&<Onboarding onClose={()=>{setShowOnboarding(false);localStorage.setItem("lcs_onboarded","1");}}/>}
     {/* Header */}
     <div style={{marginBottom:28}}>
       <div style={{fontSize:28,fontWeight:900,marginBottom:4}}>LaCasaStudio</div>

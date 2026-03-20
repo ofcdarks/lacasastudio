@@ -1,21 +1,27 @@
 version: "3.8"
-
 services:
   app:
     build: .
     ports:
       - "3000:3000"
+    volumes:
+      - lacasa-data:/app/data
+      - lacasa-uploads:/app/server/uploads
     environment:
       - NODE_ENV=production
-      - PORT=3000
-      - JWT_SECRET=${JWT_SECRET:-lacasastudio-v2-super-secret-key-prod-2025-minimum-32-chars}
       - DATABASE_URL=file:/app/data/lacasastudio.db
-      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
     volumes:
-      - app-data:/app/data
-      - app-uploads:/app/server/uploads
+      - lacasa-redis:/data
     restart: unless-stopped
 
 volumes:
-  app-data:
-  app-uploads:
+  lacasa-data:
+  lacasa-uploads:
+  lacasa-redis:

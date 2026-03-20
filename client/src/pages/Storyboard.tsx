@@ -331,17 +331,26 @@ export default function Storyboard(){
       <div style={{fontSize:9,textAlign:"center",color:"#EF4444",marginBottom:16,fontWeight:700,letterSpacing:1.5}}>⚡ CLIQUE EM "GERAR ASSET" PARA CRIAR A IMAGEM DA CENA COM IA</div>
       
       {/* ⏱️ Timeline Visual */}
-      <div style={{display:"flex",marginBottom:24,borderRadius:8,overflow:"hidden",border:`1px solid ${C.border}`}}>
-        {scenes.map((s,i)=>{const m=ST[s.type]||ST.content;const durStr=s.duration||"";const secs=durStr.includes("m")?parseInt(durStr)*60:durStr.includes("s")?parseInt(durStr):parseInt(durStr)||10;return<div key={s.id} style={{flex:Math.max(1,secs/10),background:`${m.c}20`,borderRight:i<scenes.length-1?`1px solid ${C.border}`:"none",padding:"8px 4px",textAlign:"center",minWidth:30,cursor:"pointer",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.background=`${m.c}40`} onMouseLeave={e=>e.currentTarget.style.background=`${m.c}20`} title={`${s.title} — ${s.duration||"?"}`}>
-          <div style={{fontSize:7,fontWeight:800,color:m.c,letterSpacing:1}}>{m.l}</div>
-          <div style={{fontSize:10,fontWeight:700,color:C.text,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.title?.slice(0,12)}</div>
-          <div style={{fontSize:8,color:C.dim,marginTop:1}}>{s.duration||"~10s"}</div>
-        </div>})}
-      </div>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:20,fontSize:10,color:C.dim}}>
-        <span>0:00</span>
-        <span>Duração total: {scenes.reduce((a,s)=>{const d=s.duration||"";const n=d.includes("m")?parseInt(d)*60:parseInt(d)||10;return a+n;},0)>60?Math.round(scenes.reduce((a,s)=>{const d=s.duration||"";return a+(d.includes("m")?parseInt(d)*60:parseInt(d)||10);},0)/60)+"min":scenes.reduce((a,s)=>{const d=s.duration||"";return a+(d.includes("m")?parseInt(d)*60:parseInt(d)||10);},0)+"s"}</span>
-      </div>
+      {(()=>{
+        const vidDur=vid?.duration||"10:00";const parts=vidDur.split(":");const totalSecs=(parseInt(parts[0])||0)*60+(parseInt(parts[1])||0);
+        const perScene=totalSecs/Math.max(1,scenes.length);
+        const fmtT=s=>{const m=Math.floor(s/60),ss=Math.round(s%60);return`${m}:${String(ss).padStart(2,"0")}`;};
+        let acc=0;
+        return<div>
+          <div style={{display:"flex",marginBottom:4,borderRadius:8,overflow:"hidden",border:`1px solid ${C.border}`}}>
+            {scenes.map((s,i)=>{const m=ST[s.type]||ST.content;const start=acc;acc+=perScene;return<div key={s.id} style={{flex:1,background:`${m.c}20`,borderRight:i<scenes.length-1?`1px solid ${C.border}`:"none",padding:"8px 4px",textAlign:"center",cursor:"pointer",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.background=`${m.c}40`} onMouseLeave={e=>e.currentTarget.style.background=`${m.c}20`} title={`${s.title} — ${fmtT(start)} a ${fmtT(acc)}`}>
+              <div style={{fontSize:7,fontWeight:800,color:m.c,letterSpacing:1}}>{m.l}</div>
+              <div style={{fontSize:9,fontWeight:700,color:C.text,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.title?.slice(0,10)}</div>
+              <div style={{fontSize:8,color:C.dim,marginTop:1}}>{fmtT(start)}</div>
+            </div>})}
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:20,fontSize:10,color:C.dim}}>
+            <span>0:00</span>
+            <span>{scenes.length} cenas · {Math.round(perScene)}s/cena</span>
+            <span>{vidDur}</span>
+          </div>
+        </div>;
+      })()}
       {scenes.map((s,i)=><SceneCard key={s.id} scene={s} idx={i} total={scenes.length} onEdit={setEditScene} onDel={delScene} onAsset={setAssetScene} onGenerate={generateAsset} generating={generating}/>)}
       <div style={{textAlign:"center",padding:"28px 0",color:C.dim}}><div style={{width:2,height:30,background:C.border,margin:"0 auto 8px"}}/><div style={{width:10,height:10,borderRadius:"50%",background:C.border,margin:"0 auto 8px"}}/><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase"}}>FIM</div></div>
     </div>}

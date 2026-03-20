@@ -112,6 +112,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
 
         {/* GESTÃO */}
         <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>GESTÃO</div></div>
+          <SItem icon="💰" label="Controle de Gastos" path="/orcamento" onClick={closeMobile} />
           <SItem icon="👥" label="Equipe" path="/equipe" onClick={closeMobile} />
           <SItem icon="⚙️" label="Configurações" path="/settings" onClick={closeMobile} />
           <SItem icon="🔐" label="Admin" path="/admin" onClick={closeMobile} />

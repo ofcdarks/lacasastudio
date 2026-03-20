@@ -217,3 +217,31 @@ export const chatApi = {
   send: (messages: any[], context?: string) => api.post<{ reply: string }>("/chat", { messages, context }),
   shorts: (data: any) => api.post<{ shorts: any[] }>("/chat/shorts", data),
 };
+
+// SSE Streaming
+export async function streamAI(prompt: string, onToken: (t: string) => void, systemPrompt?: string): Promise<void> {
+  const token = localStorage.getItem("token");
+  const res = await fetch("/api/ai/stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ prompt, systemPrompt })
+  });
+  if (!res.ok || !res.body) throw new Error("Stream failed");
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        const data = line.slice(6).trim();
+        if (data === "[DONE]") return;
+        try { const j = JSON.parse(data); if (j.token) onToken(j.token); if (j.error) throw new Error(j.error); } catch {}
+      }
+    }
+  }
+}
