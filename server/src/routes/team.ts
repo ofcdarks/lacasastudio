@@ -18,7 +18,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
     const { name, role, email, avatar, channelIds } = req.body as any;
     if (!name) return res.status(400).json({ error: "Nome obrigatório" });
     const member = await prisma.teamMember.create({
-      data: { name, role, email, avatar, channels: channelIds ? { connect: channelIds.map(id => ({ id })) } : undefined },
+      data: { name, role, email, avatar, channels: channelIds ? { connect: channelIds.map((id: any) => ({ id })) } : undefined },
       include: { channels: true },
     });
     res.status(201).json(member);
@@ -28,7 +28,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
 router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
   try {
     const { name, role, email, avatar, status, tasks } = req.body as any;
-    const data = {};
+    const data: any = {};
     if (name !== undefined) data.name = name;
     if (role !== undefined) data.role = role;
     if (email !== undefined) data.email = email;

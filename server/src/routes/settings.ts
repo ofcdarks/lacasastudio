@@ -7,8 +7,8 @@ router.use(authenticate);
 router.get("/", async (req: any, res: Response, next: NextFunction) => {
   try {
     const settings = await prisma.setting.findMany();
-    const obj = {};
-    settings.forEach(s => { obj[s.key] = s.value; });
+    const obj: any = {};
+    settings.forEach((s: any) => { obj[s.key] = s.value; });
     res.json(obj);
   } catch (err) { next(err); }
 });

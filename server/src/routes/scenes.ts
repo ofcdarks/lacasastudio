@@ -4,7 +4,7 @@ import { authenticate } from "../middleware/auth";
 const router = Router();
 router.use(authenticate);
 
-async function ownsVideo(userId, videoId) {
+async function ownsVideo(userId: any, videoId: any) {
   return prisma.video.findFirst({ where: { id: Number(videoId), userId } });
 }
 
@@ -33,7 +33,7 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
     const scene = await prisma.scene.findUnique({ where: { id: Number(req.params.id) }, include: { video: true } });
     if (!scene || scene.video.userId !== req.userId) return res.status(404).json({ error: "Cena não encontrada" });
     const { title, type, duration, notes, camera, audio, color, order } = req.body as any;
-    const data = {};
+    const data: any = {};
     if (title !== undefined) data.title = title;
     if (type !== undefined) data.type = type;
     if (duration !== undefined) data.duration = duration;

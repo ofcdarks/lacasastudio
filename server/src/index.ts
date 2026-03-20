@@ -31,7 +31,7 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
 const ALLOWED_ORIGINS: string[] = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+  ? process.env.CORS_ORIGIN.split(",").map((o: string) => o.trim())
   : [];
 
 app.use(helmet({ contentSecurityPolicy: false }));

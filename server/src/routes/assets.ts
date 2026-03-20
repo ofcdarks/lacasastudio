@@ -12,7 +12,7 @@ router.use(authenticate);
 
 router.get("/", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const where = { userId: req.userId };
+    const where: any = { userId: req.userId };
     if (req.query.channelId) where.channelId = Number(req.query.channelId);
     if (req.query.type) where.type = req.query.type;
     const assets = await prisma.asset.findMany({
@@ -64,7 +64,7 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
     const asset = await prisma.asset.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
     if (!asset) return res.status(404).json({ error: "Ativo não encontrado" });
     const { name, type, tags, notes, channelId } = req.body as any;
-    const data = {};
+    const data: any = {};
     if (name !== undefined) data.name = name;
     if (type !== undefined) data.type = type;
     if (tags !== undefined) data.tags = tags;
