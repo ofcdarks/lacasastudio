@@ -11,6 +11,14 @@ async function request<T>(path: string, opts: RequestInit = {}, skipAuthRedirect
   if (opts.body instanceof FormData) delete headers["Content-Type"];
 
   const res = await fetch(`${BASE}${path}`, { ...opts, headers });
+  
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    if (!res.ok) throw new Error(`Erro ${res.status} — servidor retornou resposta inválida`);
+    const text = await res.text();
+    try { return JSON.parse(text) as T; } catch { throw new Error("Resposta inválida do servidor"); }
+  }
+  
   const data = await res.json();
 
   if (!res.ok) {

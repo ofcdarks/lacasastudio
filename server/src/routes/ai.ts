@@ -110,26 +110,47 @@ router.post("/storyboard", async (req: any, res: Response, next: NextFunction) =
     const model = await getModel();
     const { title, duration, style } = req.body as any;
 
-    const raw = await callAI(apiKey, model,
-      "Você é um diretor cinematográfico de Hollywood e Netflix. Cria storyboards profissionais com direção de fotografia, narração, animação, efeitos sonoros e música para cada cena. Responda APENAS JSON válido sem markdown.",
-      `Crie um storyboard cinematográfico COMPLETO e DETALHADO para: "${title}"
-Duração: ${duration || "10:00"}
-Estilo: ${style || "cinematográfico viral com alta retenção"}
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000);
 
-Crie 8-12 cenas. RETORNE APENAS um array JSON:
-[{"type":"hook","title":"NOME DA CENA","duration":"~5s","notes":"Narração completa que será falada pelo apresentador nesta cena. Escreva 2-3 frases detalhadas.","camera":"Direção de câmera: movimento, enquadramento, transição de entrada. Ex: Extreme close-up -> zoom out lento, corte seco para wide shot","audio":"Trilha + SFX: descreva a música de fundo e efeitos sonoros. Ex: Bass drop + reverse cymbal, trilha tensa em Dm menor","color":"#EF4444"}]
+    const aiRes = await fetch("https://api.laozhang.ai/v1/chat/completions", {
+      method: "POST", signal: controller.signal,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model, temperature: 0.6, max_tokens: 3000,
+        messages: [
+          { role: "system", content: "Diretor cinematográfico. APENAS JSON array válido, sem markdown." },
+          { role: "user", content: `Storyboard para: "${title}" (${duration || "10:00"}, ${style || "cinematográfico"}).
+6 cenas. JSON array:
+[{"type":"hook","title":"NOME","notes":"Narração 2 frases","camera":"Câmera: movimento","audio":"Trilha + SFX"},{"type":"intro","title":"...","notes":"...","camera":"...","audio":"..."},{"type":"content","title":"...","notes":"...","camera":"...","audio":"..."},{"type":"reveal","title":"...","notes":"...","camera":"...","audio":"..."},{"type":"content","title":"...","notes":"...","camera":"...","audio":"..."},{"type":"cta","title":"...","notes":"...","camera":"...","audio":"..."}]
+Tipos: hook,intro,problem,content,demo,reveal,transition,cta,outro,broll` }
+        ]
+      })
+    });
+    clearTimeout(timeout);
 
-Tipos válidos: hook, intro, problem, content, demo, reveal, transition, cta, outro, broll
-Cores sugeridas: hook=#EF4444, intro=#A855F7, problem=#F59E0B, content=#3B82F6, demo=#06B6D4, reveal=#EC4899, transition=#8B5CF6, cta=#F59E0B, outro=#22C55E, broll=#14B8A6
+    if (!aiRes.ok) {
+      res.status(500).json({ error: `IA retornou erro ${aiRes.status}. Tente novamente.` });
+      return;
+    }
 
-SEJA EXTREMAMENTE DETALHADO na narração (notes), direção de câmera (camera) e trilha/SFX (audio). Cada campo deve ter pelo menos 2 frases. Isso será usado para produção profissional cinematográfica.`
-    );
+    const data = await aiRes.json() as any;
+    const raw = (data.choices?.[0]?.message?.content || "[]").trim();
     await NotifService.aiGenerated(req.userId, "storyboard");
-    const parsed = parseJSON(raw);
-    const scenes = Array.isArray(parsed) ? parsed : (parsed as any).scenes || parsed;
-    res.json({ scenes });
+
+    try {
+      const clean = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const parsed = JSON.parse(clean);
+      const scenes = Array.isArray(parsed) ? parsed : parsed.scenes || [parsed];
+      res.json({ scenes });
+    } catch {
+      res.status(500).json({ error: "IA retornou formato inválido. Tente novamente." });
+    }
   } catch (err: any) {
-    if (err.message?.includes("JSON")) { res.status(500).json({ error: "IA retornou formato inválido. Tente novamente." }); return; }
+    if (err.name === "AbortError") {
+      res.status(504).json({ error: "Timeout — IA demorou demais. Tente novamente." });
+      return;
+    }
+    if (err.message?.includes("JSON")) { res.status(500).json({ error: "Formato inválido. Tente novamente." }); return; }
     next(err);
   }
 });
@@ -223,8 +244,6 @@ router.post("/generate-asset", async (req: any, res: Response, next: NextFunctio
   }
 });
 
-export default router;
-
 // 🔥 SSE Streaming AI Response
 router.post("/stream", async (req: any, res: Response, next: NextFunction) => {
   try {
@@ -285,3 +304,5 @@ router.post("/stream", async (req: any, res: Response, next: NextFunction) => {
     try { res.write(`data: {"error":"${err.message}"}\n\n`); res.end(); } catch {}
   }
 });
+
+export default router;
