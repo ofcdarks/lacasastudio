@@ -242,3 +242,84 @@ router.get("/:id/download", async (req: any, res: Response, next: NextFunction) 
     }
   } catch (err) { next(err); }
 });
+
+// Disk usage info
+router.get("/disk-usage", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const os = require("os");
+    const { execSync } = require("child_process");
+    
+    // Get disk space for uploads directory
+    let diskInfo = { total: 0, used: 0, free: 0, percent: 0 };
+    try {
+      const df = execSync("df -B1 /app/server/uploads 2>/dev/null || df -B1 /app 2>/dev/null || df -B1 /", { encoding: "utf8" });
+      const lines = df.trim().split("\n");
+      if (lines.length >= 2) {
+        const parts = lines[1].split(/\s+/);
+        diskInfo.total = parseInt(parts[1]) || 0;
+        diskInfo.used = parseInt(parts[2]) || 0;
+        diskInfo.free = parseInt(parts[3]) || 0;
+        diskInfo.percent = diskInfo.total > 0 ? Math.round((diskInfo.used / diskInfo.total) * 100) : 0;
+      }
+    } catch {
+      // Fallback: try os.freemem for at least some info
+      diskInfo.free = os.freemem();
+      diskInfo.total = os.totalmem();
+      diskInfo.used = diskInfo.total - diskInfo.free;
+      diskInfo.percent = Math.round((diskInfo.used / diskInfo.total) * 100);
+    }
+
+    // Get uploads folder size for this user
+    let userUploadsSize = 0;
+    let totalUploadsSize = 0;
+    let userFileCount = 0;
+    try {
+      const userDir = path.join(__dirname, "..", "..", "uploads", String(req.userId));
+      if (fs.existsSync(userDir)) {
+        const duUser = execSync(`du -sb "${userDir}" 2>/dev/null`, { encoding: "utf8" });
+        userUploadsSize = parseInt(duUser.split("\t")[0]) || 0;
+        const countOut = execSync(`find "${userDir}" -type f 2>/dev/null | wc -l`, { encoding: "utf8" });
+        userFileCount = parseInt(countOut.trim()) || 0;
+      }
+      const uploadsDir = path.join(__dirname, "..", "..", "uploads");
+      if (fs.existsSync(uploadsDir)) {
+        const duTotal = execSync(`du -sb "${uploadsDir}" 2>/dev/null`, { encoding: "utf8" });
+        totalUploadsSize = parseInt(duTotal.split("\t")[0]) || 0;
+      }
+    } catch {}
+
+    // Get DB file size
+    let dbSize = 0;
+    try {
+      const dbPaths = ["/app/data/lacasastudio.db", "./server/lacasastudio.db", "./lacasastudio.db"];
+      for (const p of dbPaths) {
+        if (fs.existsSync(p)) { dbSize = fs.statSync(p).size; break; }
+      }
+    } catch {}
+
+    // RAM info
+    const ram = {
+      total: os.totalmem(),
+      free: os.freemem(),
+      used: os.totalmem() - os.freemem(),
+      percent: Math.round(((os.totalmem() - os.freemem()) / os.totalmem()) * 100),
+    };
+
+    res.json({
+      disk: {
+        total: diskInfo.total,
+        used: diskInfo.used,
+        free: diskInfo.free,
+        percent: diskInfo.percent,
+      },
+      uploads: {
+        userSize: userUploadsSize,
+        userFiles: userFileCount,
+        totalSize: totalUploadsSize,
+      },
+      database: { size: dbSize },
+      ram,
+      uptime: process.uptime(),
+    });
+  } catch (err) { next(err); }
+});

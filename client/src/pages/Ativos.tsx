@@ -32,6 +32,81 @@ function guessType(ext) {
   return map[(ext||"").toLowerCase()] || "other";
 }
 
+/* --- Storage Info --- */
+function StoragePanel({ info }) {
+  if (!info) return null;
+  function fmt(bytes) {
+    if (!bytes || bytes <= 0) return "0 B";
+    if (bytes >= 1099511627776) return (bytes / 1099511627776).toFixed(1) + " TB";
+    if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + " GB";
+    if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + " MB";
+    if (bytes >= 1024) return (bytes / 1024).toFixed(0) + " KB";
+    return bytes + " B";
+  }
+  const disk = info.disk || {};
+  const uploads = info.uploads || {};
+  const ram = info.ram || {};
+  const db = info.database || {};
+  const diskColor = disk.percent > 90 ? "#EF4444" : disk.percent > 70 ? "#F59E0B" : "#22D35E";
+  const ramColor = ram.percent > 90 ? "#EF4444" : ram.percent > 70 ? "#F59E0B" : "#22D35E";
+  return (
+    <div style={{ marginTop: 12, padding: "12px 10px 8px", borderTop: "1px solid rgba(255,255,255,0.055)" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: "0.05em", marginBottom: 10, textTransform: "uppercase" }}>SERVIDOR</div>
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>Disco</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: diskColor }}>{disk.percent || 0}%</span>
+        </div>
+        <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
+          <div style={{ width: (disk.percent || 0) + "%", height: "100%", borderRadius: 3, background: diskColor, transition: "width 0.8s ease" }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>{fmt(disk.used)} usado</span>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>{fmt(disk.free)} livre</span>
+        </div>
+      </div>
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>RAM</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: ramColor }}>{ram.percent || 0}%</span>
+        </div>
+        <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.04)", overflow: "hidden" }}>
+          <div style={{ width: (ram.percent || 0) + "%", height: "100%", borderRadius: 3, background: ramColor, transition: "width 0.8s ease" }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>{fmt(ram.used)}</span>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>{fmt(ram.total)}</span>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Seus uploads</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#E8E6F0" }}>{fmt(uploads.userSize)}</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Arquivos</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#E8E6F0" }}>{uploads.userFiles || 0}</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Total server</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#E8E6F0" }}>{fmt(uploads.totalSize)}</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Banco de dados</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#E8E6F0" }}>{fmt(db.size)}</span>
+        </div>
+        {info.uptime > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,0.03)" }}>
+            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>Uptime</span>
+            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>{Math.floor(info.uptime / 3600)}h {Math.floor((info.uptime % 3600) / 60)}m</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 /* ─── Folder Sidebar ─── */
 function FolderTree({ folders, current, onSelect, onCreate }) {
   const [creating, setCreating] = useState(false);
@@ -348,6 +423,7 @@ export default function Ativos() {
   const [mode, setMode] = useState("none");
   const [editAsset, setEditAsset] = useState(null);
   const [search, setSearch] = useState("");
+  const [diskInfo, setDiskInfo] = useState(null);
 
   // Load assets + folders
   useEffect(() => {
@@ -359,6 +435,8 @@ export default function Ativos() {
       .then(r => r.ok ? r.json() : ["/"])
       .then(setFolders)
       .catch(() => setFolders(["/"]));
+    fetch(`${BASE}/assets/disk-usage`, { headers: { Authorization: `Bearer ${getToken()}` } })
+      .then(r => r.ok ? r.json() : null).then(setDiskInfo).catch(() => {});
   }, []);
 
   // Filter
@@ -376,6 +454,7 @@ export default function Ativos() {
   const onUploaded = (asset) => {
     setAssets(p => [asset, ...p]);
     if (asset.folder && !folders.includes(asset.folder)) setFolders(p => [...p, asset.folder].sort());
+    fetch(`${BASE}/assets/disk-usage`, { headers: { Authorization: `Bearer ${getToken()}` } }).then(r => r.ok ? r.json() : null).then(setDiskInfo).catch(() => {});
   };
   const createFolder = (path) => {
     const clean = path.replace(/\/+/g, "/").replace(/\/$/, "") || "/";
@@ -442,6 +521,7 @@ export default function Ativos() {
                   <span style={{ fontSize: 12 }}>{v.i}</span><span style={{ fontSize: 11, color: filter === k ? C.text : C.muted, flex: 1 }}>{v.l}</span><span style={{ fontSize: 10, color: v.c, fontWeight: 700 }}>{c}</span>
                 </div>); })}
             </div>
+            <StoragePanel info={diskInfo} />
           </Card>
         </div>
 
