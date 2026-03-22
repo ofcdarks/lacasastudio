@@ -3,18 +3,11 @@ import { useToast } from "../components/shared/Toast";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { useConfirm } from "../context/ConfirmContext";
+import { assetApi } from "../lib/api";
 import { Card, Btn, Hdr, Label, Input, Select, Badge, C } from "../components/shared/UI";
 
 const BASE = "/api";
 function getToken() { return localStorage.getItem("lc_token"); }
-async function apiFetch(path, opts = {}) {
-  const headers = { Authorization: `Bearer ${getToken()}`, ...(opts.headers || {}) };
-  if (!(opts.body instanceof FormData)) headers["Content-Type"] = "application/json";
-  const res = await fetch(`${BASE}${path}`, { ...opts, headers });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Erro");
-  return data;
-}
 
 const TYPES = {
   thumbnail: { l: "Thumbnails", c: "#F59E0B", i: "🖼️" },
@@ -220,7 +213,7 @@ function LinkForm({ folder, channels, onCreated }) {
     if (!na.name.trim()) return;
     setSaving(true);
     try {
-      const asset = await apiFetch("/assets", { method: "POST", body: JSON.stringify({ ...na, folder, channelId: na.channelId ? Number(na.channelId) : null, tags: na.tags.split(",").map(t => t.trim()).filter(Boolean) }) });
+      const asset = await assetApi.create({ ...na, folder, channelId: na.channelId ? Number(na.channelId) : null, tags: na.tags.split(",").map(t => t.trim()).filter(Boolean) });
       onCreated(asset); setNa({ name: "", type: "thumbnail", channelId: "", tags: "", fileUrl: "", notes: "" });
     } catch (err) { toast?.error(err.message); } finally { setSaving(false); }
   };
@@ -292,8 +285,8 @@ export default function Ativos() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    apiFetch("/assets?limit=100").then(r => setAssets(r.data || r)).catch(() => {});
-    apiFetch("/assets/folders").then(setFolders).catch(() => setFolders(["/"]));
+    assetApi.list().then(setAssets).catch(() => {});
+    fetch(`${BASE}/assets/folders`, { headers: { Authorization: `Bearer ${getToken()}` } }).then(r => r.ok ? r.json() : ["/"]).then(setFolders).catch(() => setFolders(["/"]));
   }, []);
 
   const filtered = assets.filter(a => {
@@ -309,8 +302,8 @@ export default function Ativos() {
   const onUploaded = asset => { setAssets(p => [asset, ...p]); if (asset.folder && !folders.includes(asset.folder)) setFolders(p => [...p, asset.folder].sort()); };
   const onCreated = asset => { onUploaded(asset); setMode("none"); };
   const createFolder = path => { const clean = path.replace(/\/+/g, "/").replace(/\/$/, "") || "/"; if (!folders.includes(clean)) setFolders(p => [...p, clean].sort()); setCurrentFolder(clean); };
-  const saveEdit = async (id, data) => { const u = await apiFetch(`/assets/${id}`, { method: "PUT", body: JSON.stringify(data) }); setAssets(p => p.map(a => a.id === id ? { ...a, ...u } : a)); if (u.folder && !folders.includes(u.folder)) setFolders(p => [...p, u.folder].sort()); };
-  const delA = async id => { if (!await confirm({ title: "Remover Ativo", message: "Deseja continuar?" })) return; try { await apiFetch(`/assets/${id}`, { method: "DELETE" }); setAssets(p => p.filter(a => a.id !== id)); } catch {} };
+  const saveEdit = async (id, data) => { const u = await assetApi.update(id, data); setAssets(p => p.map(a => a.id === id ? { ...a, ...u } : a)); if (u.folder && !folders.includes(u.folder)) setFolders(p => [...p, u.folder].sort()); };
+  const delA = async id => { if (!await confirm({ title: "Remover Ativo", message: "Deseja continuar?" })) return; try { await assetApi.del(id); setAssets(p => p.filter(a => a.id !== id)); } catch {} };
 
   const typeCounts = {};
   Object.keys(TYPES).forEach(k => { typeCounts[k] = filtered.filter(a => a.type === k).length; });

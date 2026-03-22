@@ -28,7 +28,7 @@ export function authenticate(req: any, res: Response, next: NextFunction): void 
 }
 
 export function signAccessToken(payload: { id: number }): string {
-  return jwt.sign({ ...payload, type: "access" }, getSecret(), { expiresIn: "15m" });
+  return jwt.sign({ ...payload, type: "access" }, getSecret(), { expiresIn: "7d" });
 }
 
 export function signRefreshToken(payload: { id: number }): string {
