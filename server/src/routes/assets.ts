@@ -222,3 +222,23 @@ function sanitizeFolder(folder: string): string {
 }
 
 export default router;
+
+// Download file - triggers browser "Save As" dialog
+router.get("/:id/download", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const asset = await prisma.asset.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
+    if (!asset) { res.status(404).json({ error: "Ativo não encontrado" }); return; }
+    
+    if (asset.filePath && fs.existsSync(asset.filePath)) {
+      const filename = asset.name + (asset.format ? `.${asset.format.toLowerCase()}` : "");
+      res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(filename)}"`);
+      res.setHeader("Content-Type", "application/octet-stream");
+      const stream = fs.createReadStream(asset.filePath);
+      stream.pipe(res);
+    } else if (asset.fileUrl) {
+      res.redirect(asset.fileUrl);
+    } else {
+      res.status(404).json({ error: "Arquivo não encontrado no servidor" });
+    }
+  } catch (err) { next(err); }
+});
