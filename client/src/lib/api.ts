@@ -20,8 +20,7 @@ async function tryRefresh(): Promise<boolean> {
     if (!rt) return false;
     try {
       const res = await fetch(`${BASE}/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken: rt }),
       });
       if (!res.ok) return false;
@@ -42,7 +41,6 @@ async function request<T>(path: string, opts: RequestInit = {}, skipAuthRedirect
 
   let res = await fetch(`${BASE}${path}`, { ...opts, headers });
 
-  // Auto-refresh on 401
   if (res.status === 401 && !skipAuthRedirect) {
     const refreshed = await tryRefresh();
     if (refreshed) {
@@ -59,7 +57,6 @@ async function request<T>(path: string, opts: RequestInit = {}, skipAuthRedirect
   }
 
   const data = await res.json();
-
   if (!res.ok) {
     if (res.status === 401 && !skipAuthRedirect) {
       localStorage.removeItem("lc_token");
@@ -68,7 +65,6 @@ async function request<T>(path: string, opts: RequestInit = {}, skipAuthRedirect
     }
     throw new Error(data.error || "Erro na requisição");
   }
-
   return data as T;
 }
 
@@ -79,27 +75,30 @@ const api = {
   del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };
 
-// Helper to extract data from paginated responses
+// Helper for paginated responses
 function extractData<T>(response: any): T[] {
   if (Array.isArray(response)) return response;
   if (response?.data && Array.isArray(response.data)) return response.data;
   return response;
 }
 
+// ============================================================
+// ALL EXPORTS — original methods preserved + refresh tokens
+// ============================================================
+
 export const authApi = {
   login: async (email: string, password: string) => {
-    const res = await api.post<{ token: string; refreshToken: string; user: any }>("/auth/login", { email, password }, true);
+    const res = await api.post<{ token: string; refreshToken?: string; user: any }>("/auth/login", { email, password }, true);
     setTokens(res.token, res.refreshToken);
     return res;
   },
   register: async (email: string, name: string, password: string) => {
-    const res = await api.post<{ token: string; refreshToken: string; user: any }>("/auth/register", { email, name, password }, true);
+    const res = await api.post<{ token: string; refreshToken?: string; user: any }>("/auth/register", { email, name, password }, true);
     setTokens(res.token, res.refreshToken);
     return res;
   },
   logout: () => api.post("/auth/logout").catch(() => {}).finally(() => {
-    localStorage.removeItem("lc_token");
-    localStorage.removeItem("lc_refresh");
+    localStorage.removeItem("lc_token"); localStorage.removeItem("lc_refresh");
   }),
   me: () => api.get<{ id: number; name: string; email: string; avatar: string; role: string; isAdmin?: boolean }>("/auth/me"),
 };
@@ -138,16 +137,26 @@ export const teamApi = {
 };
 
 export const assetApi = {
-  list: async () => extractData<Asset>(await api.get("/assets")),
+  list: async (params: Record<string, string> = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return extractData<Asset>(await api.get(`/assets${q ? `?${q}` : ""}`));
+  },
   create: (data: Partial<Asset>) => api.post<Asset>("/assets", data),
-  upload: async (formData: FormData) => request<Asset>("/assets/upload", { method: "POST", body: formData }),
+  upload: (formData: FormData): Promise<Asset> => {
+    const token = getToken();
+    return fetch(`${BASE}/assets/upload`, {
+      method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(async res => { const data = await res.json(); if (!res.ok) throw new Error(data.error || "Erro no upload"); return data; });
+  },
+  update: (id: number, data: Partial<Asset>) => api.put<Asset>(`/assets/${id}`, data),
   del: (id: number) => api.del<{ ok: boolean }>(`/assets/${id}`),
 };
 
 export const metaApi = {
   list: async () => extractData<Meta>(await api.get("/metas")),
   create: (data: any) => api.post<Meta>("/metas", data),
-  update: (id: number, data: any) => api.put<Meta>(`/metas/${id}`, data),
+  updateItem: (id: number, data: Partial<{ current: number; target: number }>) => api.put<any>(`/metas/item/${id}`, data),
   del: (id: number) => api.del<{ ok: boolean }>(`/metas/${id}`),
 };
 
@@ -160,13 +169,57 @@ export const templateApi = {
 export const budgetApi = {
   list: async () => extractData<BudgetItem>(await api.get("/budget")),
   create: (data: Partial<BudgetItem>) => api.post<BudgetItem>("/budget", data),
+  update: (id: number, data: Partial<BudgetItem>) => api.put<BudgetItem>(`/budget/${id}`, data),
+  delete: (id: number) => api.del<{ ok: boolean }>(`/budget/${id}`),
   del: (id: number) => api.del<{ ok: boolean }>(`/budget/${id}`),
 };
 
 export const notifApi = {
   list: async () => extractData<Notification>(await api.get("/notifications")),
-  markRead: (id: number) => api.put<Notification>(`/notifications/${id}`, { read: true }),
+  markRead: (id: number) => api.put<{ ok: boolean }>(`/notifications/${id}/read`),
   markAllRead: () => api.put<{ ok: boolean }>("/notifications/read-all"),
+  clearRead: () => api.del<{ ok: boolean }>("/notifications/clear"),
+};
+
+export const checklistApi = {
+  listByVideo: (videoId: number) => api.get<ChecklistItem[]>(`/checklists/video/${videoId}`),
+  create: (data: Partial<ChecklistItem & { videoId: number }>) => api.post<ChecklistItem>("/checklists", data),
+  update: (id: number, data: Partial<ChecklistItem>) => api.put<ChecklistItem>(`/checklists/${id}`, data),
+  del: (id: number) => api.del<{ ok: boolean }>(`/checklists/${id}`),
+};
+
+export const settingsApi = {
+  get: () => api.get<Record<string, string>>("/settings"),
+  getRaw: (key: string) => api.get<{ key: string; value: string }>(`/settings/raw/${key}`),
+  save: (data: Record<string, string>) => api.put<{ ok: boolean }>("/settings", data),
+};
+
+export const aiApi = {
+  seo: (data: any) => api.post<any>("/ai/seo", data),
+  script: (data: any) => api.post<{ script: string }>("/ai/script", data),
+  storyboard: (data: any) => api.post<{ scenes: any[] }>("/ai/storyboard", data),
+  generateAsset: (data: any) => api.post<{ url: string; b64?: string }>("/ai/generate-asset", data),
+  titles: (data: any) => api.post<{ titles: string[] }>("/ai/titles", data),
+  analyzeIdea: (data: any) => api.post<any>("/ai/analyze-idea", data),
+};
+
+export const youtubeApi = {
+  channel: (channelId: string) => api.get<any>(`/youtube/channel/${channelId}`),
+  videos: (channelId: string, max = 10) => api.get<any[]>(`/youtube/videos/${channelId}?max=${max}`),
+  analyze: (data: any) => api.post<any>("/youtube/analyze", data),
+};
+
+export const scriptApi = {
+  listByVideo: (videoId: number) => api.get<Script[]>(`/scripts/video/${videoId}`),
+  create: (data: { content?: string; videoId: number; label?: string }) => api.post<Script>("/scripts", data),
+  update: (id: number, data: Partial<Script>) => api.put<Script>(`/scripts/${id}`, data),
+  del: (id: number) => api.del<{ ok: boolean }>(`/scripts/${id}`),
+};
+
+export const seoResultApi = {
+  listByVideo: (videoId: number) => api.get<any[]>(`/seo-results/video/${videoId}`),
+  create: (data: any) => api.post<any>("/seo-results", data),
+  del: (id: number) => api.del<{ ok: boolean }>(`/seo-results/${id}`),
 };
 
 export const ideaApi = {
@@ -176,35 +229,130 @@ export const ideaApi = {
   del: (id: number) => api.del<{ ok: boolean }>(`/ideas/${id}`),
 };
 
-export const scriptApi = {
-  listByVideo: (videoId: number) => api.get<Script[]>(`/scripts/video/${videoId}`),
-  create: (data: Partial<Script>) => api.post<Script>("/scripts", data),
-  update: (id: number, data: Partial<Script>) => api.put<Script>(`/scripts/${id}`, data),
-  del: (id: number) => api.del<{ ok: boolean }>(`/scripts/${id}`),
-};
-
-export const checklistApi = {
-  listByVideo: (videoId: number) => api.get<ChecklistItem[]>(`/checklists/video/${videoId}`),
-  create: (data: Partial<ChecklistItem>) => api.post<ChecklistItem>("/checklists", data),
-  update: (id: number, data: Partial<ChecklistItem>) => api.put<ChecklistItem>(`/checklists/${id}`, data),
-  del: (id: number) => api.del<{ ok: boolean }>(`/checklists/${id}`),
-};
-
 export const searchApi = {
+  search: (q: string) => api.get<SearchResults>(`/search?q=${encodeURIComponent(q)}`),
   global: (q: string) => api.get<SearchResults>(`/search?q=${encodeURIComponent(q)}`),
 };
 
-export const aiApi = {
-  seo: (data: any) => api.post<any>("/ai/seo", data),
-  script: (data: any) => api.post<any>("/ai/script", data),
-  storyboard: (data: any) => api.post<any>("/ai/storyboard", data),
-  titles: (data: any) => api.post<any>("/ai/titles", data),
-  analyzeIdea: (data: any) => api.post<any>("/ai/analyze-idea", data),
-};
-
-export const settingsApi = {
-  get: (key: string) => api.get<{ value: string }>(`/settings/${key}`),
-  set: (key: string, value: string) => api.post<{ ok: boolean }>("/settings", { key, value }),
+export const exportApi = {
+  videoCsv: () => `${BASE}/export/videos-csv`,
+  budgetCsv: () => `${BASE}/export/budget-csv`,
+  scriptTxt: (id: number) => `${BASE}/export/script/${id}`,
 };
 
 export default api;
+
+export const researchApi = {
+  search: (query: string) => api.post<{ channels: any[] }>("/research/search", { query, maxResults: 16 }),
+  analyze: (channelId: string) => api.post<any>("/research/analyze", { channelId }),
+  save: (data: any) => api.post<any>("/research/save", data),
+  listSaved: () => api.get<any[]>("/research/saved"),
+  deleteSaved: (id: number) => api.del<{ ok: boolean }>(`/research/saved/${id}`),
+  dna: (data: any) => api.post<any>("/research/dna", data),
+  blueprint: (data: any) => api.post<any>("/research/blueprint", data),
+  monetization: (data: any) => api.post<any>("/research/monetization", data),
+  generateTitles: (data: any) => api.post<any>("/research/generate-titles", data),
+  trending: (data: any) => api.post<any>("/research/trending", data),
+  emerging: () => api.post<any>("/research/emerging", {}),
+  spy: (channelIds: string[]) => api.post<any>("/research/spy", { channelIds }),
+  abTest: (data: any) => api.post<any>("/research/ab-test", data),
+  calendar: (data: any) => api.post<any>("/research/calendar", data),
+  channelMockup: (data: any) => api.post<any>("/research/channel-mockup", data),
+  smartCompare: (channels: any[]) => api.post<any>("/research/smart-compare", { channels }),
+  analyzeScreenshots: (images: string[], context?: string) => api.post<any>("/research/analyze-screenshots", { images, context }),
+  prePublishScore: (data: any) => api.post<any>("/research/pre-publish-score", data),
+  multiLanguage: (data: any) => api.post<any>("/research/multi-language", data),
+  pipeline: (data: any) => api.post<any>("/research/pipeline", data),
+  trendingNiches: () => api.post<any>("/research/trending-niches", {}),
+  fullScript: (data: any) => api.post<any>("/research/full-script", data),
+  predictViral: (data: any) => api.post<any>("/research/predict-viral", data),
+  monetize360: (data: any) => api.post<any>("/research/monetize-360", data),
+  repurpose: (data: any) => api.post<any>("/research/repurpose", data),
+  quickAnalyze: (query: string) => api.post<any>("/research/quick-analyze", { query }),
+  saveScriptVersion: (data: any) => api.post<any>("/research/save-script-version", data),
+  getScriptVersions: (videoId: number) => api.get<any>(`/research/script-versions/${videoId}`),
+  exportChannel: (channelId: number) => api.post<any>("/research/export-channel", { channelId }),
+  spyAlerts: () => api.post<any>("/research/spy-alerts", {}),
+  bestTime: (data: any) => api.post<any>("/research/best-time", data),
+  trendDetector: (data: any) => api.post<any>("/research/trend-detector", data),
+  engagementGen: (data: any) => api.post<any>("/research/engagement-gen", data),
+  updateSaved: (id: number, data: any) => api.put<any>(`/research/saved/${id}`, data),
+};
+
+export const competitiveApi = {
+  keywordSearch: (data: any) => api.post<any>("/competitive/keywords/search", data),
+  keywordHistory: () => api.get<any[]>("/competitive/keywords/history"),
+  tagSpy: (data: any) => api.post<any>("/competitive/tag-spy", data),
+  tagSpyBulk: (data: any) => api.post<any>("/competitive/tag-spy/bulk", data),
+  seoAudit: (data: any) => api.post<any>("/competitive/seo-audit", data),
+  seoAuditPrePub: (data: any) => api.post<any>("/competitive/seo-audit/pre-publish", data),
+  dailyIdeasGenerate: () => api.post<any>("/competitive/daily-ideas/generate", {}),
+  dailyIdeasList: () => api.get<any[]>("/competitive/daily-ideas"),
+  dailyIdeaUse: (id: number) => api.put<any>(`/competitive/daily-ideas/${id}/use`, {}),
+  compare: (data: any) => api.post<any>("/competitive/compare", data),
+  velocityCheck: () => api.post<any>("/competitive/velocity/check", {}),
+  velocityHistory: (videoId: string) => api.get<any[]>(`/competitive/velocity/history/${videoId}`),
+  retentionAnalyze: (data: any) => api.post<any>("/competitive/retention-analyze", data),
+  shortsClip: (data: any) => api.post<any>("/competitive/shorts-clip", data),
+  snapshotsCollect: () => api.post<any>("/competitive/snapshots/collect", {}),
+  snapshotsList: (channelId: number) => api.get<any[]>(`/competitive/snapshots/${channelId}`),
+};
+
+export const algorithmApi = {
+  oauthUrl: () => api.get<{ url: string }>("/algorithm/oauth/url"),
+  oauthStatus: () => api.get<any>("/algorithm/oauth/status"),
+  overview: (days = 28) => api.get<any>(`/algorithm/my-channel/overview?days=${days}`),
+  videos: (days = 28) => api.get<any>(`/algorithm/my-channel/videos?days=${days}`),
+  videoDetails: (videoId: string) => api.get<any>(`/algorithm/my-channel/video/${videoId}/details`),
+  abTestCreate: (data: any) => api.post<any>("/algorithm/ab-test/create", data),
+  abTestList: () => api.get<any[]>("/algorithm/ab-test/list"),
+  abTestRotate: (id: number, data: any) => api.post<any>(`/algorithm/ab-test/${id}/rotate`, data),
+  abTestComplete: (id: number, data: any) => api.post<any>(`/algorithm/ab-test/${id}/complete`, data),
+  commandCenter: (data: any) => api.post<any>("/algorithm/command-center", data),
+  satisfaction: () => api.get<any>("/algorithm/satisfaction"),
+  playlistOptimize: (data: any) => api.post<any>("/algorithm/playlist-optimize", data),
+  communityGenerate: (data: any) => api.post<any>("/algorithm/community/generate", data),
+  communityList: () => api.get<any[]>("/algorithm/community/list"),
+  communitySave: (data: any) => api.post<any>("/algorithm/community/save", data),
+  shortsOptimize: (data: any) => api.post<any>("/algorithm/shorts-optimize", data),
+  streakLog: (data: any) => api.post<any>("/algorithm/streak/log", data),
+  streakData: () => api.get<any>("/algorithm/streak/data"),
+  endScreenSuggest: (data: any) => api.post<any>("/algorithm/end-screen/suggest", data),
+  hypeStrategy: (data: any) => api.post<any>("/algorithm/hype-strategy", data),
+  aiDisclosureCheck: (data: any) => api.post<any>("/algorithm/ai-disclosure/check", data),
+  catalogScan: () => api.post<any>("/algorithm/catalog/scan", {}),
+  catalogFix: (data: any) => api.post<any>("/algorithm/catalog/fix", data),
+  devices: () => api.get<any>("/algorithm/devices"),
+};
+
+export const chatApi = {
+  send: (messages: any[], context?: string) => api.post<{ reply: string }>("/chat", { messages, context }),
+  shorts: (data: any) => api.post<{ shorts: any[] }>("/chat/shorts", data),
+};
+
+export async function streamAI(prompt: string, onToken: (t: string) => void, systemPrompt?: string): Promise<void> {
+  const token = getToken();
+  const res = await fetch("/api/ai/stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ prompt, systemPrompt })
+  });
+  if (!res.ok || !res.body) throw new Error("Stream failed");
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        const data = line.slice(6).trim();
+        if (data === "[DONE]") return;
+        try { const j = JSON.parse(data); if (j.token) onToken(j.token); if (j.error) throw new Error(j.error); } catch {}
+      }
+    }
+  }
+}
