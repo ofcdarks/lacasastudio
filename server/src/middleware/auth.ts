@@ -2,7 +2,6 @@ import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import prisma from "../db/prisma";
-import type { AuthRequest } from "../types";
 import { getEnv } from "../services/env";
 
 function getSecret(): string {

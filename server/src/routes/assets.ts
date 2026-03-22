@@ -1,14 +1,11 @@
+import { parsePagination, paginatedResponse } from "../services/pagination";
 import { Router, Response, NextFunction } from "express";
-import { z } from "zod";
 import path from "path";
 import fs from "fs";
 import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
-import { validate } from "../middleware/validate";
 import { upload } from "../middleware/upload";
-import { parsePagination, paginatedResponse } from "../services/pagination";
 import logger from "../services/logger";
-import type { AuthRequest, ValidatedRequest } from "../types";
 
 const router = Router();
 router.use(authenticate);

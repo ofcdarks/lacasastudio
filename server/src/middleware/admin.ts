@@ -1,6 +1,5 @@
 import { Response, NextFunction } from "express";
 import prisma from "../db/prisma";
-import type { AuthRequest } from "../types";
 
 export async function requireAdmin(req: any, res: Response, next: NextFunction): Promise<void> {
   try {

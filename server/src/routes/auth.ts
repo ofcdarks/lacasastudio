@@ -6,7 +6,6 @@ import { validate } from "../middleware/validate";
 import { z } from "zod";
 import AuditService from "../services/audit";
 import logger from "../services/logger";
-import type { AuthRequest, ValidatedRequest } from "../types";
 
 const router = Router();
 

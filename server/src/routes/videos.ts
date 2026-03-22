@@ -1,13 +1,12 @@
+import { parsePagination, paginatedResponse } from "../services/pagination";
 import { Router, Response, NextFunction } from "express";
 import { z } from "zod";
 import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
 import { validate } from "../middleware/validate";
-import { parsePagination, paginatedResponse } from "../services/pagination";
 import NotifService from "../services/notifications";
 import AuditService from "../services/audit";
 import logger from "../services/logger";
-import type { AuthRequest, ValidatedRequest } from "../types";
 
 const router = Router();
 router.use(authenticate);
