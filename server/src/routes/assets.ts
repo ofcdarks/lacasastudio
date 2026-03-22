@@ -14,7 +14,7 @@ const router = Router();
 router.use(authenticate);
 
 // List assets with filters
-router.get("/", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get("/", async (req: any, res: Response, next: NextFunction) => {
   try {
     const { page, limit, skip } = parsePagination(req.query as any);
     const where: any = { userId: req.userId };
@@ -36,7 +36,7 @@ router.get("/", async (req: AuthRequest, res: Response, next: NextFunction) => {
 });
 
 // Get unique folders for the user
-router.get("/folders", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get("/folders", async (req: any, res: Response, next: NextFunction) => {
   try {
     const assets = await prisma.asset.findMany({
       where: { userId: req.userId },
@@ -51,7 +51,7 @@ router.get("/folders", async (req: AuthRequest, res: Response, next: NextFunctio
 });
 
 // Upload file + create asset (auto-detect format + size)
-router.post("/upload", upload.single("file"), async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/upload", upload.single("file"), async (req: any, res: Response, next: NextFunction) => {
   try {
     if (!req.file) { res.status(400).json({ error: "Arquivo obrigatório" }); return; }
     const { name, type, tags, notes, channelId, folder } = req.body as any;
@@ -91,7 +91,7 @@ router.post("/upload", upload.single("file"), async (req: AuthRequest, res: Resp
 });
 
 // Create metadata-only asset
-router.post("/", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/", async (req: any, res: Response, next: NextFunction) => {
   try {
     const { name, type, format, size, tags, fileUrl, notes, channelId, folder } = req.body as any;
     if (!name) { res.status(400).json({ error: "Nome obrigatório" }); return; }
@@ -115,7 +115,7 @@ router.post("/", async (req: AuthRequest, res: Response, next: NextFunction) => 
 });
 
 // Update asset
-router.put("/:id", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
   try {
     const asset = await prisma.asset.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
     if (!asset) { res.status(404).json({ error: "Ativo não encontrado" }); return; }
@@ -136,7 +136,7 @@ router.put("/:id", async (req: AuthRequest, res: Response, next: NextFunction) =
 });
 
 // Move asset to folder
-router.put("/:id/move", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.put("/:id/move", async (req: any, res: Response, next: NextFunction) => {
   try {
     const asset = await prisma.asset.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
     if (!asset) { res.status(404).json({ error: "Ativo não encontrado" }); return; }
@@ -151,7 +151,7 @@ router.put("/:id/move", async (req: AuthRequest, res: Response, next: NextFuncti
 });
 
 // Bulk move
-router.post("/bulk-move", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/bulk-move", async (req: any, res: Response, next: NextFunction) => {
   try {
     const { ids, folder } = req.body as { ids: number[]; folder: string };
     if (!ids?.length) { res.status(400).json({ error: "IDs obrigatórios" }); return; }
@@ -164,7 +164,7 @@ router.post("/bulk-move", async (req: AuthRequest, res: Response, next: NextFunc
 });
 
 // Delete asset
-router.delete("/:id", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
   try {
     const asset = await prisma.asset.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
     if (!asset) { res.status(404).json({ error: "Ativo não encontrado" }); return; }

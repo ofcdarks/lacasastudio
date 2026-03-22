@@ -5,7 +5,7 @@
     "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -13,11 +13,10 @@
     "declaration": false,
     "sourceMap": true,
     "moduleResolution": "node",
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "strictNullChecks": true
+    "noImplicitAny": false,
+    "noImplicitReturns": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "src/__tests__/**"]

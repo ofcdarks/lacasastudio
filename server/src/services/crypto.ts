@@ -2,7 +2,7 @@ import crypto from "crypto";
 
 const ALGO = "aes-256-gcm";
 const IV_LEN = 16;
-const TAG_LEN = 16;
+
 
 function deriveKey(secret: string): Buffer {
   return crypto.scryptSync(secret, "lacasastudio-salt", 32);

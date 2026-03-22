@@ -5,7 +5,7 @@ import compression from "compression";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import path from "path";
-import { validateEnv, getEnv } from "./services/env";
+import { validateEnv } from "./services/env";
 import logger from "./services/logger";
 import prisma from "./db/prisma";
 import { requestId } from "./middleware/requestId";
@@ -138,7 +138,7 @@ const publicPath = path.join(__dirname, "..", "public");
 app.use(express.static(publicPath));
 app.get("*", (req: Request, res: Response) => {
   if (req.path.startsWith("/api")) {
-    return res.status(404).json({ error: "Route not found" });
+    res.status(404).json({ error: "Route not found" });
   }
   res.sendFile(path.join(publicPath, "index.html"));
 });

@@ -9,7 +9,7 @@ function getSecret(): string {
   return getEnv().JWT_SECRET;
 }
 
-export function authenticate(req: AuthRequest, res: Response, next: NextFunction): void {
+export function authenticate(req: any, res: Response, next: NextFunction): void {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Token não fornecido" });

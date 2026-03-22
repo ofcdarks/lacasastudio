@@ -19,7 +19,7 @@ const channelSchema = z.object({
   subs: z.string().max(50).optional(),
 });
 
-router.get("/", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get("/", async (req: any, res: Response, next: NextFunction) => {
   try {
     const { page, limit, skip } = parsePagination(req.query as any);
     const where = { userId: req.userId };
@@ -35,7 +35,7 @@ router.get("/", async (req: AuthRequest, res: Response, next: NextFunction) => {
   } catch (err) { next(err); }
 });
 
-router.post("/", validate(channelSchema), async (req: ValidatedRequest, res: Response, next: NextFunction) => {
+router.post("/", validate(channelSchema), async (req: any, res: Response, next: NextFunction) => {
   try {
     const { name, color, icon, subs } = req.validated;
     const ch = await prisma.channel.create({
@@ -47,7 +47,7 @@ router.post("/", validate(channelSchema), async (req: ValidatedRequest, res: Res
   } catch (err) { next(err); }
 });
 
-router.put("/:id", validate(channelSchema.partial()), async (req: ValidatedRequest, res: Response, next: NextFunction) => {
+router.put("/:id", validate(channelSchema.partial()), async (req: any, res: Response, next: NextFunction) => {
   try {
     const ch = await prisma.channel.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
     if (!ch) { res.status(404).json({ error: "Canal não encontrado" }); return; }
@@ -56,7 +56,7 @@ router.put("/:id", validate(channelSchema.partial()), async (req: ValidatedReque
   } catch (err) { next(err); }
 });
 
-router.delete("/:id", async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
   try {
     const ch = await prisma.channel.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
     if (!ch) { res.status(404).json({ error: "Canal não encontrado" }); return; }

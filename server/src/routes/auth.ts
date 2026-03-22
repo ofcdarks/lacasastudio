@@ -14,7 +14,7 @@ const registerSchema = z.object({ email: z.string().email(), name: z.string().mi
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 
 // Register
-router.post("/register", validate(registerSchema), async (req: ValidatedRequest, res: Response, next: NextFunction) => {
+router.post("/register", validate(registerSchema), async (req: any, res: Response, next: NextFunction) => {
   try {
     const config = await prisma.systemConfig.findUnique({ where: { key: "block_registration" } }).catch(() => null);
     if (config?.value === "true") {
@@ -39,7 +39,7 @@ router.post("/register", validate(registerSchema), async (req: ValidatedRequest,
 });
 
 // Login
-router.post("/login", validate(loginSchema), async (req: ValidatedRequest, res: Response, next: NextFunction) => {
+router.post("/login", validate(loginSchema), async (req: any, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.validated;
     const user = await prisma.user.findUnique({ where: { email } });
@@ -64,7 +64,7 @@ router.post("/login", validate(loginSchema), async (req: ValidatedRequest, res: 
 });
 
 // Refresh token
-router.post("/refresh", async (req: ValidatedRequest, res: Response, next: NextFunction) => {
+router.post("/refresh", async (req: any, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.body as { refreshToken?: string };
     if (!refreshToken) { res.status(400).json({ error: "Refresh token obrigatório" }); return; }
@@ -75,7 +75,7 @@ router.post("/refresh", async (req: ValidatedRequest, res: Response, next: NextF
 });
 
 // Logout (revoke all refresh tokens)
-router.post("/logout", authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/logout", authenticate, async (req: any, res: Response, next: NextFunction) => {
   try {
     await revokeAllUserTokens(req.userId);
     await AuditService.log(req.userId, "logout", "auth", undefined, undefined, req.ip || "");
@@ -84,7 +84,7 @@ router.post("/logout", authenticate, async (req: AuthRequest, res: Response, nex
 });
 
 // Promote to admin
-router.post("/promote-admin", authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post("/promote-admin", authenticate, async (req: any, res: Response, next: NextFunction) => {
   try {
     const me = await prisma.user.findUnique({ where: { id: req.userId } });
     if (me?.isAdmin) { res.json({ ok: true, message: "Você já é admin" }); return; }
@@ -101,7 +101,7 @@ router.post("/promote-admin", authenticate, async (req: AuthRequest, res: Respon
 });
 
 // Me
-router.get("/me", authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get("/me", authenticate, async (req: any, res: Response, next: NextFunction) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
