@@ -2,65 +2,35 @@ import { Request } from "express";
 
 export interface AuthRequest extends Request {
   userId: number;
-  validated?: any;
-  validatedQuery?: any;
 }
 
-export interface VideoData {
-  title: string;
-  channelId: number;
-  status?: string;
-  date?: string;
-  priority?: "alta" | "média" | "baixa";
-  duration?: string;
+export interface ValidatedRequest<T = any> extends AuthRequest {
+  validated: T;
 }
 
-export interface ChannelData {
-  name: string;
-  color?: string;
-  icon?: string;
-  subs?: string;
+export interface PaginationQuery {
+  page?: string;
+  limit?: string;
+  cursor?: string;
 }
 
-export interface IdeaData {
-  title: string;
-  content?: string;
-  imageUrl?: string;
-  tags?: string;
-  color?: string;
-  pinned?: boolean;
-  channelId?: number | null;
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
 }
 
-export interface BudgetData {
-  category: string;
-  desc: string;
-  value: number;
-  type?: "expense" | "income";
-  month?: string;
-  recurring?: boolean;
-  notes?: string;
-}
-
-export interface MetaData {
-  title: string;
-  channelId?: number | null;
-  items?: { label: string; current?: number; target?: number; unit?: string }[];
-}
-
-export interface AICallParams {
-  apiKey: string;
-  model: string;
-  systemPrompt: string;
-  userPrompt: string;
-}
-
-export interface NotificationType {
-  id: number;
-  type: string;
-  message: string;
-  read: boolean;
-  link: string;
+export interface AuditEntry {
   userId: number;
-  createdAt: Date;
+  action: string;
+  resource: string;
+  resourceId?: number | string;
+  details?: string;
+  ip?: string;
 }

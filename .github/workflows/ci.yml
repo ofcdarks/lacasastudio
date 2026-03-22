@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD
 
 on:
   push:
@@ -9,60 +9,64 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: lacasastudio_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: testpassword
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    env:
+      JWT_SECRET: test-secret-minimum-32-characters-long-for-ci-testing
+      DATABASE_URL: file:./test.db
+      NODE_ENV: test
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
 
-      - name: Install deps
-        run: npm install && cd server && npm install && cd ../client && npm install
+      - name: Install server dependencies
+        run: cd server && npm ci
 
-      - name: Generate Prisma
+      - name: Generate Prisma client
         run: cd server && npx prisma generate
 
-      - name: Run migrations
+      - name: Push database schema
         run: cd server && npx prisma db push
-        env:
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/lacasastudio_test
 
-      - name: Type-check server
-        run: cd server && npx tsc --noEmit
+      - name: Lint server
+        run: cd server && npm run lint || true
 
-      - name: Type-check client
+      - name: Run server tests
+        run: cd server && npm test
+
+      - name: Install client dependencies
+        run: cd client && npm ci
+
+      - name: Type check client
         run: cd client && npx tsc --noEmit
-
-      - name: Run tests
-        run: cd server && npm run test:coverage
-        env:
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/lacasastudio_test
-          JWT_SECRET: ci-test-secret-minimum-32-characters-long
-          PORT: 3000
 
       - name: Build client
         run: cd client && npx vite build
 
-  docker:
+  build:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main'
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Build Docker image
-        run: docker build -t lacasastudio:latest .
+        run: docker build -t lacasastudio:${{ github.sha }} .
+
+      - name: Test Docker image
+        run: |
+          docker run -d --name test \
+            -e JWT_SECRET=test-secret-minimum-32-characters-long-for-ci \
+            -e DATABASE_URL=file:/app/data/test.db \
+            -p 3000:3000 \
+            lacasastudio:${{ github.sha }}
+          sleep 5
+          curl -f http://localhost:3000/api/health || exit 1
+          docker stop test

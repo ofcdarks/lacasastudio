@@ -5,7 +5,13 @@ import compression from "compression";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import path from "path";
+import { validateEnv, getEnv } from "./services/env";
 import logger from "./services/logger";
+import prisma from "./db/prisma";
+import { requestId } from "./middleware/requestId";
+
+// Validate environment FIRST — fail fast
+const env = validateEnv();
 
 import authRoutes from "./routes/auth";
 import channelRoutes from "./routes/channels";
@@ -33,21 +39,47 @@ import competitiveRoutes from "./routes/competitive";
 import algorithmRoutes from "./routes/algorithm";
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(env.PORT) || 3000;
 
-const ALLOWED_ORIGINS: string[] = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map((o: string) => o.trim())
+// Trust proxy (required behind nginx/EasyPanel for correct IP in rate limiting)
+app.set("trust proxy", 1);
+
+// CORS — require explicit origin in production
+const ALLOWED_ORIGINS: string[] = env.CORS_ORIGIN
+  ? env.CORS_ORIGIN.split(",").map((o: string) => o.trim())
   : [];
 
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(compression());
-app.use(cors({
-  origin: ALLOWED_ORIGINS.length > 0 && ALLOWED_ORIGINS[0] !== "*" ? ALLOWED_ORIGINS : true,
-  credentials: true,
-}));
-app.use(express.json({ limit: "50mb" }));
-app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+const corsOrigin = env.NODE_ENV === "production" && ALLOWED_ORIGINS.length > 0
+  ? ALLOWED_ORIGINS
+  : true; // Allow all in development only
 
+app.use(cors({ origin: corsOrigin, credentials: true }));
+
+// Security headers with CSP
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", "https://api.laozhang.ai", "https://www.googleapis.com", "https://youtube.googleapis.com"],
+      mediaSrc: ["'self'", "blob:"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  hsts: { maxAge: 31536000, includeSubDomains: true },
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+}));
+
+app.use(compression());
+app.use(requestId);
+app.use(express.json({ limit: "5mb" })); // Reduced from 50mb
+app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
+
+// Rate limiting
 const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHeaders: true, legacyHeaders: false });
 const aiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: { error: "Muitas requisições de IA." } });
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: "Muitas tentativas." } });
@@ -59,6 +91,7 @@ app.use("/api/auth/register", authLimiter);
 
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/channels", channelRoutes);
 app.use("/api/videos", videoRoutes);
@@ -84,10 +117,23 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/competitive", competitiveRoutes);
 app.use("/api/algorithm", algorithmRoutes);
 
+// Health check with expanded metrics
 app.get("/api/health", (_: Request, res: Response) => {
-  res.json({ status: "ok", version: "2.4.0", uptime: process.uptime() });
+  const mem = process.memoryUsage();
+  res.json({
+    status: "ok",
+    version: "2.5.0",
+    uptime: process.uptime(),
+    memory: {
+      heapUsed: Math.round(mem.heapUsed / 1024 / 1024) + "MB",
+      heapTotal: Math.round(mem.heapTotal / 1024 / 1024) + "MB",
+      rss: Math.round(mem.rss / 1024 / 1024) + "MB",
+    },
+    env: env.NODE_ENV,
+  });
 });
 
+// Serve client
 const publicPath = path.join(__dirname, "..", "public");
 app.use(express.static(publicPath));
 app.get("*", (req: Request, res: Response) => {
@@ -97,15 +143,39 @@ app.get("*", (req: Request, res: Response) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
+// Error handler
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
-  logger.error(err.message, { path: req.path, method: req.method });
+  const reqId = (req as any).requestId || "unknown";
+  logger.error(err.message, { path: req.path, method: req.method, requestId: reqId });
   res.status(err.status || 500).json({
-    error: process.env.NODE_ENV === "production" ? "Internal server error" : err.message,
+    error: env.NODE_ENV === "production" ? "Internal server error" : err.message,
+    requestId: reqId,
   });
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-  logger.info(`LaCasaStudio V2.4 running on http://0.0.0.0:${PORT}`);
+// Enable WAL mode for SQLite
+prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL").catch(() => {});
+
+const server = app.listen(PORT, "0.0.0.0", () => {
+  logger.info(`LaCasaStudio V2.5 running on http://0.0.0.0:${PORT} [${env.NODE_ENV}]`);
 });
+
+// Graceful shutdown
+function gracefulShutdown(signal: string) {
+  logger.info(`Received ${signal}. Shutting down gracefully...`);
+  server.close(async () => {
+    await prisma.$disconnect();
+    logger.info("Server closed. Connections drained.");
+    process.exit(0);
+  });
+  // Force close after 10s
+  setTimeout(() => {
+    logger.error("Forced shutdown after timeout");
+    process.exit(1);
+  }, 10000);
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 export default app;

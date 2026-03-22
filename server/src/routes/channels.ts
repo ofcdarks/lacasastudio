@@ -3,7 +3,12 @@ import { z } from "zod";
 import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
 import { validate } from "../middleware/validate";
+import { parsePagination, paginatedResponse } from "../services/pagination";
 import NotifService from "../services/notifications";
+import AuditService from "../services/audit";
+import logger from "../services/logger";
+import type { AuthRequest, ValidatedRequest } from "../types";
+
 const router = Router();
 router.use(authenticate);
 
@@ -14,29 +19,35 @@ const channelSchema = z.object({
   subs: z.string().max(50).optional(),
 });
 
-router.get("/", async (req: any, res: Response, next: NextFunction) => {
+router.get("/", async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const channels = await prisma.channel.findMany({
-      where: { userId: req.userId },
-      include: { _count: { select: { videos: true } } },
-      orderBy: { createdAt: "asc" },
-    });
-    res.json(channels);
+    const { page, limit, skip } = parsePagination(req.query as any);
+    const where = { userId: req.userId };
+    const [channels, total] = await Promise.all([
+      prisma.channel.findMany({
+        where, take: limit, skip,
+        include: { _count: { select: { videos: true } } },
+        orderBy: { createdAt: "asc" },
+      }),
+      prisma.channel.count({ where }),
+    ]);
+    res.json(paginatedResponse(channels, total, page, limit));
   } catch (err) { next(err); }
 });
 
-router.post("/", validate(channelSchema), async (req: any, res: Response, next: NextFunction) => {
+router.post("/", validate(channelSchema), async (req: ValidatedRequest, res: Response, next: NextFunction) => {
   try {
     const { name, color, icon, subs } = req.validated;
     const ch = await prisma.channel.create({
       data: { name, color: color || "#EF4444", icon: icon || "📺", subs: subs || "0", userId: req.userId },
     });
     await NotifService.channelCreated(req.userId, name);
+    logger.info("Channel created", { userId: req.userId, channelId: ch.id });
     res.status(201).json(ch);
   } catch (err) { next(err); }
 });
 
-router.put("/:id", validate(channelSchema.partial()), async (req: any, res: Response, next: NextFunction) => {
+router.put("/:id", validate(channelSchema.partial()), async (req: ValidatedRequest, res: Response, next: NextFunction) => {
   try {
     const ch = await prisma.channel.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
     if (!ch) { res.status(404).json({ error: "Canal não encontrado" }); return; }
@@ -45,11 +56,13 @@ router.put("/:id", validate(channelSchema.partial()), async (req: any, res: Resp
   } catch (err) { next(err); }
 });
 
-router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
+router.delete("/:id", async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const ch = await prisma.channel.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
     if (!ch) { res.status(404).json({ error: "Canal não encontrado" }); return; }
     await prisma.channel.delete({ where: { id: ch.id } });
+    await AuditService.dataDeleted(req.userId, "channel", ch.id, req.ip || "");
+    logger.info("Channel deleted", { userId: req.userId, channelId: ch.id });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

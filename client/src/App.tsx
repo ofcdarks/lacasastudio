@@ -1,6 +1,8 @@
-import { useState, ReactNode, lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { useState, ReactNode, lazy, Suspense, useCallback, useMemo } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import { useOnline } from "./lib/useOnline";
+import { useKeyboard } from "./lib/useKeyboard";
 import { Spinner, C } from "./components/shared/UI";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
 import AiChat from "./components/shared/AiChat";
@@ -50,15 +52,67 @@ const CommunityPlanner = lazy(() => import("./pages/CommunityPlanner"));
 const ShortsOptimizer = lazy(() => import("./pages/ShortsOptimizer"));
 const CatalogOptimizer = lazy(() => import("./pages/CatalogOptimizer"));
 const HypeStrategy = lazy(() => import("./pages/HypeStrategy"));
+const Calendario = lazy(() => import("./pages/Calendario"));
+const Editor = lazy(() => import("./pages/Editor"));
+const MultiLang = lazy(() => import("./pages/MultiLang"));
+const PrePublish = lazy(() => import("./pages/PrePublish"));
+
 function Layout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const online = useOnline();
+  const navigate = useNavigate();
+
+  const shortcuts = useMemo(() => ({
+    "mod+k": () => document.dispatchEvent(new CustomEvent("open-search")),
+    "mod+n": () => navigate("/planner"),
+    "mod+d": () => navigate("/"),
+  }), [navigate]);
+
+  useKeyboard(shortcuts);
+
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
+      {/* Skip to content - a11y */}
+      <a href="#main-content" className="skip-link">Pular para o conteúdo</a>
+
+      {/* Offline banner */}
+      {!online && (
+        <div className="offline-banner" role="alert" aria-live="polite">
+          ⚠️ Sem conexão com a internet — alterações podem não ser salvas
+        </div>
+      )}
+
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <main className="main-content" style={{ marginLeft: 230, flex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", transition: "margin 0.25s cubic-bezier(0.4,0,0.2,1)" }}>
+
+      <main
+        id="main-content"
+        className="main-content"
+        role="main"
+        tabIndex={-1}
+        style={{
+          marginLeft: "var(--sidebar-w)", flex: 1, minHeight: "100vh",
+          display: "flex", flexDirection: "column",
+          transition: "margin 0.25s cubic-bezier(0.4,0,0.2,1)",
+        }}
+      >
         <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        <div className="page-padding" style={{ padding: "28px 36px", flex: 1, background: `radial-gradient(ellipse at 20% 0%, rgba(240,68,68,0.02) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(75,141,248,0.015) 0%, transparent 50%)` }}>
-          <ProgressProvider><Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",flex:1,padding:40}}><Spinner/></div>}><ErrorBoundary>{children}</ErrorBoundary></Suspense></ProgressProvider>
+        <div
+          className="page-padding"
+          style={{
+            padding: "28px 36px", flex: 1,
+            background: `radial-gradient(ellipse at 20% 0%, rgba(240,68,68,0.02) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(75,141,248,0.015) 0%, transparent 50%)`,
+          }}
+        >
+          <ProgressProvider>
+            <Suspense fallback={
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, padding: 40 }}
+                   role="status" aria-label="Carregando">
+                <Spinner />
+              </div>
+            }>
+              <ErrorBoundary>{children}</ErrorBoundary>
+            </Suspense>
+          </ProgressProvider>
         </div>
       </main>
       <AiChat />
@@ -68,8 +122,21 @@ function Layout({ children }: { children: ReactNode }) {
 
 export default function App() {
   const { user, loading } = useAuth();
-  if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}><Spinner /></div>;
-  if (!user) return <Routes><Route path="/login" element={<LoginPage />} /><Route path="*" element={<Navigate to="/login" replace />} /></Routes>;
+
+  if (loading) return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}
+         role="status" aria-label="Carregando aplicação">
+      <Spinner />
+    </div>
+  );
+
+  if (!user) return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
+
   return (
     <Routes>
       <Route path="/login" element={<Navigate to="/" replace />} />
@@ -96,7 +163,7 @@ export default function App() {
       <Route path="/ativos" element={<Layout><Ativos /></Layout>} />
       <Route path="/equipe" element={<Layout><Equipe /></Layout>} />
       <Route path="/settings" element={<Layout><Settings /></Layout>} />
-            <Route path="/admin" element={<Layout><Admin /></Layout>} />
+      <Route path="/admin" element={<Layout><Admin /></Layout>} />
       <Route path="/ideas" element={<Layout><Ideas /></Layout>} />
       <Route path="/keywords" element={<Layout><Keywords /></Layout>} />
       <Route path="/tag-spy" element={<Layout><TagSpy /></Layout>} />
@@ -113,6 +180,8 @@ export default function App() {
       <Route path="/shorts-optimizer" element={<Layout><ShortsOptimizer /></Layout>} />
       <Route path="/catalog" element={<Layout><CatalogOptimizer /></Layout>} />
       <Route path="/hype" element={<Layout><HypeStrategy /></Layout>} />
+      <Route path="/editor" element={<Layout><Editor /></Layout>} />
+      <Route path="/calendario" element={<Layout><Calendario /></Layout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

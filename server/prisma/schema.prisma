@@ -27,6 +27,39 @@ model User {
   ideas         Idea[]
   notifications Notification[]
   savedChannels SavedChannel[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  @@index([email])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action     String
+  resource   String
+  resourceId String   @default("")
+  details    String   @default("")
+  ip         String   @default("")
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }
 
 model Setting {
@@ -54,6 +87,8 @@ model Channel {
   templates  Template[]
   members    TeamMember[]
   ideas      Idea[]
+
+  @@index([userId])
 }
 
 model Video {
@@ -73,21 +108,28 @@ model Video {
   seoResults SeoResult[]
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
+
+  @@index([userId, status])
+  @@index([channelId, status])
+  @@index([userId, channelId])
+  @@index([date])
 }
 
 model Scene {
-  id       Int    @id @default(autoincrement())
-  type     String @default("content")
-  title    String
-  duration String @default("")
-  notes    String @default("")
-  camera   String @default("")
-  audio    String @default("")
-  color    String @default("#3B82F6")
+  id        Int    @id @default(autoincrement())
+  type      String @default("content")
+  title     String
+  duration  String @default("")
+  notes     String @default("")
+  camera    String @default("")
+  audio     String @default("")
+  color     String @default("#3B82F6")
   thumbnail String @default("")
-  order    Int    @default(0)
-  videoId  Int
-  video    Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  order     Int    @default(0)
+  videoId   Int
+  video     Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId, order])
 }
 
 model Checklist {
@@ -96,6 +138,8 @@ model Checklist {
   done    Boolean @default(false)
   videoId Int
   video   Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
 }
 
 model Meta {
@@ -107,6 +151,8 @@ model Meta {
   channel   Channel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
   items     MetaItem[]
   createdAt DateTime   @default(now())
+
+  @@index([userId])
 }
 
 model MetaItem {
@@ -123,7 +169,7 @@ model TeamMember {
   id       Int       @id @default(autoincrement())
   name     String
   role     String    @default("editor")
-  isAdmin   Boolean  @default(false)
+  isAdmin  Boolean   @default(false)
   email    String    @default("")
   avatar   String    @default("")
   status   String    @default("offline")
@@ -132,6 +178,7 @@ model TeamMember {
 }
 
 model Asset {
+  folder    String   @default("/")
   id        Int      @id @default(autoincrement())
   name      String
   type      String   @default("thumbnail")
@@ -146,6 +193,10 @@ model Asset {
   channelId Int?
   channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, type])
+  @@index([userId, folder])
 }
 
 model Template {
@@ -161,6 +212,8 @@ model Template {
   channelId Int?
   channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Notification {
@@ -172,6 +225,9 @@ model Notification {
   userId    Int
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
 }
 
 model BudgetItem {
@@ -186,6 +242,9 @@ model BudgetItem {
   userId    Int
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, month])
 }
 
 model Script {
@@ -197,6 +256,8 @@ model Script {
   video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([videoId])
 }
 
 model SeoResult {
@@ -209,6 +270,8 @@ model SeoResult {
   videoId     Int
   video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
+
+  @@index([videoId])
 }
 
 model Idea {
@@ -225,6 +288,9 @@ model Idea {
   channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId, channelId])
+  @@index([userId, pinned])
 }
 
 model SystemConfig {
@@ -233,33 +299,36 @@ model SystemConfig {
 }
 
 model SavedChannel {
-  id            Int      @id @default(autoincrement())
-  ytChannelId   String
-  name          String
-  handle        String   @default("")
-  thumbnail     String   @default("")
-  subscribers   Int      @default(0)
-  totalViews    Int      @default(0)
-  videoCount    Int      @default(0)
-  country       String   @default("")
-  score         Int      @default(0)
-  tier          String   @default("")
-  niche         String   @default("")
-  subNiche      String   @default("")
-  microNiche    String   @default("")
-  avgDuration   String   @default("")
-  uploadsPerWeek Float   @default(0)
-  bestUploadDay  String  @default("")
-  bestUploadHour String  @default("")
-  topCountries  String   @default("")
-  tags          String   @default("")
-  notes         String   @default("")
-  modelable     Boolean  @default(false)
-  analysisJson  String   @default("")
-  userId        Int
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  ytChannelId    String
+  name           String
+  handle         String   @default("")
+  thumbnail      String   @default("")
+  subscribers    Int      @default(0)
+  totalViews     Int      @default(0)
+  videoCount     Int      @default(0)
+  country        String   @default("")
+  score          Int      @default(0)
+  tier           String   @default("")
+  niche          String   @default("")
+  subNiche       String   @default("")
+  microNiche     String   @default("")
+  avgDuration    String   @default("")
+  uploadsPerWeek Float    @default(0)
+  bestUploadDay  String   @default("")
+  bestUploadHour String   @default("")
+  topCountries   String   @default("")
+  tags           String   @default("")
+  notes          String   @default("")
+  modelable      Boolean  @default(false)
+  analysisJson   String   @default("")
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@index([ytChannelId])
 }
 
 model ScriptVersion {
@@ -271,7 +340,10 @@ model ScriptVersion {
   sections  String   @default("[]")
   notes     String   @default("")
   createdAt DateTime @default(now())
+
+  @@index([videoId])
 }
+
 model KeywordResult {
   id          Int      @id @default(autoincrement())
   keyword     String
@@ -279,23 +351,28 @@ model KeywordResult {
   volume      String   @default("")
   competition String   @default("")
   avgViews    Int      @default(0)
-  topResults  String   @default("[]") // JSON array of top 10 videos
-  related     String   @default("[]") // JSON array of related keywords
+  topResults  String   @default("[]")
+  related     String   @default("[]")
   niche       String   @default("")
   userId      Int
   createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([keyword])
 }
 
 model DailyIdea {
   id        Int      @id @default(autoincrement())
   title     String
-  potential String   @default("medium") // low, medium, high, very_high
+  potential String   @default("medium")
   niche     String   @default("")
   reasoning String   @default("")
   tags      String   @default("")
   used      Boolean  @default(false)
   userId    Int
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model ChannelSnapshot {
@@ -306,8 +383,11 @@ model ChannelSnapshot {
   subscribers    Int      @default(0)
   totalViews     Int      @default(0)
   videoCount     Int      @default(0)
-  date           String   @default("") // YYYY-MM-DD
+  date           String   @default("")
   createdAt      DateTime @default(now())
+
+  @@index([savedChannelId])
+  @@index([date])
 }
 
 model VideoVelocity {
@@ -317,8 +397,10 @@ model VideoVelocity {
   channelName String   @default("")
   views       Int      @default(0)
   prevViews   Int      @default(0)
-  velocity    Float    @default(0) // views per hour
+  velocity    Float    @default(0)
   checkedAt   DateTime @default(now())
+
+  @@index([ytVideoId])
 }
 
 model CpmReference {
@@ -329,6 +411,8 @@ model CpmReference {
   minCpm      Float    @default(0)
   maxCpm      Float    @default(0)
   lastUpdated DateTime @default(now())
+
+  @@index([niche, country])
 }
 
 model RepurposePiece {
@@ -339,23 +423,29 @@ model RepurposePiece {
   title       String   @default("")
   content     String   @default("")
   hook        String   @default("")
-  status      String   @default("draft") // draft, scheduled, published
+  status      String   @default("draft")
   scheduledAt String   @default("")
   userId      Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, status])
 }
 
 model RevenueEntry {
   id        Int      @id @default(autoincrement())
   channelId Int?
-  source    String   @default("adsense") // adsense, affiliate, sponsor, product, membership, merch
+  source    String   @default("adsense")
   amount    Float    @default(0)
   currency  String   @default("BRL")
-  month     String   @default("") // YYYY-MM
+  month     String   @default("")
   notes     String   @default("")
   userId    Int
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, month])
 }
 
 model OAuthToken {
@@ -373,100 +463,121 @@ model OAuthToken {
   updatedAt    DateTime @updatedAt
 
   @@unique([userId, channelId])
+  @@index([userId])
 }
 
 model ABTest {
-  id           Int      @id @default(autoincrement())
-  videoId      String
-  type         String   @default("thumbnail") // thumbnail, title, description
-  status       String   @default("running") // running, completed, cancelled
-  variants     String   @default("[]") // JSON array [{label,value,impressions,clicks,ctr,watchTime}]
-  winnerId     Int?
-  startedAt    DateTime @default(now())
-  endedAt      String   @default("")
-  rotationHrs  Int      @default(1)
-  userId       Int
-  createdAt    DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  videoId     String
+  type        String   @default("thumbnail")
+  status      String   @default("running")
+  variants    String   @default("[]")
+  winnerId    Int?
+  startedAt   DateTime @default(now())
+  endedAt     String   @default("")
+  rotationHrs Int      @default(1)
+  userId      Int
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, status])
 }
 
 model VideoPerformance {
-  id            Int      @id @default(autoincrement())
-  ytVideoId     String
-  title         String   @default("")
-  publishedAt   String   @default("")
-  impressions   Int      @default(0)
-  clicks        Int      @default(0)
-  ctr           Float    @default(0)
-  avgViewDuration Float  @default(0)
-  avgViewPct    Float    @default(0)
-  views         Int      @default(0)
-  likes         Int      @default(0)
-  dislikes      Int      @default(0)
-  comments      Int      @default(0)
-  shares        Int      @default(0)
-  subsGained    Int      @default(0)
-  subsLost      Int      @default(0)
-  watchTimeMin  Float    @default(0)
-  satisfaction  Float    @default(0)
-  trafficSources String  @default("{}") // JSON
-  devices       String   @default("{}") // JSON {mobile,desktop,tv,tablet}
-  countries     String   @default("{}") // JSON
-  layer         String   @default("testing") // testing,core,recent,topic,adjacent,viral
-  channelId     String   @default("")
-  userId        Int
-  checkedAt     DateTime @default(now())
+  id              Int      @id @default(autoincrement())
+  ytVideoId       String
+  title           String   @default("")
+  publishedAt     String   @default("")
+  impressions     Int      @default(0)
+  clicks          Int      @default(0)
+  ctr             Float    @default(0)
+  avgViewDuration Float    @default(0)
+  avgViewPct      Float    @default(0)
+  views           Int      @default(0)
+  likes           Int      @default(0)
+  dislikes        Int      @default(0)
+  comments        Int      @default(0)
+  shares          Int      @default(0)
+  subsGained      Int      @default(0)
+  subsLost        Int      @default(0)
+  watchTimeMin    Float    @default(0)
+  satisfaction    Float    @default(0)
+  trafficSources  String   @default("{}")
+  devices         String   @default("{}")
+  countries       String   @default("{}")
+  layer           String   @default("testing")
+  channelId       String   @default("")
+  userId          Int
+  checkedAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([ytVideoId])
+  @@index([userId, layer])
 }
 
 model CommunityPost {
   id          Int      @id @default(autoincrement())
-  type        String   @default("text") // text, poll, image, teaser
+  type        String   @default("text")
   content     String   @default("")
-  options     String   @default("[]") // JSON for polls
-  status      String   @default("draft") // draft, scheduled, published
+  options     String   @default("[]")
+  status      String   @default("draft")
   scheduledAt String   @default("")
   videoId     Int?
   channelId   Int?
   userId      Int
   createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, status])
 }
 
 model CommentTemplate {
-  id       Int    @id @default(autoincrement())
-  label    String
-  type     String @default("reply") // reply, pinned, first
-  content  String @default("")
-  userId   Int
+  id      Int    @id @default(autoincrement())
+  label   String
+  type    String @default("reply")
+  content String @default("")
+  userId  Int
+
+  @@index([userId])
 }
 
 model UploadStreak {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  channelId Int?
-  date      String   // YYYY-MM-DD
-  videoTitle String  @default("")
-  type      String   @default("long") // long, short
-  createdAt DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  channelId  Int?
+  date       String
+  videoTitle String   @default("")
+  type       String   @default("long")
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, date])
 }
 
 model PlaylistStrategy {
-  id          Int    @id @default(autoincrement())
-  name        String
-  videoIds    String @default("[]") // JSON ordered array of ytVideoIds
-  strategy    String @default("") // AI generated strategy
-  sessionEst  String @default("") // estimated session duration
-  userId      Int
-  channelId   Int?
-  createdAt   DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  name       String
+  videoIds   String   @default("[]")
+  strategy   String   @default("")
+  sessionEst String   @default("")
+  userId     Int
+  channelId  Int?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
 }
 
 model CatalogAudit {
-  id         Int      @id @default(autoincrement())
-  ytVideoId  String
-  title      String   @default("")
-  seoScore   Int      @default(0)
-  issues     String   @default("[]") // JSON
-  fixes      String   @default("[]") // JSON
-  status     String   @default("pending") // pending, fixed, skipped
-  userId     Int
-  createdAt  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  ytVideoId String
+  title     String   @default("")
+  seoScore  Int      @default(0)
+  issues    String   @default("[]")
+  fixes     String   @default("[]")
+  status    String   @default("pending")
+  userId    Int
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, status])
 }

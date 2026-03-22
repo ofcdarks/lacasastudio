@@ -7,10 +7,14 @@ services:
     volumes:
       - lacasa-data:/app/data
       - lacasa-uploads:/app/server/uploads
+      - lacasa-backups:/app/backups
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/data/lacasastudio.db
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required (min 32 chars)}
+      - CORS_ORIGIN=${CORS_ORIGIN:-}
       - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=info
     depends_on:
       - redis
     restart: unless-stopped
@@ -24,4 +28,5 @@ services:
 volumes:
   lacasa-data:
   lacasa-uploads:
+  lacasa-backups:
   lacasa-redis:

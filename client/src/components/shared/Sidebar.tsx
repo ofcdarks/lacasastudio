@@ -1,175 +1,233 @@
-import { useState } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useState, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useApp } from "../../context/AppContext";
-import { channelApi } from "../../lib/api";
-import { useToast } from "./Toast";
-import { Badge, C } from "./UI";
-import type { Channel } from "../../types";
+import { useTheme } from "../../context/ThemeContext";
+import { C } from "./UI";
 
-function SItem({ icon, label, path, badge, bc, onClick: extraClick }: { icon: string; label: string; path: string; badge?: number | string | null; bc?: string; onClick?: () => void }) {
-  const [h, setH] = useState(false);
-  const nav = useNavigate();
-  const loc = useLocation();
-  const active = loc.pathname === path;
-  return (
-    <div onClick={() => { nav(path); extraClick?.(); }} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-      style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13.5, fontWeight: active ? 600 : 450, color: active ? C.red : h ? C.text : C.muted, background: active ? `${C.red}15` : h ? C.bgHover : "transparent", transition: "all 0.2s", userSelect: "none" }}>
-      <span style={{ fontSize: 14, width: 18, textAlign: "center", opacity: active ? 1 : 0.6 }}>{icon}</span>
-      <span style={{ flex: 1 }}>{label}</span>
-      {badge != null && <Badge text={String(badge)} color={bc || C.red} v="count" />}
-    </div>
-  );
-}
+interface NavItem { path: string; label: string; icon: string; }
 
-function Sec({ title }: { title: string }) {
-  return <div style={{ fontSize: 10, fontWeight: 700, color: C.dim, letterSpacing: "0.1em", textTransform: "uppercase", padding: "16px 14px 6px" }}>{title}</div>;
-}
+interface NavGroup { label: string; icon: string; items: NavItem[]; }
 
-function ChDot({ ch, active, onClick }: { ch: { name: string; color: string; _count?: { videos: number }; videoCount?: number }; active: boolean; onClick: () => void }) {
-  const [h, setH] = useState(false);
-  return (
-    <div onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-      style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13.5, fontWeight: active ? 700 : 450, color: active ? C.text : C.muted, background: active ? "rgba(255,255,255,0.06)" : h ? C.bgHover : "transparent", transition: "all 0.2s" }}>
-      <Badge color={ch.color} />
-      <span style={{ flex: 1 }}>{ch.name}</span>
-      {(ch._count?.videos || ch.videoCount || 0) > 0 && <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: C.dim }}>{ch._count?.videos || ch.videoCount}</span>}
-    </div>
-  );
-}
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: "Principal",
+    icon: "🏠",
+    items: [
+      { path: "/", label: "Dashboard", icon: "📊" },
+      { path: "/command-center", label: "Command Center", icon: "🎮" },
+    ],
+  },
+  {
+    label: "Produção",
+    icon: "🎬",
+    items: [
+      { path: "/planner", label: "Planner", icon: "📋" },
+      { path: "/pipeline", label: "Pipeline", icon: "🔄" },
+      { path: "/storyboard", label: "Storyboard", icon: "🎞️" },
+      { path: "/roteiro", label: "Roteiro", icon: "📝" },
+      { path: "/editor", label: "Editor", icon: "✂️" },
+      { path: "/checklist", label: "Checklist", icon: "✅" },
+      { path: "/thumbs", label: "Thumbnails", icon: "🖼️" },
+      { path: "/calendario", label: "Calendário", icon: "📅" },
+      { path: "/streak", label: "Streak", icon: "🔥" },
+    ],
+  },
+  {
+    label: "SEO & Growth",
+    icon: "🚀",
+    items: [
+      { path: "/seo", label: "Gerador SEO", icon: "🔍" },
+      { path: "/keywords", label: "Keywords", icon: "🔑" },
+      { path: "/tag-spy", label: "Tag Spy", icon: "🕵️" },
+      { path: "/seo-audit", label: "SEO Audit", icon: "📑" },
+      { path: "/catalog", label: "Catálogo", icon: "📚" },
+      { path: "/hooks", label: "Hooks", icon: "🪝" },
+      { path: "/preditor", label: "Viral Predict", icon: "🔮" },
+      { path: "/hype", label: "Hype Strategy", icon: "📣" },
+    ],
+  },
+  {
+    label: "Analytics",
+    icon: "📈",
+    items: [
+      { path: "/analytics", label: "Analytics", icon: "📈" },
+      { path: "/my-analytics", label: "Meu Analytics", icon: "📉" },
+      { path: "/analyzer", label: "Analyzer", icon: "🔬" },
+      { path: "/retention", label: "Retenção", icon: "⏱️" },
+      { path: "/ab-testing", label: "A/B Testing", icon: "🧪" },
+      { path: "/algoritmo", label: "Algoritmo", icon: "🤖" },
+    ],
+  },
+  {
+    label: "Pesquisa",
+    icon: "🔎",
+    items: [
+      { path: "/research", label: "Research", icon: "🔎" },
+      { path: "/compare", label: "Comparar", icon: "⚖️" },
+      { path: "/ideas", label: "Ideias", icon: "💡" },
+      { path: "/daily-ideas", label: "Ideias Diárias", icon: "✨" },
+    ],
+  },
+  {
+    label: "Shorts & Multi",
+    icon: "📱",
+    items: [
+      { path: "/shorts", label: "Shorts", icon: "📱" },
+      { path: "/shorts-clip", label: "Clipper", icon: "✂️" },
+      { path: "/shorts-optimizer", label: "Otimizador", icon: "⚡" },
+      { path: "/repurpose", label: "Repurpose", icon: "♻️" },
+      { path: "/community", label: "Comunidade", icon: "👥" },
+    ],
+  },
+  {
+    label: "Negócios",
+    icon: "💰",
+    items: [
+      { path: "/monetizar", label: "Monetize 360", icon: "💰" },
+      { path: "/orcamento", label: "Orçamento", icon: "💳" },
+      { path: "/metas", label: "Metas", icon: "🎯" },
+    ],
+  },
+  {
+    label: "Workspace",
+    icon: "🗂️",
+    items: [
+      { path: "/ativos", label: "Ativos", icon: "📁" },
+      { path: "/templates", label: "Templates", icon: "📐" },
+      { path: "/equipe", label: "Equipe", icon: "👤" },
+      { path: "/settings", label: "Configurações", icon: "⚙️" },
+    ],
+  },
+];
 
-export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { channels, videos, selChannel, setSelChannel, refreshChannels } = useApp();
-  const { user } = useAuth();
-  const toast = useToast();
-  const nav = useNavigate();
-  const loc = useLocation();
-  const pending = videos.filter(v => v.status !== "published").length;
-  const closeMobile = () => { if (onClose) onClose(); };
-  const [showNewChannel, setShowNewChannel] = useState(false);
-  const [newChName, setNewChName] = useState("");
+interface SidebarProps { isOpen: boolean; onClose: () => void; }
 
-  const addChannel = async () => {
-    if (!newChName.trim()) return;
-    const colors = [C.red, C.purple, C.green, C.blue, C.orange, C.pink];
-    try {
-      await channelApi.create({ name: newChName, color: colors[Math.floor(Math.random() * colors.length)] });
-      refreshChannels();
-      toast?.success(`Canal "${newChName}" criado!`);
-      setNewChName("");
-      setShowNewChannel(false);
-    } catch (err: any) { toast?.error(err.message); }
-  };
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { theme, toggle } = useTheme();
+
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("lc_sidebar_collapse") || "{}"); }
+    catch { return {}; }
+  });
+
+  const toggleGroup = useCallback((label: string) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [label]: !prev[label] };
+      localStorage.setItem("lc_sidebar_collapse", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const go = useCallback((path: string) => {
+    navigate(path);
+    onClose();
+  }, [navigate, onClose]);
+
+  const isActive = useCallback((path: string) => {
+    if (path === "/") return location.pathname === "/";
+    return location.pathname.startsWith(path);
+  }, [location.pathname]);
 
   return (
     <>
-      <div className={`sidebar-overlay ${isOpen ? "show" : ""}`} onClick={onClose} />
-      <aside className={`sidebar ${isOpen ? "open" : ""}`}
-        style={{ width: 230, minWidth: 230, background: C.bgSidebar, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", position: "fixed", top: 0, left: 0, bottom: 0, overflowY: "auto", zIndex: 100, transition: "transform 0.25s cubic-bezier(0.4,0,0.2,1)" }}>
-        <div style={{ padding: "22px 18px 10px", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: `linear-gradient(135deg, ${C.red}, #D03030)`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13, color: "#fff", flexShrink: 0, boxShadow: `0 4px 12px ${C.red}30` }}>LC</div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: 14, letterSpacing: "-0.02em" }}>LaCasaStudio</div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: C.dim }}>V2.4 · YOUTUBE OS</div>
+      {/* Mobile overlay */}
+      <div className={`sidebar-overlay ${isOpen ? "show" : ""}`} onClick={onClose} aria-hidden="true" />
+
+      <nav
+        className={`sidebar-desktop ${isOpen ? "open" : ""}`}
+        role="navigation"
+        aria-label="Navegação principal"
+        style={{
+          width: "var(--sidebar-w)", height: "100vh", position: "fixed", top: 0, left: 0,
+          background: "var(--bg-sidebar)", borderRight: "1px solid var(--border)",
+          overflowY: "auto", overflowX: "hidden", zIndex: 100,
+          display: "flex", flexDirection: "column",
+        }}
+      >
+        {/* Logo */}
+        <div style={{ padding: "18px 18px 12px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #F04444, #FF6B6B)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
+            🏠
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)" }}>LaCasaStudio</div>
+            <div style={{ fontSize: 10, color: "var(--dim)" }}>v2.5 • YouTube OS</div>
           </div>
         </div>
-        <div style={{ flex: 1, padding: "4px 8px" }}>
-          <Sec title="Produção" />
-        {/* PRINCIPAL */}
-        <div style={{padding:"0 16px",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>PRINCIPAL</div></div>
-          <SItem icon="🏠" label="Dashboard" path="/" onClick={closeMobile} />
-          <SItem icon="📋" label="Planner Kanban" path="/planner" onClick={closeMobile} />
-          <SItem icon="📊" label="Analytics" path="/analytics" onClick={closeMobile} />
 
-        {/* CRIAÇÃO */}
-        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>CRIAÇÃO</div></div>
-          <SItem icon="🎬" label="Pipeline" path="/pipeline" onClick={closeMobile} />
-          <SItem icon="📜" label="Roteiro Completo" path="/roteiro" onClick={closeMobile} />
-          <SItem icon="🖼️" label="Thumbnails" path="/thumbs" onClick={closeMobile} />
-          <SItem icon="📱" label="Shorts/Reels" path="/shorts" onClick={closeMobile} />
-          <SItem icon="♻️" label="Repurpose" path="/repurpose" onClick={closeMobile} />
+        {/* Groups */}
+        <div style={{ flex: 1, padding: "4px 10px", overflowY: "auto" }}>
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label} style={{ marginBottom: 4 }}>
+              <button
+                onClick={() => toggleGroup(group.label)}
+                aria-expanded={!collapsed[group.label]}
+                aria-controls={`nav-group-${group.label}`}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 8,
+                  padding: "7px 8px", border: "none", background: "transparent",
+                  color: "var(--dim)", fontSize: 10, fontWeight: 700, letterSpacing: "0.05em",
+                  textTransform: "uppercase", cursor: "pointer", borderRadius: 6,
+                }}
+              >
+                <span style={{ fontSize: 11 }}>{group.icon}</span>
+                <span style={{ flex: 1, textAlign: "left" }}>{group.label}</span>
+                <span style={{ fontSize: 8, transform: collapsed[group.label] ? "rotate(-90deg)" : "rotate(0)", transition: "0.15s" }}>▼</span>
+              </button>
 
-        {/* INTELIGÊNCIA */}
-        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>INTELIGÊNCIA</div></div>
-          <SItem icon="🔍" label="Pesquisa de Mercado" path="/research" onClick={closeMobile} />
-          <SItem icon="📸" label="Analisador" path="/analyzer" onClick={closeMobile} />
-          <SItem icon="🔮" label="Preditor Viral" path="/preditor" onClick={closeMobile} />
-          <SItem icon="🧠" label="Hooks Virais" path="/hooks" onClick={closeMobile} />
-          <SItem icon="⚡" label="Armas do Algoritmo" path="/algoritmo" onClick={closeMobile} />
-
-        {/* DADOS */}
-        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>DADOS</div></div>
-          <SItem icon="🔑" label="Keywords" path="/keywords" onClick={closeMobile} />
-          <SItem icon="🏷️" label="Tag Spy" path="/tag-spy" onClick={closeMobile} />
-          <SItem icon="✅" label="SEO Audit" path="/seo-audit" onClick={closeMobile} />
-          <SItem icon="📊" label="Comparador" path="/compare" onClick={closeMobile} />
-          <SItem icon="💡" label="Ideias do Dia" path="/daily-ideas" onClick={closeMobile} />
-          <SItem icon="🎯" label="Retenção" path="/retention" onClick={closeMobile} />
-          <SItem icon="✂️" label="Shorts Clipper" path="/shorts-clip" onClick={closeMobile} />
-
-        {/* ALGORITMO */}
-        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>ALGORITMO</div></div>
-          <SItem icon="📺" label="Meu Canal (OAuth)" path="/my-analytics" onClick={closeMobile} />
-          <SItem icon="🎯" label="Command Center 48h" path="/command-center" onClick={closeMobile} />
-          <SItem icon="🧪" label="A/B Testing" path="/ab-testing" onClick={closeMobile} />
-          <SItem icon="📱" label="Shorts Optimizer" path="/shorts-optimizer" onClick={closeMobile} />
-          <SItem icon="💬" label="Community" path="/community" onClick={closeMobile} />
-          <SItem icon="🔥" label="Hype Strategy" path="/hype" onClick={closeMobile} />
-          <SItem icon="🔄" label="Re-Otimizar Catálogo" path="/catalog" onClick={closeMobile} />
-          <SItem icon="📅" label="Upload Streak" path="/streak" onClick={closeMobile} />
-
-        {/* OTIMIZAÇÃO */}
-        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>OTIMIZAÇÃO</div></div>
-          <SItem icon="🚀" label="SEO Viral" path="/seo" onClick={closeMobile} />
-          <SItem icon="💸" label="Monetização 360°" path="/monetizar" onClick={closeMobile} />
-
-        {/* PRODUÇÃO */}
-        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>PRODUÇÃO</div></div>
-          <SItem icon="🎨" label="Storyboard" path="/storyboard" onClick={closeMobile} />
-          <SItem icon="💡" label="Banco de Ideias" path="/ideas" onClick={closeMobile} />
-          <SItem icon="✅" label="Checklist Pub." path="/checklist" onClick={closeMobile} />
-          <SItem icon="🎯" label="Metas & OKRs" path="/metas" onClick={closeMobile} />
-          <SItem icon="📦" label="Banco de Ativos" path="/ativos" onClick={closeMobile} />
-          <SItem icon="📋" label="Templates" path="/templates" onClick={closeMobile} />
-
-        {/* GESTÃO */}
-        <div style={{padding:"12px 16px 0",marginBottom:4}}><div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,.15)",letterSpacing:2,marginBottom:8}}>GESTÃO</div></div>
-          <SItem icon="💰" label="Controle de Gastos" path="/orcamento" onClick={closeMobile} />
-          <SItem icon="👥" label="Equipe" path="/equipe" onClick={closeMobile} />
-          <SItem icon="⚙️" label="Configurações" path="/settings" onClick={closeMobile} />
-          <SItem icon="🔐" label="Admin" path="/admin" onClick={closeMobile} />
-          <Sec title="Canais" />
-          {channels.map((ch: any) => (
-            <ChDot key={ch.id} ch={ch} active={selChannel === ch.id && loc.pathname === "/planner"}
-              onClick={() => { setSelChannel(selChannel === ch.id ? null : ch.id); nav("/planner"); closeMobile(); }} />
+              <div
+                id={`nav-group-${group.label}`}
+                role="list"
+                style={{
+                  overflow: "hidden",
+                  maxHeight: collapsed[group.label] ? 0 : `${group.items.length * 34}px`,
+                  transition: "max-height 0.25s ease",
+                }}
+              >
+                {group.items.map((item) => {
+                  const active = isActive(item.path);
+                  return (
+                    <button
+                      key={item.path}
+                      role="listitem"
+                      onClick={() => go(item.path)}
+                      aria-current={active ? "page" : undefined}
+                      style={{
+                        width: "100%", display: "flex", alignItems: "center", gap: 8,
+                        padding: "6px 8px 6px 24px", border: "none", borderRadius: 6,
+                        background: active ? "var(--red)" + "14" : "transparent",
+                        color: active ? "var(--text)" : "var(--muted)",
+                        fontSize: 12, fontWeight: active ? 600 : 500,
+                        cursor: "pointer", transition: "all 0.15s",
+                        borderLeft: active ? `2px solid var(--red)` : "2px solid transparent",
+                      }}
+                    >
+                      <span style={{ fontSize: 13, width: 20, textAlign: "center" }}>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
-          <ChDot ch={{ name: "Todos os canais", color: C.dim }} active={!selChannel && loc.pathname === "/planner"}
-            onClick={() => { setSelChannel(null); nav("/planner"); closeMobile(); }} />
         </div>
-        <div style={{ padding: "12px 16px", borderTop: `1px solid ${C.border}` }}>
-          <div onClick={() => setShowNewChannel(true)} style={{ fontSize: 12, color: C.muted, cursor: "pointer", padding: "6px 0" }}>+ Novo canal</div>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: C.dim, marginTop: 6 }}>© LaCasaStudio V2.3</div>
+
+        {/* Footer */}
+        <div style={{ padding: "10px 14px", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", gap: 8 }}>
+          <button
+            onClick={toggle}
+            aria-label={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
+            style={{
+              flex: 1, padding: "6px", borderRadius: 6, border: "1px solid var(--border)",
+              background: "var(--bg-hover)", color: "var(--muted)", cursor: "pointer",
+              fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            }}
+          >
+            {theme === "dark" ? "☀️ Claro" : "🌙 Escuro"}
+          </button>
         </div>
-      </aside>
-      {showNewChannel && (
-        <div onClick={() => setShowNewChannel(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: 380, background: C.bgCard, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 20px 60px rgba(0,0,0,.5)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${C.red}, ${C.orange})`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13, color: "#fff" }}>LC</div>
-              <div><div style={{ fontWeight: 700, fontSize: 16 }}>Novo Canal</div><div style={{ fontSize: 11, color: C.dim }}>Crie um canal para organizar seus vídeos</div></div>
-            </div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.muted, textTransform: "uppercase", marginBottom: 6 }}>Nome do Canal</div>
-            <input autoFocus value={newChName} onChange={e => setNewChName(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") addChannel(); if (e.key === "Escape") setShowNewChannel(false); }}
-              placeholder="Ex: Canal Dark, Cortes, Vlogs..."
-              style={{ width: "100%", background: "rgba(255,255,255,.06)", border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px", color: C.text, fontSize: 14, outline: "none", marginBottom: 16 }} />
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button onClick={() => setShowNewChannel(false)} style={{ padding: "8px 18px", borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 13 }}>Cancelar</button>
-              <button onClick={addChannel} style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: C.red, color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Criar Canal</button>
-            </div>
-          </div>
-        </div>
-      )}
+      </nav>
     </>
   );
 }

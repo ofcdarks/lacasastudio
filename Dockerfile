@@ -1,5 +1,5 @@
 # ============================================================
-# LaCasaStudio V2.3 — Production Build
+# LaCasaStudio V2.5 — Production Build
 # ============================================================
 
 FROM node:20-slim AS client-build
@@ -22,21 +22,24 @@ FROM node:20-slim AS server-deps
 WORKDIR /app/server
 COPY server/package*.json ./
 COPY server/prisma ./prisma/
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl sqlite3 && rm -rf /var/lib/apt/lists/*
 RUN npm install --omit=dev && npx prisma generate
 
 FROM node:20-slim AS production
 WORKDIR /app
-RUN apt-get update -y && apt-get install -y openssl wget && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl sqlite3 wget && rm -rf /var/lib/apt/lists/*
 RUN groupadd -r appgroup && useradd -r -g appgroup -m appuser
 
 COPY --from=server-deps /app/server/node_modules ./server/node_modules
 COPY --from=server-build /app/server/dist ./server/dist
 COPY server/prisma ./server/prisma/
 COPY --from=client-build /app/client/dist ./server/public
+COPY scripts/entrypoint.sh /app/entrypoint.sh
+COPY scripts/backup.sh /app/backup.sh
 
-# Create persistent data directory
-RUN mkdir -p /app/data /app/server/uploads && chown -R appuser:appgroup /app
+RUN mkdir -p /app/data /app/backups /app/server/uploads \
+    && chmod +x /app/entrypoint.sh /app/backup.sh \
+    && chown -R appuser:appgroup /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -47,4 +50,5 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD wget -qO- http://localhost:3000/api/health || exit 1
 
-CMD ["sh", "-c", "cd server && npx prisma db push 2>/dev/null; node dist/db/seed.js 2>/dev/null; node dist/index.js"]
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["node", "server/dist/index.js"]
