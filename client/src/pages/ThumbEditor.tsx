@@ -22,21 +22,61 @@ const NICHES = [
 ];
 
 const TITLE_STYLES = [
+  // ── Clássicos ──
   { id: "impacto", l: "Impacto", desc: "Grande, bold, sombra forte", ex: "TÍTULO", font: "Impact, sans-serif", size: 72, weight: 900, stroke: true, shadow: true, color: "#FFFFFF" },
-  { id: "neon", l: "Neon", desc: "Glow neon, futurista", ex: "Título", font: "'Bebas Neue', sans-serif", size: 68, weight: 400, stroke: false, shadow: false, glow: true, color: "#00FFFF" },
   { id: "clean", l: "Clean", desc: "Minimalista, elegante", ex: "Título", font: "'Montserrat', sans-serif", size: 60, weight: 700, stroke: false, shadow: true, color: "#FFFFFF" },
-  { id: "fire", l: "Fogo", desc: "Gradiente quente", ex: "TÍTULO", font: "Impact, sans-serif", size: 76, weight: 900, stroke: true, shadow: true, color: "#FF4500" },
+  { id: "fire", l: "Fogo", desc: "Gradiente quente, agressivo", ex: "TÍTULO", font: "Impact, sans-serif", size: 76, weight: 900, stroke: true, shadow: true, color: "#FF4500" },
+  // ── Neon / Futurista ──
+  { id: "neon", l: "Neon", desc: "Glow cyan futurista", ex: "Título", font: "'Bebas Neue', sans-serif", size: 68, weight: 400, stroke: false, shadow: false, glow: true, color: "#00FFFF" },
+  { id: "neon-pink", l: "Neon Rosa", desc: "Glow magenta vibrante", ex: "Título", font: "'Bebas Neue', sans-serif", size: 68, weight: 400, stroke: false, shadow: false, glow: true, color: "#FF00FF" },
+  { id: "hologram", l: "Holograma", desc: "Multi-cor iridescente, sci-fi", ex: "TÍTULO", font: "'Orbitron', sans-serif", size: 64, weight: 900, stroke: true, shadow: false, glow: true, color: "#00FFB3" },
+  // ── Premium / Luxo ──
+  { id: "elegant", l: "Elegante", desc: "Serif dourado, premium", ex: "Título", font: "Georgia, serif", size: 58, weight: 700, stroke: false, shadow: true, color: "#FFD700" },
+  { id: "chrome", l: "Chrome", desc: "Metálico prateado, 3D", ex: "TÍTULO", font: "'Oswald', sans-serif", size: 72, weight: 700, stroke: true, shadow: true, color: "#C0C0C0" },
+  { id: "royal", l: "Royal", desc: "Serif clássico com ornamentos", ex: "Título", font: "'Playfair Display', serif", size: 62, weight: 900, stroke: false, shadow: true, color: "#E8D5B7" },
+  // ── Agressivo / Dark ──
   { id: "glitch", l: "Glitch", desc: "Distorcido, cyberpunk", ex: "Título", font: "'Courier New', monospace", size: 64, weight: 700, stroke: true, shadow: true, color: "#FF00FF" },
-  { id: "elegant", l: "Elegante", desc: "Serif, premium", ex: "Título", font: "Georgia, serif", size: 58, weight: 700, stroke: false, shadow: true, color: "#FFD700" },
+  { id: "horror", l: "Terror", desc: "Sangrento, dripping", ex: "TÍTULO", font: "'Creepster', cursive", size: 70, weight: 400, stroke: true, shadow: true, color: "#8B0000" },
+  { id: "grunge", l: "Grunge", desc: "Sujo, rasgado, punk", ex: "TÍTULO", font: "'Permanent Marker', cursive", size: 66, weight: 400, stroke: true, shadow: true, color: "#C4A000" },
+  { id: "toxic", l: "Tóxico", desc: "Verde radioativo, danger", ex: "TÍTULO", font: "Impact, sans-serif", size: 74, weight: 900, stroke: true, shadow: true, color: "#39FF14" },
+  // ── Estiloso / Moderno ──
+  { id: "retro", l: "Retrô", desc: "Anos 80, synthwave", ex: "TÍTULO", font: "'Righteous', cursive", size: 66, weight: 400, stroke: false, shadow: true, glow: true, color: "#FF6EC7" },
+  { id: "brush", l: "Pincel", desc: "Brush stroke, orgânico", ex: "Título", font: "'Caveat', cursive", size: 72, weight: 700, stroke: false, shadow: true, color: "#FFFFFF" },
+  { id: "stencil", l: "Stencil", desc: "Militar, tático, bold", ex: "TÍTULO", font: "'Black Ops One', cursive", size: 64, weight: 400, stroke: true, shadow: true, color: "#4ADE80" },
+  { id: "anime", l: "Anime", desc: "Estilo manga japonês", ex: "TÍTULO", font: "'Bangers', cursive", size: 70, weight: 400, stroke: true, shadow: false, glow: true, color: "#FFE500" },
+  { id: "3d-pop", l: "3D Pop", desc: "Extrusão 3D colorida", ex: "TÍTULO", font: "'Bungee', cursive", size: 64, weight: 400, stroke: true, shadow: true, color: "#FF3366" },
 ];
 
 const CHAR_POSITIONS = ["Esquerda", "Centro", "Direita", "Cima", "Baixo"];
 const TEXT_POSITIONS = ["Esquerda", "Centro", "Direita", "Topo", "Rodapé"];
 const CHAR_FRAMES = ["Automático", "Rosto/Close-up", "Meio Corpo", "Corpo Inteiro"];
 const EFFECTS = [
-  { id: "feixe", l: "Feixe", i: "💥" }, { id: "brilho", l: "Brilho Neon", i: "✨" },
-  { id: "fumaca", l: "Fumaça", i: "🌫️" }, { id: "lens", l: "Lens Flare", i: "🔆" },
-  { id: "glitch", l: "Matte Glitch", i: "🌀" }, { id: "bokeh", l: "Bokeh", i: "⭕" },
+  // ── Luz ──
+  { id: "feixe", l: "Feixe de Luz", i: "💥" },
+  { id: "brilho", l: "Brilho Neon", i: "✨" },
+  { id: "lens", l: "Lens Flare", i: "🔆" },
+  { id: "godrays", l: "God Rays", i: "☀️" },
+  { id: "spotlight", l: "Spotlight", i: "🔦" },
+  { id: "aura", l: "Aura Energética", i: "💫" },
+  // ── Atmosfera ──
+  { id: "fumaca", l: "Fumaça", i: "🌫️" },
+  { id: "bokeh", l: "Bokeh", i: "⭕" },
+  { id: "rain", l: "Chuva", i: "🌧️" },
+  { id: "snow", l: "Neve / Partículas", i: "❄️" },
+  { id: "fire-fx", l: "Chamas", i: "🔥" },
+  { id: "sparks", l: "Faíscas", i: "⚡" },
+  // ── Distorção ──
+  { id: "glitch", l: "Glitch Digital", i: "🌀" },
+  { id: "chromatic", l: "Aberração Cromática", i: "🌈" },
+  { id: "shatter", l: "Vidro Quebrado", i: "💎" },
+  { id: "motion", l: "Motion Blur", i: "💨" },
+  // ── Overlay ──
+  { id: "vignette", l: "Vinheta Escura", i: "🖤" },
+  { id: "grain", l: "Grain / Noise", i: "📺" },
+  { id: "duotone", l: "Duotone", i: "🎨" },
+  { id: "halftone", l: "Halftone / Comics", i: "📰" },
+  { id: "neon-border", l: "Borda Neon", i: "🔲" },
+  { id: "light-leak", l: "Light Leak", i: "🟡" },
 ];
 
 const TEMPLATES_CANVAS = [
@@ -89,7 +129,9 @@ function CriadorNinja({ toast, pg }) {
   const [titleStyle, setTitleStyle] = useState("impacto");
   const [subtitle, setSubtitle] = useState("");
   const [charDesc, setCharDesc] = useState("");
-  const [charImg, setCharImg] = useState(null);
+  const [charImgs, setCharImgs] = useState([]);
+  const addCharImg = (f) => { if (charImgs.length >= 3) return; setCharImgs(p => [...p, URL.createObjectURL(f)]); };
+  const rmCharImg = (i) => setCharImgs(p => p.filter((_, j) => j !== i));
   const [charPos, setCharPos] = useState("Direita");
   const [textPos, setTextPos] = useState("Esquerda");
   const [charFrame, setCharFrame] = useState("Automático");
@@ -97,8 +139,20 @@ function CriadorNinja({ toast, pg }) {
   const [mainColor, setMainColor] = useState("#FF0000");
   const [effects, setEffects] = useState([]);
   const [bgDesc, setBgDesc] = useState("");
+  const [bgImg, setBgImg] = useState(null);
   const [output, setOutput] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [genImages, setGenImages] = useState({});
+  const [genImgLoading, setGenImgLoading] = useState({});
+  const genImage = async (key, prompt) => {
+    setGenImgLoading(p => ({ ...p, [key]: true }));
+    pg?.start("Gerando Imagem", ["ImageFX processando", "Finalizando"]);
+    try {
+      const r = await aiApi.generateAsset({ prompt: prompt + ", YouTube thumbnail, 16:9 landscape, no text, ultra quality, 8K" });
+      if (r.url || r.b64) { setGenImages(p => ({ ...p, [key]: r.url || ("data:image/png;base64," + r.b64) })); pg?.done(); toast?.success("Imagem gerada!"); }
+    } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
+    setGenImgLoading(p => ({ ...p, [key]: false }));
+  };
 
   const toggle = id => setEffects(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
 
@@ -112,7 +166,7 @@ function CriadorNinja({ toast, pg }) {
       const fxList = effects.map(e => EFFECTS.find(x => x.id === e)?.l).join(", ");
       const { reply } = await chatApi.send([{ role: "user", content: `Crie 3 prompts detalhados para thumbnail YouTube.
 Nicho: ${nicheL}. Título: "${title}". Estilo título: ${styleL}. Sub: ${subtitle||"nenhum"}.
-Personagem: ${charDesc||"nenhum"}. Posição personagem: ${charPos}. Posição texto: ${textPos}. Enquadramento: ${charFrame}. Nº personagens: ${charCount}. Cor: ${mainColor}. Efeitos: ${fxList||"nenhum"}. Fundo: ${bgDesc||"auto"}.
+Personagem: ${charDesc||"nenhum"}${charImgs.length ? ` (${charImgs.length} imagem(ns) de referência enviada(s))` : ""}. Posição personagem: ${charPos}. Posição texto: ${textPos}. Enquadramento: ${charFrame}. Nº personagens: ${charCount}. Cor: ${mainColor}. Efeitos: ${fxList||"nenhum"}. Fundo: ${bgImg ? "imagem de fundo enviada pelo usuário" : bgDesc||"auto"}.
 RESPONDA JSON (sem backticks):
 {"promptImageFX":"prompt principal ImageFX 16:9 sem texto na imagem, ultra detalhado cinematográfico 8K","promptVariation2":"variação 2","promptVariation3":"variação 3 ousada","textOverlay":{"title":"${title}","titleStyle":"desc estilo","subtitle":"${subtitle}","badge":"sugestão badge","emoji":"1 emoji"},"tips":["3 dicas CTR"],"ctrEstimate":85}` }]);
       const parsed = JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
@@ -134,22 +188,38 @@ RESPONDA JSON (sem backticks):
           <Label t="Título" />
           <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: A MELHOR JOGADA DA MINHA VIDA" style={{ marginBottom: 10 }} />
           <Label t="Estilo de Título" />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
-            {TITLE_STYLES.map(s => (<button key={s.id} onClick={() => setTitleStyle(s.id)} style={{ padding: "10px 6px", borderRadius: 8, cursor: "pointer", textAlign: "center", border: `2px solid ${titleStyle === s.id ? "#DC2626" : C.border}`, background: titleStyle === s.id ? "#DC262612" : "rgba(255,255,255,0.02)" }}>
-              <div style={{ fontFamily: s.font, fontSize: 15, fontWeight: s.weight, color: s.color, textShadow: s.shadow ? "2px 2px 4px rgba(0,0,0,0.8)" : "none" }}>{s.ex}</div>
-              <div style={{ fontSize: 9, color: C.dim, marginTop: 3 }}>{s.desc}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 5, marginBottom: 10 }}>
+            {TITLE_STYLES.map(s => (<button key={s.id} onClick={() => setTitleStyle(s.id)} style={{ padding: "8px 4px", borderRadius: 8, cursor: "pointer", textAlign: "center", border: `2px solid ${titleStyle === s.id ? "#DC2626" : C.border}`, background: titleStyle === s.id ? "#DC262612" : "rgba(255,255,255,0.02)" }}>
+              <div style={{ fontFamily: s.font, fontSize: 13, fontWeight: s.weight, color: s.color, textShadow: s.shadow ? "2px 2px 4px rgba(0,0,0,0.8)" : "none", lineHeight: 1.2 }}>{s.ex}</div>
+              <div style={{ fontSize: 8, color: C.dim, marginTop: 2, lineHeight: 1.2 }}>{s.l}</div>
             </button>))}
           </div>
           <Label t="Subtítulo (opcional)" />
           <Input value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="Ex: Gameplay de Fortnite" style={{ marginBottom: 10 }} />
           <Label t="Descrição do Personagem" />
-          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-            <Input value={charDesc} onChange={e => setCharDesc(e.target.value)} placeholder="Ex: jovem com hoodie neon, cara de surpreso" style={{ flex: 1 }} />
-            <label style={{ display: "flex", alignItems: "center", gap: 4, padding: "0 10px", borderRadius: 8, border: `1px solid ${C.border}`, cursor: "pointer", fontSize: 10, color: C.muted, whiteSpace: "nowrap" }}>📷 Usar Imagem
-              <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) setCharImg(URL.createObjectURL(e.target.files[0])); }} />
+          <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+            <span style={{ fontSize: 10, color: C.dim }}>Faz upload de 1-3 imagens para auxiliar as características do personagem.</span>
+            <label style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.orange}40`, background: `${C.orange}10`, cursor: "pointer", fontSize: 10, color: C.orange, fontWeight: 600, whiteSpace: "nowrap" }}>📷 Usar Imagens
+              <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) addCharImg(e.target.files[0]); }} />
             </label>
           </div>
-          {charImg && <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}><img src={charImg} style={{ width: 50, height: 50, borderRadius: 8, objectFit: "cover" }} /><button onClick={() => setCharImg(null)} style={{ background: "none", border: "none", color: C.red, cursor: "pointer", fontSize: 10 }}>✕ Remover</button></div>}
+          {/* Image grid with + buttons */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            {charImgs.map((img, i) => (
+              <div key={i} style={{ position: "relative", width: 80, height: 80 }}>
+                <img src={img} style={{ width: 80, height: 80, borderRadius: 10, objectFit: "cover", border: `2px solid ${C.orange}40` }} />
+                <button onClick={() => rmCharImg(i)} style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: C.red, border: "none", color: "#fff", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              </div>
+            ))}
+            {charImgs.length < 3 && (
+              <label style={{ width: 80, height: 80, borderRadius: 10, border: `2px dashed ${C.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "rgba(255,255,255,0.02)" }}>
+                <span style={{ fontSize: 24, color: C.dim }}>+</span>
+                <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) addCharImg(e.target.files[0]); }} />
+              </label>
+            )}
+          </div>
+          <Label t="Auxiliar Imagens" />
+          <Input value={charDesc} onChange={e => setCharDesc(e.target.value)} placeholder="Ex: jovem com hoodie neon, cara de surpreso" style={{ marginBottom: 10 }} />
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
             <div><Label t="Posição Personagem" /><div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{CHAR_POSITIONS.map(p => <Pill key={p} active={charPos===p} onClick={() => setCharPos(p)} color={C.orange}>{p}</Pill>)}</div></div>
@@ -162,12 +232,54 @@ RESPONDA JSON (sem backticks):
             <div><Label t="Nº Personagens" /><div style={{ display: "flex", gap: 4 }}>{[1,2,3,4,5].map(n => <Pill key={n} active={charCount===n} onClick={() => setCharCount(n)} color={C.green}>{n}</Pill>)}</div></div>
           </div>
           <Label t="Fundo (opcional)" />
-          <Input value={bgDesc} onChange={e => setBgDesc(e.target.value)} placeholder="Deixe vazio para auto ou descreva" />
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <Input value={bgDesc} onChange={e => setBgDesc(e.target.value)} placeholder="Descreva o fundo ou deixe vazio para auto" style={{ flex: 1 }} />
+            <label style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.purple}40`, background: `${C.purple}10`, cursor: "pointer", fontSize: 10, color: C.purple, fontWeight: 600, whiteSpace: "nowrap" }}>🖼️ Enviar
+              <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) setBgImg(URL.createObjectURL(e.target.files[0])); }} />
+            </label>
+          </div>
+          {bgImg && (
+            <div style={{ position: "relative", marginBottom: 10 }}>
+              <img src={bgImg} style={{ width: "100%", height: 100, objectFit: "cover", borderRadius: 10, border: `2px solid ${C.purple}40` }} />
+              <button onClick={() => setBgImg(null)} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, borderRadius: "50%", background: "rgba(0,0,0,0.7)", border: "none", color: "#fff", fontSize: 12, cursor: "pointer" }}>✕</button>
+              <div style={{ position: "absolute", bottom: 6, left: 8, fontSize: 9, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "2px 8px", borderRadius: 4 }}>Fundo enviado</div>
+            </div>
+          )}
+          {/* Quick background presets */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 4, marginBottom: 4 }}>
+            {[
+              { bg: "linear-gradient(135deg,#0f0c29,#302b63)", l: "Roxo" },
+              { bg: "linear-gradient(135deg,#1a1a2e,#16213e)", l: "Azul" },
+              { bg: "linear-gradient(135deg,#f12711,#f5af19)", l: "Fogo" },
+              { bg: "linear-gradient(135deg,#0a0a0a,#1a0a0a)", l: "Dark" },
+              { bg: "linear-gradient(135deg,#134e5e,#71b280)", l: "Verde" },
+              { bg: "linear-gradient(135deg,#1a1a1a,#2d1b00)", l: "Gold" },
+              { bg: "linear-gradient(135deg,#8B0000,#FF0000)", l: "Red" },
+              { bg: "linear-gradient(135deg,#0a0a2e,#000)", l: "Neon" },
+            ].map((p, i) => (
+              <button key={i} onClick={() => setBgDesc(p.l.toLowerCase() + " gradient background")} style={{ height: 28, borderRadius: 6, border: `1px solid ${C.border}`, background: p.bg, cursor: "pointer" }}>
+                <span style={{ fontSize: 7, fontWeight: 700, color: "#fff" }}>{p.l}</span>
+              </button>
+            ))}
+          </div>
         </Sec>
 
         <Sec title="3. Efeitos Especiais" icon="✨" open={false}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
-            {EFFECTS.map(e => <Pill key={e.id} active={effects.includes(e.id)} onClick={() => toggle(e.id)} color="#EC4899"><span style={{ fontSize: 16 }}>{e.i}</span><div style={{ fontSize: 10 }}>{e.l}</div></Pill>)}
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.dim, marginBottom: 6, letterSpacing: "0.05em" }}>💡 LUZ</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 5, marginBottom: 10 }}>
+            {EFFECTS.slice(0, 6).map(e => <Pill key={e.id} active={effects.includes(e.id)} onClick={() => toggle(e.id)} color="#EC4899"><span style={{ fontSize: 14 }}>{e.i}</span><div style={{ fontSize: 9 }}>{e.l}</div></Pill>)}
+          </div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.dim, marginBottom: 6, letterSpacing: "0.05em" }}>🌫️ ATMOSFERA</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 5, marginBottom: 10 }}>
+            {EFFECTS.slice(6, 12).map(e => <Pill key={e.id} active={effects.includes(e.id)} onClick={() => toggle(e.id)} color="#8B5CF6"><span style={{ fontSize: 14 }}>{e.i}</span><div style={{ fontSize: 9 }}>{e.l}</div></Pill>)}
+          </div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.dim, marginBottom: 6, letterSpacing: "0.05em" }}>🌀 DISTORÇÃO</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 5, marginBottom: 10 }}>
+            {EFFECTS.slice(12, 16).map(e => <Pill key={e.id} active={effects.includes(e.id)} onClick={() => toggle(e.id)} color="#06B6D4"><span style={{ fontSize: 14 }}>{e.i}</span><div style={{ fontSize: 9 }}>{e.l}</div></Pill>)}
+          </div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.dim, marginBottom: 6, letterSpacing: "0.05em" }}>🎨 OVERLAY</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 5 }}>
+            {EFFECTS.slice(16).map(e => <Pill key={e.id} active={effects.includes(e.id)} onClick={() => toggle(e.id)} color="#F59E0B"><span style={{ fontSize: 14 }}>{e.i}</span><div style={{ fontSize: 9 }}>{e.l}</div></Pill>)}
           </div>
         </Sec>
 
@@ -191,7 +303,21 @@ RESPONDA JSON (sem backticks):
                 <div key={p.k}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: p.c, marginBottom: 6 }}>{p.t}</div>
                   <div style={{ padding: 12, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, fontSize: 12, lineHeight: 1.6 }}>{output[p.k]}</div>
-                  <button onClick={() => { navigator.clipboard.writeText(output[p.k]); toast?.success("Copiado!"); }} style={{ marginTop: 4, padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>📋 Copiar</button>
+                  <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                    <button onClick={() => { navigator.clipboard.writeText(output[p.k]); toast?.success("Copiado!"); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>📋 Copiar</button>
+                    <button onClick={() => genImage(p.k, output[p.k])} disabled={genImgLoading[p.k]} style={{ flex: 1, padding: "6px 14px", borderRadius: 6, border: "none", background: `linear-gradient(135deg, ${p.c}, ${p.c}99)`, color: "#fff", cursor: genImgLoading[p.k] ? "wait" : "pointer", fontSize: 11, fontWeight: 700, opacity: genImgLoading[p.k] ? 0.6 : 1 }}>
+                      {genImgLoading[p.k] ? "⏳ Gerando..." : "🎨 Gerar Imagem (ImageFX)"}
+                    </button>
+                  </div>
+                  {genImages[p.k] && (
+                    <div style={{ marginTop: 8 }}>
+                      <img src={genImages[p.k]} style={{ width: "100%", borderRadius: 10, border: `2px solid ${p.c}40` }} />
+                      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                        <a href={genImages[p.k]} download={`thumb-${p.k}.png`} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", borderRadius: 6, background: "#22D35E15", color: "#22D35E", textDecoration: "none", fontSize: 11, fontWeight: 600, border: "1px solid #22D35E30" }}>💾 Baixar PNG</a>
+                        <button onClick={() => genImage(p.k, output[p.k])} style={{ padding: "8px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>🔄 Refazer</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               {output.textOverlay && (
@@ -227,6 +353,17 @@ function RemixAI({ toast, pg }) {
   const [thumbUrl, setThumbUrl] = useState("");
   const [output, setOutput] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [genImages, setGenImages] = useState({});
+  const [genImgLoading, setGenImgLoading] = useState({});
+  const genImage = async (key, prompt) => {
+    setGenImgLoading(p => ({ ...p, [key]: true }));
+    pg?.start("Gerando Remix", ["ImageFX processando"]);
+    try {
+      const r = await aiApi.generateAsset({ prompt: prompt + ", YouTube thumbnail, 16:9, no text, ultra quality" });
+      if (r.url || r.b64) { setGenImages(p => ({ ...p, [key]: r.url || ("data:image/png;base64," + r.b64) })); pg?.done(); toast?.success("Remix gerado!"); }
+    } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
+    setGenImgLoading(p => ({ ...p, [key]: false }));
+  };
 
   const analyze = async () => {
     if (!thumbUrl) { toast?.error("Envie uma thumbnail"); return; }
@@ -269,14 +406,26 @@ RESPONDA JSON (sem backticks):
                   {output.analysis.colors?.length > 0 && <div style={{ display: "flex", gap: 4, marginTop: 6 }}>{output.analysis.colors.map((c, i) => <div key={i} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: "1px solid rgba(255,255,255,0.1)" }} />)}</div>}
                 </div>
               </div>}
-              {output.remixPrompts?.map((r, i) => <div key={i}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: [C.orange, C.purple, C.cyan][i], marginBottom: 6 }}>{r.name}</div>
+              {output.remixPrompts?.map((r, i) => { const k = "remix"+i; const clr = [C.orange, C.purple, C.cyan][i]; return <div key={i}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: clr, marginBottom: 6 }}>{r.name}</div>
                 <div style={{ padding: 12, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, fontSize: 12, lineHeight: 1.6 }}>{r.prompt}</div>
-                <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                  <button onClick={() => { navigator.clipboard.writeText(r.prompt); toast?.success("Copiado!"); }} style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>📋 Copiar</button>
-                  <span style={{ fontSize: 10, color: C.dim, alignSelf: "center" }}>{r.changes}</span>
+                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                  <button onClick={() => { navigator.clipboard.writeText(r.prompt); toast?.success("Copiado!"); }} style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>📋 Copiar</button>
+                  <button onClick={() => genImage(k, r.prompt)} disabled={genImgLoading[k]} style={{ flex: 1, padding: "6px 14px", borderRadius: 6, border: "none", background: `linear-gradient(135deg, ${clr}, ${clr}99)`, color: "#fff", cursor: genImgLoading[k] ? "wait" : "pointer", fontSize: 11, fontWeight: 700, opacity: genImgLoading[k] ? 0.6 : 1 }}>
+                    {genImgLoading[k] ? "⏳ Gerando..." : "🎨 Gerar Imagem"}
+                  </button>
                 </div>
-              </div>)}
+                <div style={{ fontSize: 10, color: C.dim, marginTop: 4 }}>Mudança: {r.changes}</div>
+                {genImages[k] && (
+                  <div style={{ marginTop: 8 }}>
+                    <img src={genImages[k]} style={{ width: "100%", borderRadius: 10, border: `2px solid ${clr}40` }} />
+                    <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                      <a href={genImages[k]} download={"remix-"+(i+1)+".png"} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", borderRadius: 6, background: "#22D35E15", color: "#22D35E", textDecoration: "none", fontSize: 11, fontWeight: 600, border: "1px solid #22D35E30" }}>💾 Baixar PNG</a>
+                      <button onClick={() => genImage(k, r.prompt)} style={{ padding: "8px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>🔄 Refazer</button>
+                    </div>
+                  </div>
+                )}
+              </div>; })}
               {output.improvements?.length > 0 && <div><div style={{ fontSize: 11, fontWeight: 700, color: C.green, marginBottom: 6 }}>💡 Melhorias</div>{output.improvements.map((t, i) => <div key={i} style={{ fontSize: 12, color: C.muted, padding: "4px 0 4px 12px", borderLeft: `2px solid ${C.green}30`, marginBottom: 4 }}>{t}</div>)}</div>}
             </div>)}
         </Sec>
@@ -303,7 +452,7 @@ function AnalisadorViral({ toast, pg }) {
     pg?.start("🔍 Analisando Viralização", ["Avaliando thumbnails", "Analisando títulos", "Score viral"]);
     try {
       const { reply } = await chatApi.send([{ role: "user", content: `Expert em viralização YouTube. Analise:
-T�tulos: ${titles.filter(Boolean).map(t => `"${t}"`).join(", ")}. Nicho: ${niche || "geral"}. ${thumbUrls.filter(Boolean).length} thumbnail(s).
+T�tulos: ${titles.filter(Boolean).map(t => `"${t}"`).join(", ")}. Nicho: ${niche || "geral"}. ${thumbUrls.filter(Boolean).length} thumbnail(s).
 JSON (sem backticks):
 {"overallScore":85,"titleAnalysis":[{"title":"título","score":80,"strengths":["fortes"],"weaknesses":["fracos"],"improvedVersion":"versão melhorada"}],"viralFactors":{"curiosityGap":85,"emotionalImpact":70,"clarity":90,"uniqueness":75,"clickability":80},"thumbnailTips":["3 dicas thumb"],"actionPlan":["3 ações"]}` }]);
       setOutput(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
@@ -430,7 +579,7 @@ function EditorCanvas({ toast, pg }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: "75vh", overflowY: "auto" }}>
         <Sec title="📝 Texto" icon="">
           <Label t="Título" /><textarea value={title} onChange={e => setTitle(e.target.value)} style={{ width: "100%", background: "rgba(255,255,255,.04)", border: `1px solid ${C.border}`, borderRadius: 8, padding: 8, color: C.text, fontSize: 13, outline: "none", minHeight: 44, resize: "vertical" }} />
-          <Label t="Estilo" /><div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4, marginBottom: 8 }}>{TITLE_STYLES.map(s => <button key={s.id} onClick={() => setTitleStyle(s.id)} style={{ padding: "6px 4px", borderRadius: 6, border: `1px solid ${titleStyle === s.id ? C.red : C.border}`, background: titleStyle === s.id ? C.red+"12" : "transparent", cursor: "pointer" }}><div style={{ fontFamily: s.font, fontSize: 11, fontWeight: s.weight, color: s.color }}>{s.ex}</div><div style={{ fontSize: 8, color: C.dim }}>{s.l}</div></button>)}</div>
+          <Label t="Estilo" /><div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 3, marginBottom: 8 }}>{TITLE_STYLES.map(s => <button key={s.id} onClick={() => setTitleStyle(s.id)} style={{ padding: "5px 2px", borderRadius: 5, border: `1px solid ${titleStyle === s.id ? C.red : C.border}`, background: titleStyle === s.id ? C.red+"12" : "transparent", cursor: "pointer" }}><div style={{ fontFamily: s.font, fontSize: 9, fontWeight: s.weight, color: s.color }}>{s.ex}</div><div style={{ fontSize: 7, color: C.dim }}>{s.l}</div></button>)}</div>
           <Label t="Subtítulo" /><Input value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="Texto secundário" />
           <Label t="Badge" /><Input value={badge} onChange={e => setBadge(e.target.value)} placeholder="NOVO, TOP 10" />
           <Label t="Emoji" /><Input value={emoji} onChange={e => setEmoji(e.target.value)} placeholder="🔥 😱 💰" />
@@ -464,6 +613,17 @@ export default function ThumbEditor() {
   const toast = useToast();
   const pg = useProgress();
   const [tab, setTab] = useState("criador");
+
+  // Load Google Fonts for title styles
+  useEffect(() => {
+    if (!document.getElementById("thumb-fonts")) {
+      const link = document.createElement("link");
+      link.id = "thumb-fonts";
+      link.rel = "stylesheet";
+      link.href = "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@700&family=Orbitron:wght@900&family=Oswald:wght@700&family=Playfair+Display:wght@900&family=Creepster&family=Permanent+Marker&family=Righteous&family=Caveat:wght@700&family=Black+Ops+One&family=Bangers&family=Bungee&display=swap";
+      document.head.appendChild(link);
+    }
+  }, []);
   return (
     <div className="page-enter">
       <Hdr title="THUMBNAIL NINJA 🥷" sub="Crie thumbnails profissionais que viralizam" />
