@@ -159,7 +159,7 @@ function CriadorNinja({ toast, pg }) {
   const generate = async () => {
     if (!title.trim()) { toast?.error("Digite o título"); return; }
     setLoading(true);
-    pg?.start("🎨 Gerando Prompt Ninja", ["Analisando nicho e estilo", "Construindo visual", "Otimizando CTR"]);
+    pg?.start("🎨 Gerando Prompt ThumbStudio", ["Analisando nicho e estilo", "Construindo visual", "Otimizando CTR"]);
     try {
       const nicheL = NICHES.find(n => n.id === niche)?.l || niche;
       const styleL = TITLE_STYLES.find(s => s.id === titleStyle)?.desc || "";
@@ -284,7 +284,7 @@ RESPONDA JSON (sem backticks):
         </Sec>
 
         <button onClick={generate} disabled={loading} style={{ width: "100%", padding: "16px", borderRadius: 12, border: "none", cursor: loading ? "wait" : "pointer", background: "linear-gradient(135deg, #DC2626, #F97316)", color: "#fff", fontSize: 16, fontWeight: 800, opacity: loading ? 0.5 : 1 }}>
-          {loading ? "⏳ Gerando..." : "🎨 Gerar Prompt Ninja"}
+          {loading ? "⏳ Gerando..." : "🎨 Gerar Prompt ThumbStudio"}
         </button>
       </div>
 
@@ -603,7 +603,7 @@ function EditorCanvas({ toast, pg }) {
    MAIN
    ═══════════════════════════════════════ */
 const TABS = [
-  { id: "criador", l: "Criador Ninja", i: "🎨", color: "#DC2626" },
+  { id: "criador", l: "Criador Pro", i: "🎨", color: "#DC2626" },
   { id: "remix", l: "Remix AI", i: "🔄", color: "#7C3AED", badge: "NOVO" },
   { id: "analisador", l: "AnalisadorViral", i: "🔍", color: "#F97316", badge: "NOVO" },
   { id: "editor", l: "Editor Canvas", i: "🖌️", color: "#3B82F6" },
@@ -626,7 +626,7 @@ export default function ThumbEditor() {
   }, []);
   return (
     <div className="page-enter">
-      <Hdr title="THUMBNAIL NINJA 🥷" sub="Crie thumbnails profissionais que viralizam" />
+      <Hdr title="LaCasa ThumbStudio 🎨" sub="Editor profissional de thumbnails com IA" />
       <div style={{ display: "flex", gap: 6, marginBottom: 20, borderBottom: `1px solid ${C.border}`, paddingBottom: 12, overflowX: "auto" }}>
         {TABS.map(t => <button key={t.id} onClick={() => setTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 18px", borderRadius: 10, border: "none", cursor: "pointer", background: tab===t.id ? t.color+"18" : "transparent", borderBottom: tab===t.id ? `3px solid ${t.color}` : "3px solid transparent", color: tab===t.id ? "#fff" : C.muted, fontSize: 13, fontWeight: tab===t.id ? 700 : 400, transition: "0.2s", whiteSpace: "nowrap" }}>
           <span>{t.i}</span><span>{t.l}</span>{t.badge && <span style={{ fontSize: 8, fontWeight: 800, color: "#fff", background: t.color, padding: "2px 6px", borderRadius: 4 }}>{t.badge}</span>}
