@@ -931,25 +931,24 @@ function TrendsTab({ toast, pg }) {
       if (hasCustomTitle) {
         // ═══════════════════════════════════════════
         // 2-STEP MODE: Custom title provided
-        // Step 1: Quick technique identification
-        // Step 2: Generate prompts 100% themed to title
+        // Step 1: Extract ABSTRACT technique only (no content details)
+        // Step 2: Interpret title → visual concepts → apply technique → prompt
         // ═══════════════════════════════════════════
 
-        // STEP 1: Identify technique from original thumbnail (short response)
-        pg?.update(0, "Identificando técnica visual...");
+        // STEP 1: Extract ONLY the abstract visual technique (no specific content)
+        pg?.update(0, "Extraindo técnica visual...");
         const step1Messages = [
-          { role: "system", content: "You analyze YouTube thumbnails and identify their visual technique in ONE short paragraph. Be precise and concise." },
+          { role: "system", content: "You extract the ABSTRACT visual technique from YouTube thumbnails. Describe ONLY the structural technique, NOT the specific content/subjects. Output max 60 words." },
           { role: "user", content: [
             ...(thumbUrl ? [{ type: "image_url", image_url: { url: thumbUrl } }] : []),
-            { type: "text", text: `Look at this thumbnail for "${video.title}" by ${video.channel}.
+            { type: "text", text: `Describe ONLY the abstract visual STRUCTURE of this thumbnail. Do NOT mention specific subjects (no pharaohs, soldiers, etc).
 
-In ONE paragraph (max 100 words), describe:
-1. The TECHNIQUE used (choose one: GRID COLLAGE, SPLIT FACE, SYMMETRICAL DUALITY, CUTOUT COMPOSITE, IMPOSSIBLE SCALE, SINGLE CINEMATIC, BEFORE/AFTER, TRIPTYCH)
-2. The LAYOUT: how many elements, their positions (left/center/right, % of frame)
-3. The COLOR MOOD: warm/cold, dominant colors
-4. The LIGHTING: direction and style
+Choose technique: SPLIT FACE / SYMMETRICAL DUALITY / GRID COLLAGE / CUTOUT COMPOSITE / IMPOSSIBLE SCALE / SINGLE CINEMATIC / TRIPTYCH
 
-Format: "TECHNIQUE: [name]. LAYOUT: [description]. COLORS: [description]. LIGHTING: [description]."` }
+Then describe ONLY the abstract layout:
+- "TECHNIQUE: SPLIT FACE. A face split vertically down the center, left half shows one era, right half shows another. Background split matches: left warm tones, right cool tones. Central figure occupies 50% of frame."
+
+Do NOT describe what the subjects ARE — only their positions and the structural technique.` }
           ]}
         ];
 
@@ -957,45 +956,55 @@ Format: "TECHNIQUE: [name]. LAYOUT: [description]. COLORS: [description]. LIGHTI
         try {
           techniqueDesc = await aiCall(step1Messages, null);
         } catch {
-          // If vision fails, fallback to text-based guessing from title
-          techniqueDesc = `TECHNIQUE: CINEMATIC COMPOSITE. LAYOUT: Central dramatic element at 50% of frame with atmospheric background. COLORS: warm golden tones with dark contrast. LIGHTING: dramatic side lighting with rim light effects. Based on title: "${video.title}"`;
+          techniqueDesc = `TECHNIQUE: SPLIT FACE. Central figure split vertically, left half and right half showing contrasting eras/themes. Backgrounds match each side. Warm-to-cool color transition. Figure occupies 40-50% of frame center.`;
         }
 
-        // STEP 2: Generate prompts 100% focused on the custom title
-        pg?.update(1, `Gerando prompts para: ${titleTheme.slice(0,30)}...`);
+        // STEP 2: Three-part prompt — interpret title → map to technique → generate
+        pg?.update(1, `Interpretando título + gerando prompts...`);
         const step2Reply = await aiCall([
-          { role: "system", content: `You are an expert ImageFX prompt engineer. You generate ENGLISH prompts for Google ImageFX that create stunning YouTube thumbnails.
+          { role: "system", content: `You are an expert ImageFX prompt engineer specializing in YouTube thumbnails for history/civilization channels.
 
-YOUR ONLY JOB: Generate ImageFX prompts for the video title the user gives you, using the visual technique described.
+YOUR PROCESS (follow in order):
+1. INTERPRET the video title into concrete visual elements
+2. MAP those elements to the visual technique provided
+3. GENERATE ImageFX prompts using ONLY those mapped elements
 
-RULES:
-- ALL prompts in ENGLISH, minimum 150 words each
-- EVERY visual element in the prompt MUST directly relate to the video title theme
-- NO generic elements, NO random subjects — everything must serve the title's story
-- NO text, NO letters, NO words in the image
-- Be ultra-specific: exact positions (left/center/right), sizes (% of frame), lighting (direction + color temp), colors (hex codes)
-- SAFETY: no blood, weapons, violence, death. Use safe visual alternatives.` },
-          { role: "user", content: `GENERATE THUMBNAIL PROMPTS FOR THIS VIDEO:
+PHOTOREALISM RULES (CRITICAL):
+- Always specify: "ultra-realistic photograph, NOT illustration, NOT painting, NOT drawing, NOT digital art, NOT cartoon"
+- Include camera specs: "shot on Canon EOS R5, 24-70mm lens, f/2.8"
+- Include: "photojournalistic quality, real-world textures, human skin pores visible, fabric weave detail"
+- The output must look like a REAL PHOTOGRAPH composited in Photoshop, not an AI illustration
 
-VIDEO TITLE: "${titleTheme}"
-NICHE: ${nicheLabel}
-FORMAT: ${formatPrompt}
+STRICT RULES:
+- ALL prompts in ENGLISH
+- Minimum 150 words per prompt
+- ZERO generic elements — every single visual must directly represent the title
+- NO text, letters, or words in the image
+- SAFETY: no blood, weapons, violence. Use safe alternatives.` },
+          { role: "user", content: `═══ STEP A: INTERPRET THIS TITLE ═══
+Title: "${titleTheme}"
 
-USE THIS VISUAL TECHNIQUE (extracted from a reference thumbnail):
+First, think about what this title means visually:
+- What are the KEY VISUAL CONCEPTS? (e.g., for "Tenochtitlán had technology Europe couldn't surpass": Aztec aqueducts, chinampas/floating gardens, the great causeways of Tenochtitlán, Templo Mayor, vs medieval European mud streets, wooden hovels)
+- What is the CORE CONTRAST/STORY? (advanced Aztec engineering vs primitive European cities of the same era)
+- What CHARACTERS would represent this? (Aztec engineer/ruler vs European medieval figure)
+
+═══ STEP B: APPLY THIS TECHNIQUE ═══
 ${techniqueDesc}
 
-IMPORTANT: Adapt the technique above to the title "${titleTheme}". 
-Every character, building, artifact, landscape in the prompt must represent something from "${titleTheme}".
+Take the abstract technique above and fill it with the visual elements from Step A.
+If the technique is SPLIT FACE → the left face = one side of the title's story, right face = the other side
+If SYMMETRICAL DUALITY → left elements and right elements each represent one side of the story
+If GRID COLLAGE → each grid cell shows a different aspect of the title's theme
 
-For example, if the technique is "SYMMETRICAL DUALITY with two warriors flanking a central sun stone" and the title is about Tenochtitlán technology:
-→ Describe TWO elements of Aztec technology (aqueducts, chinampas, causeways, astronomical observatory) flanking a central element (Templo Mayor, or a contrast with medieval European technology), using the SAME symmetrical layout.
+═══ STEP C: GENERATE PROMPTS ═══
+Format: ${formatPrompt}
 
 RESPOND ONLY with this JSON (no markdown, no backticks):
-{"thumbType":"the technique name","formula":"How the technique is adapted for '${titleTheme}': what represents what, spatial layout","whyItWorks":"Why this works for this specific title. 3 sentences.","composition":"LAYER-BY-LAYER: background (what themed to title, position), main subject (what themed to title, position, % of frame), secondary elements (what, where)","lightingAnalysis":"Lighting style","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words for ImageFX. ${formatPrompt} landscape. Describe a thumbnail using the identified technique where EVERY element represents '${titleTheme}'. Include exact positions, sizes, lighting direction+color, hex palette, atmospheric effects. Photorealistic, cinematic, 8K, absolutely no text or letters or words visible.","promptVariation":"ENGLISH PROMPT 150+ words. ALTERNATIVE creative interpretation of '${titleTheme}' using the same technique but with a DIFFERENT visual angle/perspective. Still 100% about the title. ${formatPrompt}, no text, 8K.","textSuggestion":"Where to place text overlay for maximum CTR on this composition","ctrTips":["tip 1 specific to this title and niche","tip 2","tip 3"]}` }
+{"thumbType":"technique name","formula":"How you mapped the title to the technique: LEFT represents X, RIGHT represents Y, CENTER represents Z","whyItWorks":"Why this works for '${titleTheme}'. 3 sentences.","composition":"LAYER-BY-LAYER for this specific title: background (what from the title, position), main subject (what from the title, position, % of frame), secondary (what, where)","lightingAnalysis":"Lighting style that fits the title mood","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words. Ultra-realistic photograph, NOT illustration NOT painting NOT drawing. Shot on Canon EOS R5, 24-70mm f/2.8. Use the technique from Step B filled with ONLY elements from '${titleTheme}'. Describe exact positions, sizes (% of frame), lighting direction and color temperature, hex color palette, atmospheric effects. Every person, building, artifact, landscape MUST represent something from '${titleTheme}'. ${formatPrompt}, photorealistic composite photograph, absolutely no text no letters no watermarks, 8K resolution, real-world textures, cinematic color grading.","promptVariation":"ENGLISH PROMPT 150+ words. Ultra-realistic photograph NOT illustration. ALTERNATIVE ANGLE on '${titleTheme}' — same technique but viewed from a different perspective or emphasizing a different aspect of the title's story. Still 100% about '${titleTheme}', still the same structural technique. ${formatPrompt}, photorealistic, no text, 8K.","textSuggestion":"Where to place text overlay","ctrTips":["tip 1 for '${titleTheme}'","tip 2","tip 3"]}` }
         ], pg);
 
         const parsed = JSON.parse(step2Reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
-        // Inject the technique analysis from step 1
         parsed._techniqueRef = techniqueDesc;
         setAnalysis(parsed);
         pg?.done();
@@ -1023,11 +1032,11 @@ LOOK AT THE IMAGE CAREFULLY:
 Then generate prompts that use the EXACT SAME VISUAL TECHNIQUE with different subjects.
 
 RESPOND ONLY JSON (no backticks):
-{"thumbType":"technique name","formula":"EXACT description of layers and positions","whyItWorks":"Why it works. 3+ sentences.","composition":"LAYER-BY-LAYER: background, main subject (position, % of frame), secondary elements, effects","lightingAnalysis":"Lighting description","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words. REPLICATE the exact same technique/layout with different subjects. ${formatPrompt}, photorealistic, no text, 8K.","promptVariation":"ENGLISH PROMPT 150+ words. RADICAL VARIATION: same technique, different genre. ${formatPrompt}, no text, 8K.","textSuggestion":"Text placement advice","ctrTips":["tip1","tip2","tip3"]}` }
+{"thumbType":"technique name","formula":"EXACT description of layers and positions","whyItWorks":"Why it works. 3+ sentences.","composition":"LAYER-BY-LAYER: background, main subject (position, % of frame), secondary elements, effects","lightingAnalysis":"Lighting description","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words. Ultra-realistic photograph NOT illustration NOT painting NOT drawing, shot on Canon EOS R5 24-70mm f/2.8. REPLICATE the exact same technique/layout with different subjects. ${formatPrompt}, photorealistic composite photograph, real-world textures, no text, 8K.","promptVariation":"ENGLISH PROMPT 150+ words. Ultra-realistic photograph NOT illustration. RADICAL VARIATION: same technique, different genre. ${formatPrompt}, photorealistic, no text, 8K.","textSuggestion":"Text placement advice","ctrTips":["tip1","tip2","tip3"]}` }
         ];
 
         const reply = await aiCall([
-          { role: "system", content: `You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails. Identify the visual technique, decompose layers, and generate ENGLISH ImageFX prompts. ALL PROMPTS IN ENGLISH. Minimum 150 words per prompt. NEVER include text/letters in prompts. SAFETY: no blood, weapons, violence.` },
+          { role: "system", content: `You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails. Identify the visual technique, decompose layers, and generate ENGLISH ImageFX prompts. ALL PROMPTS IN ENGLISH. Minimum 150 words per prompt. NEVER include text/letters in prompts. PHOTOREALISM: Always include "ultra-realistic photograph, NOT illustration, NOT painting, NOT drawing, shot on Canon EOS R5" in your prompts. SAFETY: no blood, weapons, violence.` },
           { role: "user", content: userContent }
         ], pg);
 
