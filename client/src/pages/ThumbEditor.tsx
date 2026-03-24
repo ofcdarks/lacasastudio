@@ -120,6 +120,34 @@ function Drop({ onFile, label, sub, accept = "image/*" }) {
   </div>);
 }
 
+/* ── Image Modal (shared) ── */
+function ImageModal({ src, onClose, title = "Imagem Gerada" }) {
+  if (!src) return null;
+  const download = () => {
+    const a = document.createElement("a");
+    a.href = src; a.download = "thumbnail-" + Date.now() + ".png";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  };
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ maxWidth: 900, width: "100%", background: "#111", borderRadius: 16, border: "1px solid rgba(255,255,255,0.1)", overflow: "hidden" }}>
+        <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>{title}</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 20 }}>✕</button>
+        </div>
+        <div style={{ padding: 16 }}>
+          <img src={src} style={{ width: "100%", borderRadius: 10, display: "block" }} />
+        </div>
+        <div style={{ padding: "12px 20px 18px", display: "flex", gap: 10 }}>
+          <button onClick={download} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #22C55E, #16A34A)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>💾 Baixar PNG (1280x720)</button>
+          <button onClick={() => { const hd = document.createElement("canvas"); hd.width = 2560; hd.height = 1440; const ctx = hd.getContext("2d"); const img = new Image(); img.crossOrigin = "anonymous"; img.src = src; img.onload = () => { ctx.drawImage(img, 0, 0, 2560, 1440); const a = document.createElement("a"); a.href = hd.toDataURL("image/png"); a.download = "thumb-2K-" + Date.now() + ".png"; a.click(); }; }} style={{ padding: "12px 20px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#93C5FD", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>📐 2K HD</button>
+          <button onClick={onClose} style={{ padding: "12px 20px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer" }}>Fechar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════
    TAB 1: CRIADOR NINJA
    ═══════════════════════════════════════ */
@@ -194,13 +222,14 @@ function CriadorNinja({ toast, pg }) {
   const [output, setOutput] = useState(null);
   const [loading, setLoading] = useState(false);
   const [genImages, setGenImages] = useState({});
+  const [modalImg, setModalImg] = useState(null);
   const [genImgLoading, setGenImgLoading] = useState({});
   const genImage = async (key, prompt) => {
     setGenImgLoading(p => ({ ...p, [key]: true }));
     pg?.start("Gerando Imagem", ["ImageFX processando", "Finalizando"]);
     try {
       const r = await aiApi.generateAsset({ prompt: prompt + ", YouTube thumbnail, 16:9 landscape, no text, ultra quality, 8K" });
-      if (r.url || r.b64) { setGenImages(p => ({ ...p, [key]: r.url || ("data:image/png;base64," + r.b64) })); pg?.done(); toast?.success("Imagem gerada!"); }
+      if (r.url || r.b64) { const imgUrl = r.url || ("data:image/png;base64," + r.b64); setGenImages(p => ({ ...p, [key]: imgUrl })); setModalImg(imgUrl); pg?.done(); toast?.success("Imagem gerada!"); }
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setGenImgLoading(p => ({ ...p, [key]: false }));
   };
@@ -359,6 +388,7 @@ RESPONDA APENAS este JSON (sem markdown, sem backticks):
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+      <ImageModal src={modalImg} onClose={() => setModalImg(null)} title="Thumbnail Gerada — Criador Pro" />
       <div>
         <Sec title="1. Escolha um Tema" icon="🎯">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
@@ -493,7 +523,7 @@ RESPONDA APENAS este JSON (sem markdown, sem backticks):
                   </div>
                   {genImages[p.k] && (
                     <div style={{ marginTop: 8 }}>
-                      <img src={genImages[p.k]} style={{ width: "100%", borderRadius: 10, border: `2px solid ${p.c}40` }} />
+                      <img src={genImages[p.k]} onClick={() => setModalImg(genImages[p.k])} style={{ width: "100%", borderRadius: 10, border: `2px solid ${p.c}40`, cursor: "pointer" }} title="Clique para ampliar" />
                       <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                         <a href={genImages[p.k]} download={`thumb-${p.k}.png`} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", borderRadius: 6, background: "#22D35E15", color: "#22D35E", textDecoration: "none", fontSize: 11, fontWeight: 600, border: "1px solid #22D35E30" }}>💾 Baixar PNG</a>
                         <button onClick={() => genImage(p.k, output[p.k])} style={{ padding: "8px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>🔄 Refazer</button>
@@ -537,12 +567,13 @@ function RemixAI({ toast, pg }) {
   const [loading, setLoading] = useState(false);
   const [genImages, setGenImages] = useState({});
   const [genImgLoading, setGenImgLoading] = useState({});
+  const [modalImg, setModalImg] = useState(null);
   const genImage = async (key, prompt) => {
     setGenImgLoading(p => ({ ...p, [key]: true }));
     pg?.start("Gerando Remix", ["ImageFX processando"]);
     try {
       const r = await aiApi.generateAsset({ prompt: prompt + ", YouTube thumbnail, 16:9, no text, ultra quality" });
-      if (r.url || r.b64) { setGenImages(p => ({ ...p, [key]: r.url || ("data:image/png;base64," + r.b64) })); pg?.done(); toast?.success("Remix gerado!"); }
+      if (r.url || r.b64) { const imgUrl = r.url || ("data:image/png;base64," + r.b64); setGenImages(p => ({ ...p, [key]: imgUrl })); setModalImg(imgUrl); pg?.done(); toast?.success("Remix gerado!"); }
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setGenImgLoading(p => ({ ...p, [key]: false }));
   };
@@ -572,6 +603,7 @@ RESPONDA JSON (sem backticks):
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+      <ImageModal src={modalImg} onClose={() => setModalImg(null)} title="Thumbnail Gerada — Remix AI" />
       <div>
         <Sec title="🔄 Engenharia Reversa (Remix)" icon="">
           <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 14 }}>Faça upload de uma thumbnail existente. A IA irá extrair o estilo, texto e personagem para você criar variações baseadas nela.</p>
@@ -609,7 +641,7 @@ RESPONDA JSON (sem backticks):
                 <div style={{ fontSize: 10, color: C.dim, marginTop: 4 }}>Mudança: {r.changes}</div>
                 {genImages[k] && (
                   <div style={{ marginTop: 8 }}>
-                    <img src={genImages[k]} style={{ width: "100%", borderRadius: 10, border: `2px solid ${clr}40` }} />
+                    <img src={genImages[k]} onClick={() => setModalImg(genImages[k])} style={{ width: "100%", borderRadius: 10, border: `2px solid ${clr}40`, cursor: "pointer" }} title="Clique para ampliar" />
                     <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                       <a href={genImages[k]} download={"remix-"+(i+1)+".png"} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", borderRadius: 6, background: "#22D35E15", color: "#22D35E", textDecoration: "none", fontSize: 11, fontWeight: 600, border: "1px solid #22D35E30" }}>💾 Baixar PNG</a>
                       <button onClick={() => genImage(k, r.prompt)} style={{ padding: "8px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>🔄 Refazer</button>
@@ -751,6 +783,8 @@ function TrendsTab({ toast, pg }) {
   const [selected, setSelected] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
+  const [modalImg, setModalImg] = useState(null);
+  const [genImgLoading, setGenImgLoading] = useState({});
   const BASE = "/api";
   const getToken = () => localStorage.getItem("lc_token");
 
@@ -787,6 +821,7 @@ JSON (sem backticks):
 
   return (
     <div>
+      <ImageModal src={modalImg} onClose={() => setModalImg(null)} title="Thumbnail Gerada — Trends" />
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
         <select value={niche} onChange={e => setNiche(e.target.value)} style={{ padding: "8px 14px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, color: C.text, fontSize: 13 }}>
           {NICHES.map(n => <option key={n.id} value={n.id}>{n.i} {n.l}</option>)}
@@ -858,7 +893,7 @@ JSON (sem backticks):
                       <div style={{ padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, fontSize: 12, lineHeight: 1.6 }}>{analysis[p.k]}</div>
                       <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                         <button onClick={() => { navigator.clipboard.writeText(analysis[p.k]); toast?.success("Copiado!"); }} style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>Copiar</button>
-                        <button onClick={async () => { pg?.start("Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: analysis[p.k] + ", YouTube thumbnail, 16:9, no text, ultra quality, 8K" }); if (r.url || r.b64) { const url = r.url || ("data:image/png;base64," + r.b64); window.open(url); pg?.done(); toast?.success("Imagem gerada!"); } } catch (e) { pg?.fail(e.message); } }} style={{ flex: 1, padding: "5px 12px", borderRadius: 6, border: "none", background: `${p.c}20`, color: p.c, cursor: "pointer", fontSize: 10, fontWeight: 600 }}>Gerar Imagem (ImageFX)</button>
+                        <button onClick={async () => { const k = p.k; setGenImgLoading(prev => ({...prev, [k]: true})); pg?.start("Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: analysis[p.k] + ", YouTube thumbnail, 16:9, no text, ultra quality, 8K" }); if (r.url || r.b64) { const url = r.url || ("data:image/png;base64," + r.b64); setModalImg(url); pg?.done(); toast?.success("Imagem gerada!"); } } catch (e) { pg?.fail(e.message); toast?.error(e.message); } setGenImgLoading(prev => ({...prev, [k]: false})); }} disabled={genImgLoading[p.k]} style={{ flex: 1, padding: "5px 12px", borderRadius: 6, border: "none", background: genImgLoading[p.k] ? "rgba(255,255,255,0.05)" : `${p.c}20`, color: genImgLoading[p.k] ? C.dim : p.c, cursor: genImgLoading[p.k] ? "wait" : "pointer", fontSize: 10, fontWeight: 600 }}>{genImgLoading[p.k] ? "⏳ Gerando..." : "🎨 Gerar Imagem (ImageFX)"}</button>
                       </div>
                     </div>
                   ))}
