@@ -954,6 +954,10 @@ FOR COMPOSITES, decompose EVERY LAYER you can SEE in the actual image:
 ALL PROMPTS MUST BE IN ENGLISH. Minimum 150 words per prompt.
 SAFETY: No blood, weapons, violence. Use safe alternatives.`;
 
+      // Determine if user wants a custom-themed thumbnail
+      const hasCustomTitle = !!customTitle.trim();
+      const titleTheme = customTitle.trim();
+
       // Build multimodal message with the actual thumbnail image
       const userContent = [
         ...(thumbUrl ? [{ type: "image_url", image_url: { url: thumbUrl } }] : []),
@@ -963,18 +967,39 @@ VIDEO: "${videoTitle}"
 CHANNEL: "${video.channel}"
 VIEWS: ${(video.views/1000).toFixed(0)}K
 NICHE: ${nicheLabel}
-${customTitle.trim() ? `\nCUSTOM TITLE FOR NEW THUMBNAIL: "${customTitle.trim()}" — adapt the visual formula to match THIS title while keeping the same composite technique.` : ""}
 
 LOOK AT THE IMAGE CAREFULLY. Describe what you ACTUALLY SEE:
-- Is this a split-face? A cutout composite? A single scene?
+- Is this a split-face? A symmetrical duality? A cutout composite? A single scene?
 - What are the exact layers from back to front?
 - What visual trick makes it scroll-stopping?
+- What is the EXACT spatial arrangement? (characters flanking center? split down middle? one dominant subject?)
 
-Then generate prompts that use the EXACT SAME VISUAL TECHNIQUE but with a DIFFERENT subject.
-${customTitle.trim() ? `The new thumbnail should be for: "${customTitle.trim()}"` : ""}
+Then generate prompts that use the EXACT SAME VISUAL TECHNIQUE/LAYOUT.
+${hasCustomTitle ? `
+═══════════════════════════════════════════════════
+CRITICAL — CUSTOM TITLE MODE ACTIVE
+═══════════════════════════════════════════════════
+The user wants a NEW thumbnail for THIS specific video title:
+"${titleTheme}"
+
+BOTH promptRecreate AND promptVariation MUST be 100% themed around "${titleTheme}".
+DO NOT generate random subjects (no lions, no jellyfish, no generic scenes).
+Instead, INTERPRET the title and create visuals that TELL ITS STORY using the same technique from the original.
+
+EXAMPLE of what to do:
+- If original technique is SYMMETRICAL DUALITY (two figures flanking a center element)
+  and title is "${titleTheme}"
+  → Your prompt should describe: two elements related to "${titleTheme}" flanking a center element that represents its core theme, using the same symmetrical layout, same scale, same lighting direction.
+
+- If original is SPLIT FACE (two halves merged)
+  and title is "${titleTheme}"  
+  → Your prompt should describe: a split showing two contrasting aspects of "${titleTheme}", using the same vertical divide, same face-merge technique.
+
+The KEY is: SAME VISUAL TECHNIQUE + THEMED 100% TO THE TITLE.
+═══════════════════════════════════════════════════` : "Change subjects but keep the exact same visual formula."}
 
 RESPOND ONLY with this JSON (no markdown, no backticks):
-{"thumbType":"exact technique name (SPLIT FACE / CUTOUT COMPOSITE / IMPOSSIBLE SCALE / SINGLE CINEMATIC / DUALITY / COLLAGE)","formula":"EXACT description of what you SEE: how many layers, what each contains, positions, the visual trick used. Be ultra specific to THIS image.","whyItWorks":"Why this specific technique works. 3+ sentences.","composition":"LAYER-BY-LAYER decomposition of what you see in the image: background (what, position), main subject (what, position, % of frame), secondary elements (what, where), effects (what)","lightingAnalysis":"The exact lighting you see in the image","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words for ImageFX. REPLICATE THE EXACT SAME TECHNIQUE you identified (if split-face, describe a split-face; if cutout composite, describe cutout composite). Same number of layers, same positions, same scale tricks. ${customTitle.trim() ? `Theme: ${customTitle.trim()}.` : "Change subjects but keep formula."} ${formatPrompt}, photorealistic composite, no text, 8K.","promptVariation":"ENGLISH PROMPT 150+ words. RADICAL VARIATION: same technique/layout but completely different genre/era. ${formatPrompt}, no text, 8K.","textSuggestion":"Where to place text overlay for max CTR","ctrTips":["tip 1 specific to this image","tip 2","tip 3"]}` }
+{"thumbType":"exact technique name (SPLIT FACE / CUTOUT COMPOSITE / IMPOSSIBLE SCALE / SINGLE CINEMATIC / SYMMETRICAL DUALITY / COLLAGE)","formula":"EXACT description of what you SEE in the original image: how many layers, what each contains, positions, the visual trick used. Be ultra specific.","whyItWorks":"Why this specific technique works. 3+ sentences.","composition":"LAYER-BY-LAYER decomposition of the original: background (what, position), main subject (what, position, % of frame), secondary elements (what, where), effects (what)","lightingAnalysis":"The exact lighting you see in the image","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words for ImageFX. USE THE EXACT SAME TECHNIQUE from the original (same layout, positions, scale). ${hasCustomTitle ? `ALL VISUAL ELEMENTS MUST REPRESENT THE THEME: '${titleTheme}'. Every character, building, artifact, background element must be directly related to this title. DO NOT include generic or unrelated elements.` : "Change subjects but keep formula."} ${formatPrompt}, photorealistic, cinematic composite, no text no letters no words, 8K.","promptVariation":"ENGLISH PROMPT 150+ words. ${hasCustomTitle ? `ALTERNATIVE INTERPRETATION of '${titleTheme}' using a DIFFERENT angle/perspective of the SAME technique from the original. Still 100% themed to the title but with a creative twist in how the story is visualized.` : "RADICAL VARIATION: same technique but different genre/era."} ${formatPrompt}, no text, 8K.","textSuggestion":"Where to place text overlay for max CTR","ctrTips":["tip 1 specific to this image","tip 2","tip 3"]}` }
       ];
 
       let reply;
@@ -983,18 +1008,17 @@ RESPOND ONLY with this JSON (no markdown, no backticks):
         // For combo, we need to pass the image in the analysis step
         // Build the analysis user prompt as multimodal
         const analysisUserText = userContent.find(c => c.type === "text")?.text || "";
-        const PROMPT_SYSTEM = `You are an expert PROMPT ENGINEER for Google ImageFX / Imagen 3.5. You receive a detailed visual analysis of a thumbnail and transform it into PERFECT ImageFX prompts. ALL OUTPUT IN ENGLISH. Minimum 150 words per prompt. Describe composites as layered compositions. NEVER include text/letters.`;
+        const PROMPT_SYSTEM = `You are an expert PROMPT ENGINEER for Google ImageFX / Imagen 3.5. You receive a detailed visual analysis of a thumbnail and transform it into PERFECT ImageFX prompts. ALL OUTPUT IN ENGLISH. Minimum 150 words per prompt. Describe composites as layered compositions. NEVER include text/letters. ${hasCustomTitle ? `CRITICAL: Every element in your prompts MUST relate to the theme "${titleTheme}". No random/unrelated subjects.` : ""}`;
         const PROMPT_TEMPLATE = `Based on this DEEP VISUAL ANALYSIS:
 
 ---ANALYSIS---
 {analysis}
 ---END---
 
-Generate ImageFX prompts that REPLICATE THE EXACT SAME VISUAL TECHNIQUE (split-face, cutout composite, etc) with different subjects.
-${customTitle.trim() ? `The new thumbnail is for: "${customTitle.trim()}"` : ""}
+Generate ImageFX prompts that REPLICATE THE EXACT SAME VISUAL TECHNIQUE with ${hasCustomTitle ? `ALL elements themed to: "${titleTheme}". Every character, building, artifact must directly represent this title's story. NO random subjects.` : "different subjects."}
 
 JSON (no backticks):
-{"thumbType":"technique","formula":"formula","whyItWorks":"why","composition":"layers","lightingAnalysis":"lighting","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH 150+ words, ${formatPrompt}, no text, 8K","promptVariation":"ENGLISH 150+ words radical variation, ${formatPrompt}, no text, 8K","textSuggestion":"text position","ctrTips":["tip1","tip2","tip3"]}`;
+{"thumbType":"technique","formula":"formula","whyItWorks":"why","composition":"layers","lightingAnalysis":"lighting","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH 150+ words. Same technique/layout as original. ${hasCustomTitle ? `100% themed to '${titleTheme}'. Every visual element represents this title.` : ""} ${formatPrompt}, no text, 8K","promptVariation":"ENGLISH 150+ words. ${hasCustomTitle ? `Alternative interpretation of '${titleTheme}' using same technique but different creative angle.` : "Radical variation, different genre."} ${formatPrompt}, no text, 8K","textSuggestion":"text position","ctrTips":["tip1","tip2","tip3"]}`;
 
         const result = await aiComboCall(
           ANALYSIS_SYSTEM, analysisUserText, PROMPT_SYSTEM, PROMPT_TEMPLATE,
