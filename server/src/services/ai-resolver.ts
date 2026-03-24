@@ -113,7 +113,10 @@ export async function callAIWithConfig(
     });
     if (!res.ok) {
       const err = await res.text();
-      throw new Error(`Anthropic API error (${res.status}): ${err}`);
+      if (res.status === 401) throw new Error("API Key Anthropic inválida. Verifique nas Configurações.");
+      if (res.status === 429) throw new Error("Limite de requisições Anthropic atingido. Aguarde 1 min.");
+      if (res.status === 402) throw new Error("Créditos Anthropic esgotados.");
+      throw new Error(`Erro Anthropic (${res.status}). Tente novamente.`);
     }
     const data = await res.json() as any;
     return data.content?.[0]?.text || "";
@@ -136,7 +139,10 @@ export async function callAIWithConfig(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`AI API error (${res.status}): ${err}`);
+    if (res.status === 401) throw new Error("API Key inválida. Verifique nas Configurações.");
+    if (res.status === 429) throw new Error("Limite de requisições atingido. Aguarde 1 min.");
+    if (res.status === 402 || err.includes("insufficient")) throw new Error("Créditos da API esgotados.");
+    throw new Error(`Erro IA (${res.status}). Tente novamente.`);
   }
 
   const data = await res.json() as any;

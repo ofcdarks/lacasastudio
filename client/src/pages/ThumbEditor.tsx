@@ -894,7 +894,7 @@ JSON (sem backticks):
 
       {/* Controls */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
-        <select value={niche} onChange={e => setNiche(e.target.value)} style={{ padding: "8px 14px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, color: C.text, fontSize: 13 }}>
+        <select value={niche} onChange={e => setNiche(e.target.value)} style={{ padding: "8px 14px", borderRadius: 8, background: "#1a1a2e", border: `1px solid ${C.border}`, color: "#fff", fontSize: 13 }}>
           {NICHES.map(n => <option key={n.id} value={n.id}>{n.i} {n.l}</option>)}
         </select>
 
@@ -1214,7 +1214,7 @@ function EditorCanvas({ toast, pg }) {
                 <div><Label t="Tamanho" /><input type="range" min="20" max="120" value={curLayer.size} onChange={e => updateLayer(curLayer.id, { size: +e.target.value })} style={{ width: "100%" }} /><span style={{ fontSize: 10, color: C.dim }}>{curLayer.size}px</span></div>
                 <div><Label t="Cor" /><input type="color" value={curLayer.color} onChange={e => updateLayer(curLayer.id, { color: e.target.value })} style={{ width: "100%", height: 30, border: "none", borderRadius: 6, cursor: "pointer" }} /></div>
               </div>
-              <Label t="Fonte" /><select value={curLayer.font} onChange={e => updateLayer(curLayer.id, { font: e.target.value })} style={{ width: "100%", padding: "6px", borderRadius: 6, border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.04)", color: C.text, fontSize: 11, marginBottom: 8 }}>
+              <Label t="Fonte" /><select value={curLayer.font} onChange={e => updateLayer(curLayer.id, { font: e.target.value })} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#1a1a2e", color: "#fff", fontSize: 12, marginBottom: 8, appearance: "none", WebkitAppearance: "none", backgroundImage: "url('data:image/svg+xml;utf8,<svg fill=\"white\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"16\"><path d=\"M7 10l5 5 5-5z\"/></svg>')", backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center", paddingRight: 32 }}>
                 {TITLE_STYLES.map(s => <option key={s.id} value={s.font}>{s.l} ({s.font.split(",")[0].replace(/'/g,"")})</option>)}
               </select>
               <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
@@ -1370,7 +1370,7 @@ function HistoryGallery({ toast }) {
 
       {/* Filter */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
-        <select value={filterNiche} onChange={e => setFilterNiche(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, color: C.text, fontSize: 12 }}>
+        <select value={filterNiche} onChange={e => setFilterNiche(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, background: "#1a1a2e", border: `1px solid ${C.border}`, color: "#fff", fontSize: 12 }}>
           <option value="">Todos os nichos</option>
           {NICHES.map(n => <option key={n.id} value={n.id}>{n.i} {n.l}</option>)}
         </select>

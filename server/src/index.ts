@@ -149,8 +149,22 @@ app.get("*", (req: Request, res: Response) => {
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   const reqId = (req as any).requestId || "unknown";
   logger.error(err.message, { path: req.path, method: req.method, requestId: reqId });
+
+  // Pass through user-friendly error messages (from our routes)
+  const safeError = err.message && (
+    err.message.includes("API Key") ||
+    err.message.includes("Configurações") ||
+    err.message.includes("Limite") ||
+    err.message.includes("Créditos") ||
+    err.message.includes("Tente novamente") ||
+    err.message.includes("Configure") ||
+    err.message.includes("não encontrad") ||
+    err.message.includes("Erro") ||
+    err.message.includes("inválid")
+  );
+
   res.status(err.status || 500).json({
-    error: env.NODE_ENV === "production" ? "Internal server error" : err.message,
+    error: safeError ? err.message : (env.NODE_ENV === "production" ? "Erro interno. Tente novamente." : err.message),
     requestId: reqId,
   });
 });
