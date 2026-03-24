@@ -34,68 +34,123 @@ const NICHE_QUERIES: Record<string, string[]> = {
   outro: ["viral brasil 2026", "trending youtube", "mais visto semana"],
 };
 
-// Detect user's niche from their channels
+// Detect user's niche from their channels + YouTube API
 router.get("/my-niche", async (req: any, res: Response, next: NextFunction) => {
   try {
-    // Check if user has channels with niche set
-    const channels = await prisma.channel.findMany({
-      where: { userId: req.userId },
-      select: { id: true, name: true, niche: true },
-    });
+    // 1. Check user channels for niche field
+    let channels: any[] = [];
+    try {
+      channels = await prisma.channel.findMany({
+        where: { userId: req.userId },
+        select: { id: true, name: true, niche: true },
+      });
+    } catch { channels = []; }
 
-    // If any channel has niche set, return it
     const withNiche = channels.filter((c: any) => c.niche && c.niche.trim() !== "");
     if (withNiche.length > 0) {
       res.json({ niche: withNiche[0].niche, channel: withNiche[0].name, source: "channel" });
       return;
     }
 
-    // If channels exist but no niche, try to detect from channel name + videos
-    if (channels.length > 0) {
-      const videos = await prisma.video.findMany({
+    // 2. Try to detect from user's videos in DB
+    let videos: any[] = [];
+    try {
+      videos = await prisma.video.findMany({
         where: { userId: req.userId },
         select: { title: true, tags: true },
-        take: 20,
+        take: 30,
         orderBy: { createdAt: "desc" },
       });
+    } catch { videos = []; }
 
-      if (videos.length > 0) {
-        const allText = videos.map((v: any) => `${v.title} ${v.tags || ""}`).join(" ").toLowerCase();
-        const nicheScores: Record<string, number> = {};
-        const keywords: Record<string, string[]> = {
-          gaming: ["game", "gameplay", "jogando", "jogo", "gamer", "ps5", "xbox", "fortnite", "minecraft"],
-          financas: ["dinheiro", "investir", "renda", "finanças", "cripto", "bitcoin", "trader", "bolsa"],
-          tecnologia: ["tech", "celular", "notebook", "app", "software", "programação", "código"],
-          fitness: ["treino", "academia", "dieta", "musculação", "saúde", "emagrecer", "shape"],
-          comedia: ["humor", "comédia", "piada", "engraçado", "meme", "zoeira"],
-          educacao: ["aprender", "ensinar", "aula", "curso", "estudo", "escola", "faculdade"],
-          dark: ["dark", "psicologia", "manipulação", "sombrio", "obscuro", "mente"],
-          musica: ["música", "cover", "cantando", "violão", "guitarra", "beat", "rap"],
-          cinema: ["filme", "cinema", "trailer", "série", "review filme", "análise"],
-          esportes: ["futebol", "gol", "esporte", "treino", "jogo ao vivo"],
-          motivacional: ["motivação", "sucesso", "mindset", "superação", "foco"],
-          terror: ["terror", "horror", "medo", "assombrado", "fantasma", "creepy"],
-          ia: ["inteligência artificial", "ia", "chatgpt", "claude", "machine learning"],
-        };
-
-        for (const [niche, kws] of Object.entries(keywords)) {
-          nicheScores[niche] = kws.reduce((sum, kw) => sum + (allText.split(kw).length - 1), 0);
+    if (videos.length > 0) {
+      const allText = videos.map((v: any) => `${v.title || ""} ${v.tags || ""}`).join(" ").toLowerCase();
+      const detected = detectNicheFromText(allText);
+      if (detected) {
+        // Save detected niche to first channel if possible
+        if (channels.length > 0) {
+          try { await prisma.channel.update({ where: { id: channels[0].id }, data: { niche: detected } }); } catch {}
         }
-
-        const detected = Object.entries(nicheScores).sort((a, b) => b[1] - a[1])[0];
-        if (detected && detected[1] > 0) {
-          res.json({ niche: detected[0], channel: channels[0].name, source: "detected", confidence: detected[1] });
-          return;
-        }
+        res.json({ niche: detected, channel: channels[0]?.name || "Seu Canal", source: "detected" });
+        return;
       }
     }
 
-    res.json({ niche: "", channel: "", source: "none" });
+    // 3. Try YouTube API - fetch recent videos from user's channel
+    if (channels.length > 0) {
+      try {
+        const apiKeySetting = await prisma.setting.findUnique({ where: { key: "youtube_api_key" } });
+        const apiKey = apiKeySetting?.value;
+        if (apiKey) {
+          // Search for the channel name on YouTube
+          const chName = channels[0].name;
+          const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(chName)}&maxResults=1&key=${apiKey}`;
+          const searchRes = await fetch(searchUrl);
+          if (searchRes.ok) {
+            const searchData = await searchRes.json() as any;
+            const channelId = searchData.items?.[0]?.id?.channelId;
+            if (channelId) {
+              // Fetch recent videos from this channel
+              const vidsUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=15&key=${apiKey}`;
+              const vidsRes = await fetch(vidsUrl);
+              if (vidsRes.ok) {
+                const vidsData = await vidsRes.json() as any;
+                const titles = (vidsData.items || []).map((v: any) => v.snippet?.title || "").join(" ").toLowerCase();
+                const detected = detectNicheFromText(titles);
+                if (detected) {
+                  try { await prisma.channel.update({ where: { id: channels[0].id }, data: { niche: detected } }); } catch {}
+                  res.json({ niche: detected, channel: chName, source: "youtube-api", channelId });
+                  return;
+                }
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    res.json({ niche: "", channel: channels[0]?.name || "", source: "none" });
   } catch (err: any) {
-    // niche column might not exist yet
     res.json({ niche: "", channel: "", source: "none" });
   }
 });
+
+function detectNicheFromText(text: string): string | null {
+  const keywords: Record<string, string[]> = {
+    gaming: ["game", "gameplay", "jogando", "jogo", "gamer", "ps5", "xbox", "fortnite", "minecraft", "roblox", "fps", "rpg", "mmorpg", "steam", "valorant", "league", "free fire"],
+    financas: ["dinheiro", "investir", "investimento", "renda", "finanças", "cripto", "bitcoin", "trader", "bolsa", "ações", "poupança", "rico", "milionário", "forex"],
+    tecnologia: ["tech", "celular", "notebook", "app", "software", "programação", "código", "iphone", "android", "samsung", "review tech", "unboxing tech"],
+    fitness: ["treino", "academia", "dieta", "musculação", "saúde", "emagrecer", "shape", "whey", "hipertrofia", "cardio", "exercício"],
+    comedia: ["humor", "comédia", "piada", "engraçado", "meme", "zoeira", "react", "tente não rir"],
+    educacao: ["aprender", "ensinar", "aula", "curso", "estudo", "escola", "faculdade", "enem", "vestibular", "concurso"],
+    dark: ["dark", "psicologia", "manipulação", "sombrio", "obscuro", "mente", "comportamento", "narcisista"],
+    musica: ["música", "cover", "cantando", "violão", "guitarra", "beat", "rap", "funk", "sertanejo", "pagode"],
+    cinema: ["filme", "cinema", "trailer", "série", "review filme", "análise", "marvel", "dc", "netflix"],
+    esportes: ["futebol", "gol", "esporte", "lance", "campeonato", "nba", "ufc", "libertadores"],
+    motivacional: ["motivação", "sucesso", "mindset", "superação", "foco", "disciplina", "produtividade"],
+    terror: ["terror", "horror", "medo", "assombrado", "fantasma", "creepy", "paranormal", "sobrenatural"],
+    ia: ["inteligência artificial", "ia ", "chatgpt", "claude", "machine learning", "openai", "prompt", "automação"],
+    noticias: ["notícia", "urgente", "breaking", "aconteceu", "plantão", "política", "governo"],
+    empreendedorismo: ["empreender", "negócio", "startup", "empresa", "marketing", "vendas", "dropshipping", "loja"],
+    podcast: ["podcast", "entrevista", "conversa", "papo", "bate-papo", "episódio"],
+    reviews: ["review", "análise", "vale a pena", "unboxing", "teste", "comparativo"],
+    tutoriais: ["tutorial", "como fazer", "passo a passo", "aprenda", "dica", "hack"],
+  };
+
+  const scores: [string, number][] = [];
+  for (const [niche, kws] of Object.entries(keywords)) {
+    let score = 0;
+    for (const kw of kws) {
+      const matches = text.split(kw).length - 1;
+      score += matches;
+    }
+    if (score > 0) scores.push([niche, score]);
+  }
+  
+  scores.sort((a, b) => b[1] - a[1]);
+  return scores.length > 0 && scores[0][1] >= 2 ? scores[0][0] : null;
+}
+
 
 // Fetch trending videos by niche
 router.get("/thumbnails/:niche", async (req: any, res: Response, next: NextFunction) => {

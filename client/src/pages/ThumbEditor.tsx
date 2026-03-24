@@ -873,14 +873,24 @@ JSON (sem backticks):
       <ImageModal src={modalImg} onClose={() => setModalImg(null)} title="Thumbnail Gerada — Trends" />
 
       {/* Auto-niche banner */}
-      {autoNiche && autoNiche.niche && (
+      {autoNiche && autoNiche.niche ? (
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderRadius: 10, background: C.green + "08", border: `1px solid ${C.green}20`, marginBottom: 12, fontSize: 12 }}>
           <span style={{ color: C.green, fontWeight: 700 }}>🎯 Nicho detectado:</span>
           <span style={{ color: C.text, fontWeight: 600 }}>{NICHES.find(n => n.id === autoNiche.niche)?.l || autoNiche.niche}</span>
           {autoNiche.channel && <span style={{ color: C.dim }}>({autoNiche.channel})</span>}
-          <span style={{ fontSize: 10, color: C.dim, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.04)" }}>{autoNiche.source === "channel" ? "Canal" : autoNiche.source === "detected" ? "Auto-detectado" : ""}</span>
+          <span style={{ fontSize: 10, color: C.dim, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.04)" }}>{
+            autoNiche.source === "channel" ? "Salvo no canal" :
+            autoNiche.source === "detected" ? "Auto-detectado dos videos" :
+            autoNiche.source === "youtube-api" ? "Via YouTube API" : ""
+          }</span>
+          <button onClick={() => { setAutoNiche(null); }} style={{ marginLeft: "auto", padding: "3px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, cursor: "pointer", fontSize: 10 }}>Mudar</button>
         </div>
-      )}
+      ) : autoNiche && !autoNiche.niche ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderRadius: 10, background: C.orange + "06", border: `1px solid ${C.orange}15`, marginBottom: 12, fontSize: 12 }}>
+          <span style={{ color: C.orange }}>💡</span>
+          <span style={{ color: C.muted }}>Nao detectamos o nicho do seu canal automaticamente. Selecione manualmente acima para resultados mais relevantes.</span>
+        </div>
+      ) : null}
 
       {/* Controls */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
