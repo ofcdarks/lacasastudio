@@ -914,127 +914,126 @@ function TrendsTab({ toast, pg }) {
 
   const analyzeThumb = async (video) => {
     setSelected(video); setAnalyzing(true); setAnalysis(null);
-    const combo = await getComboSettings();
-    const isCombo = !!combo;
     const thumbUrl = video.thumbnail || video.thumbnailDefault;
-    const videoTitle = customTitle.trim() || video.title;
+    const hasCustomTitle = !!customTitle.trim();
+    const titleTheme = customTitle.trim();
+    const nicheLabel = NICHES.find(n => n.id === niche)?.l || niche;
+    const formatPrompt = video.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape";
 
     pg?.start(
-      isCombo ? `Combo IA: Analisando thumbnail` : "Analisando thumbnail viral",
-      isCombo
-        ? [`Modelo 1: Análise visual da imagem`, `Modelo 2: Gerando prompts ImageFX`, "Finalizando"]
-        : ["Analisando imagem da thumbnail", "Decompondo layers + composição", "Gerando prompts em inglês"]
+      hasCustomTitle ? `Gerando thumb para: ${titleTheme.slice(0,40)}...` : "Analisando thumbnail viral",
+      hasCustomTitle
+        ? ["Etapa 1: Identificando técnica visual", "Etapa 2: Gerando prompts para seu título", "Finalizando"]
+        : ["Analisando composição da thumbnail", "Extraindo técnica visual", "Gerando prompts em inglês"]
     );
 
     try {
-      const nicheLabel = NICHES.find(n => n.id === niche)?.l || niche;
-      const formatPrompt = video.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape";
+      if (hasCustomTitle) {
+        // ═══════════════════════════════════════════
+        // 2-STEP MODE: Custom title provided
+        // Step 1: Quick technique identification
+        // Step 2: Generate prompts 100% themed to title
+        // ═══════════════════════════════════════════
 
-      const ANALYSIS_SYSTEM = `You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails. You will receive the ACTUAL THUMBNAIL IMAGE to analyze.
+        // STEP 1: Identify technique from original thumbnail (short response)
+        pg?.update(0, "Identificando técnica visual...");
+        const step1Messages = [
+          { role: "system", content: "You analyze YouTube thumbnails and identify their visual technique in ONE short paragraph. Be precise and concise." },
+          { role: "user", content: [
+            ...(thumbUrl ? [{ type: "image_url", image_url: { url: thumbUrl } }] : []),
+            { type: "text", text: `Look at this thumbnail for "${video.title}" by ${video.channel}.
 
-YOUR JOB: Look at the image and decompose it into its EXACT composite layers, then generate ImageFX prompts that REPLICATE THE SAME LAYER STRUCTURE with different subjects.
+In ONE paragraph (max 100 words), describe:
+1. The TECHNIQUE used (choose one: GRID COLLAGE, SPLIT FACE, SYMMETRICAL DUALITY, CUTOUT COMPOSITE, IMPOSSIBLE SCALE, SINGLE CINEMATIC, BEFORE/AFTER, TRIPTYCH)
+2. The LAYOUT: how many elements, their positions (left/center/right, % of frame)
+3. The COLOR MOOD: warm/cold, dominant colors
+4. The LIGHTING: direction and style
 
-CRITICAL — IDENTIFY THE VISUAL TECHNIQUE:
-- SPLIT FACE: Face divided vertically showing two eras/characters merged (e.g. pharaoh + explorer)
-- BEFORE/AFTER: Left side vs right side comparison
-- IMPOSSIBLE SCALE: Person at impossible scale next to giant structure
-- CUTOUT COMPOSITE: Person cut out placed over separate background
-- SINGLE CINEMATIC: One unified photographic scene
-- DUALITY: Two contrasting elements merged
-- COLLAGE: Multiple scenes arranged in grid/overlay
+Format: "TECHNIQUE: [name]. LAYOUT: [description]. COLORS: [description]. LIGHTING: [description]."` }
+          ]}
+        ];
 
-FOR COMPOSITES, decompose EVERY LAYER you can SEE in the actual image:
-1. BACKGROUND LAYER: What you see behind everything. Gradients, landscapes, architecture
-2. MAIN SUBJECT: Who/what is the primary element. EXACT position, % of frame, expression
-3. SECONDARY ELEMENTS: Everything else overlaid. Position of each
-4. EFFECTS: Glow, rim light, particles, color grading, vignette, texture overlays
-5. SPATIAL LAYOUT: How elements are arranged. Scale relationships
-6. COLOR PALETTE: The exact dominant colors you see
+        let techniqueDesc;
+        try {
+          techniqueDesc = await aiCall(step1Messages, null);
+        } catch {
+          // If vision fails, fallback to text-based guessing from title
+          techniqueDesc = `TECHNIQUE: CINEMATIC COMPOSITE. LAYOUT: Central dramatic element at 50% of frame with atmospheric background. COLORS: warm golden tones with dark contrast. LIGHTING: dramatic side lighting with rim light effects. Based on title: "${video.title}"`;
+        }
 
-ALL PROMPTS MUST BE IN ENGLISH. Minimum 150 words per prompt.
-SAFETY: No blood, weapons, violence. Use safe alternatives.`;
+        // STEP 2: Generate prompts 100% focused on the custom title
+        pg?.update(1, `Gerando prompts para: ${titleTheme.slice(0,30)}...`);
+        const step2Reply = await aiCall([
+          { role: "system", content: `You are an expert ImageFX prompt engineer. You generate ENGLISH prompts for Google ImageFX that create stunning YouTube thumbnails.
 
-      // Determine if user wants a custom-themed thumbnail
-      const hasCustomTitle = !!customTitle.trim();
-      const titleTheme = customTitle.trim();
+YOUR ONLY JOB: Generate ImageFX prompts for the video title the user gives you, using the visual technique described.
 
-      // Build multimodal message with the actual thumbnail image
-      const userContent = [
-        ...(thumbUrl ? [{ type: "image_url", image_url: { url: thumbUrl } }] : []),
-        { type: "text", text: `ANALYZE THIS EXACT THUMBNAIL IMAGE and reverse-engineer its visual formula.
+RULES:
+- ALL prompts in ENGLISH, minimum 150 words each
+- EVERY visual element in the prompt MUST directly relate to the video title theme
+- NO generic elements, NO random subjects — everything must serve the title's story
+- NO text, NO letters, NO words in the image
+- Be ultra-specific: exact positions (left/center/right), sizes (% of frame), lighting (direction + color temp), colors (hex codes)
+- SAFETY: no blood, weapons, violence, death. Use safe visual alternatives.` },
+          { role: "user", content: `GENERATE THUMBNAIL PROMPTS FOR THIS VIDEO:
 
-VIDEO: "${videoTitle}"
+VIDEO TITLE: "${titleTheme}"
+NICHE: ${nicheLabel}
+FORMAT: ${formatPrompt}
+
+USE THIS VISUAL TECHNIQUE (extracted from a reference thumbnail):
+${techniqueDesc}
+
+IMPORTANT: Adapt the technique above to the title "${titleTheme}". 
+Every character, building, artifact, landscape in the prompt must represent something from "${titleTheme}".
+
+For example, if the technique is "SYMMETRICAL DUALITY with two warriors flanking a central sun stone" and the title is about Tenochtitlán technology:
+→ Describe TWO elements of Aztec technology (aqueducts, chinampas, causeways, astronomical observatory) flanking a central element (Templo Mayor, or a contrast with medieval European technology), using the SAME symmetrical layout.
+
+RESPOND ONLY with this JSON (no markdown, no backticks):
+{"thumbType":"the technique name","formula":"How the technique is adapted for '${titleTheme}': what represents what, spatial layout","whyItWorks":"Why this works for this specific title. 3 sentences.","composition":"LAYER-BY-LAYER: background (what themed to title, position), main subject (what themed to title, position, % of frame), secondary elements (what, where)","lightingAnalysis":"Lighting style","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words for ImageFX. ${formatPrompt} landscape. Describe a thumbnail using the identified technique where EVERY element represents '${titleTheme}'. Include exact positions, sizes, lighting direction+color, hex palette, atmospheric effects. Photorealistic, cinematic, 8K, absolutely no text or letters or words visible.","promptVariation":"ENGLISH PROMPT 150+ words. ALTERNATIVE creative interpretation of '${titleTheme}' using the same technique but with a DIFFERENT visual angle/perspective. Still 100% about the title. ${formatPrompt}, no text, 8K.","textSuggestion":"Where to place text overlay for maximum CTR on this composition","ctrTips":["tip 1 specific to this title and niche","tip 2","tip 3"]}` }
+        ], pg);
+
+        const parsed = JSON.parse(step2Reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
+        // Inject the technique analysis from step 1
+        parsed._techniqueRef = techniqueDesc;
+        setAnalysis(parsed);
+        pg?.done();
+
+      } else {
+        // ═══════════════════════════════════════════
+        // STANDARD MODE: No custom title — analyze + generate in one call
+        // ═══════════════════════════════════════════
+
+        const userContent = [
+          ...(thumbUrl ? [{ type: "image_url", image_url: { url: thumbUrl } }] : []),
+          { type: "text", text: `ANALYZE THIS EXACT THUMBNAIL IMAGE and reverse-engineer its visual formula.
+
+VIDEO: "${video.title}"
 CHANNEL: "${video.channel}"
 VIEWS: ${(video.views/1000).toFixed(0)}K
 NICHE: ${nicheLabel}
 
-LOOK AT THE IMAGE CAREFULLY. Describe what you ACTUALLY SEE:
-- Is this a split-face? A symmetrical duality? A cutout composite? A single scene?
+LOOK AT THE IMAGE CAREFULLY:
+- What TECHNIQUE is used? (GRID COLLAGE / SPLIT FACE / SYMMETRICAL DUALITY / CUTOUT COMPOSITE / IMPOSSIBLE SCALE / SINGLE CINEMATIC / BEFORE-AFTER / TRIPTYCH)
 - What are the exact layers from back to front?
 - What visual trick makes it scroll-stopping?
-- What is the EXACT spatial arrangement? (characters flanking center? split down middle? one dominant subject?)
+- What is the EXACT spatial arrangement?
 
-Then generate prompts that use the EXACT SAME VISUAL TECHNIQUE/LAYOUT.
-${hasCustomTitle ? `
-═══════════════════════════════════════════════════
-CRITICAL — CUSTOM TITLE MODE ACTIVE
-═══════════════════════════════════════════════════
-The user wants a NEW thumbnail for THIS specific video title:
-"${titleTheme}"
+Then generate prompts that use the EXACT SAME VISUAL TECHNIQUE with different subjects.
 
-BOTH promptRecreate AND promptVariation MUST be 100% themed around "${titleTheme}".
-DO NOT generate random subjects (no lions, no jellyfish, no generic scenes).
-Instead, INTERPRET the title and create visuals that TELL ITS STORY using the same technique from the original.
+RESPOND ONLY JSON (no backticks):
+{"thumbType":"technique name","formula":"EXACT description of layers and positions","whyItWorks":"Why it works. 3+ sentences.","composition":"LAYER-BY-LAYER: background, main subject (position, % of frame), secondary elements, effects","lightingAnalysis":"Lighting description","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words. REPLICATE the exact same technique/layout with different subjects. ${formatPrompt}, photorealistic, no text, 8K.","promptVariation":"ENGLISH PROMPT 150+ words. RADICAL VARIATION: same technique, different genre. ${formatPrompt}, no text, 8K.","textSuggestion":"Text placement advice","ctrTips":["tip1","tip2","tip3"]}` }
+        ];
 
-EXAMPLE of what to do:
-- If original technique is SYMMETRICAL DUALITY (two figures flanking a center element)
-  and title is "${titleTheme}"
-  → Your prompt should describe: two elements related to "${titleTheme}" flanking a center element that represents its core theme, using the same symmetrical layout, same scale, same lighting direction.
-
-- If original is SPLIT FACE (two halves merged)
-  and title is "${titleTheme}"  
-  → Your prompt should describe: a split showing two contrasting aspects of "${titleTheme}", using the same vertical divide, same face-merge technique.
-
-The KEY is: SAME VISUAL TECHNIQUE + THEMED 100% TO THE TITLE.
-═══════════════════════════════════════════════════` : "Change subjects but keep the exact same visual formula."}
-
-RESPOND ONLY with this JSON (no markdown, no backticks):
-{"thumbType":"exact technique name (SPLIT FACE / CUTOUT COMPOSITE / IMPOSSIBLE SCALE / SINGLE CINEMATIC / SYMMETRICAL DUALITY / COLLAGE)","formula":"EXACT description of what you SEE in the original image: how many layers, what each contains, positions, the visual trick used. Be ultra specific.","whyItWorks":"Why this specific technique works. 3+ sentences.","composition":"LAYER-BY-LAYER decomposition of the original: background (what, position), main subject (what, position, % of frame), secondary elements (what, where), effects (what)","lightingAnalysis":"The exact lighting you see in the image","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words for ImageFX. USE THE EXACT SAME TECHNIQUE from the original (same layout, positions, scale). ${hasCustomTitle ? `ALL VISUAL ELEMENTS MUST REPRESENT THE THEME: '${titleTheme}'. Every character, building, artifact, background element must be directly related to this title. DO NOT include generic or unrelated elements.` : "Change subjects but keep formula."} ${formatPrompt}, photorealistic, cinematic composite, no text no letters no words, 8K.","promptVariation":"ENGLISH PROMPT 150+ words. ${hasCustomTitle ? `ALTERNATIVE INTERPRETATION of '${titleTheme}' using a DIFFERENT angle/perspective of the SAME technique from the original. Still 100% themed to the title but with a creative twist in how the story is visualized.` : "RADICAL VARIATION: same technique but different genre/era."} ${formatPrompt}, no text, 8K.","textSuggestion":"Where to place text overlay for max CTR","ctrTips":["tip 1 specific to this image","tip 2","tip 3"]}` }
-      ];
-
-      let reply;
-
-      if (isCombo) {
-        // For combo, we need to pass the image in the analysis step
-        // Build the analysis user prompt as multimodal
-        const analysisUserText = userContent.find(c => c.type === "text")?.text || "";
-        const PROMPT_SYSTEM = `You are an expert PROMPT ENGINEER for Google ImageFX / Imagen 3.5. You receive a detailed visual analysis of a thumbnail and transform it into PERFECT ImageFX prompts. ALL OUTPUT IN ENGLISH. Minimum 150 words per prompt. Describe composites as layered compositions. NEVER include text/letters. ${hasCustomTitle ? `CRITICAL: Every element in your prompts MUST relate to the theme "${titleTheme}". No random/unrelated subjects.` : ""}`;
-        const PROMPT_TEMPLATE = `Based on this DEEP VISUAL ANALYSIS:
-
----ANALYSIS---
-{analysis}
----END---
-
-Generate ImageFX prompts that REPLICATE THE EXACT SAME VISUAL TECHNIQUE with ${hasCustomTitle ? `ALL elements themed to: "${titleTheme}". Every character, building, artifact must directly represent this title's story. NO random subjects.` : "different subjects."}
-
-JSON (no backticks):
-{"thumbType":"technique","formula":"formula","whyItWorks":"why","composition":"layers","lightingAnalysis":"lighting","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH 150+ words. Same technique/layout as original. ${hasCustomTitle ? `100% themed to '${titleTheme}'. Every visual element represents this title.` : ""} ${formatPrompt}, no text, 8K","promptVariation":"ENGLISH 150+ words. ${hasCustomTitle ? `Alternative interpretation of '${titleTheme}' using same technique but different creative angle.` : "Radical variation, different genre."} ${formatPrompt}, no text, 8K","textSuggestion":"text position","ctrTips":["tip1","tip2","tip3"]}`;
-
-        const result = await aiComboCall(
-          ANALYSIS_SYSTEM, analysisUserText, PROMPT_SYSTEM, PROMPT_TEMPLATE,
-          combo, pg
-        );
-        reply = result.reply;
-      } else {
-        // Single model — send multimodal message with image
-        reply = await aiCall([
-          { role: "system", content: ANALYSIS_SYSTEM },
+        const reply = await aiCall([
+          { role: "system", content: `You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails. Identify the visual technique, decompose layers, and generate ENGLISH ImageFX prompts. ALL PROMPTS IN ENGLISH. Minimum 150 words per prompt. NEVER include text/letters in prompts. SAFETY: no blood, weapons, violence.` },
           { role: "user", content: userContent }
         ], pg);
-      }
 
-      setAnalysis(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
-      pg?.done();
+        setAnalysis(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
+        pg?.done();
+      }
     } catch (e) { pg?.fail(e.message, () => analyzeThumb(video)); toast?.error(e.message); }
     setAnalyzing(false);
   };
@@ -1166,8 +1165,21 @@ JSON (no backticks):
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {/* Type badge + Formula */}
                   {analysis.thumbType && (
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: "4px 12px", borderRadius: 6, background: analysis.thumbType?.includes("MONTAGEM") ? C.purple+"20" : C.blue+"20", color: analysis.thumbType?.includes("MONTAGEM") ? C.purple : C.blue }}>{analysis.thumbType?.includes("MONTAGEM") ? "🎭 MONTAGEM" : "📸 CENA ÚNICA"}</span>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "4px 12px", borderRadius: 6, background: C.purple+"20", color: C.purple }}>
+                        {analysis.thumbType.includes("GRID") || analysis.thumbType.includes("COLLAGE") ? "🔲 GRID COLLAGE" :
+                         analysis.thumbType.includes("SPLIT") ? "✂️ SPLIT FACE" :
+                         analysis.thumbType.includes("DUAL") ? "🎭 DUALITY" :
+                         analysis.thumbType.includes("COMPOSITE") || analysis.thumbType.includes("MONTAG") ? "🎭 COMPOSITE" :
+                         analysis.thumbType.includes("SCALE") ? "📏 IMPOSSIBLE SCALE" :
+                         `📸 ${analysis.thumbType}`}
+                      </span>
+                      {analysis._techniqueRef && <span style={{ fontSize: 9, color: C.dim, padding: "3px 8px", borderRadius: 4, background: "rgba(255,255,255,0.03)" }}>via 2-step</span>}
+                    </div>
+                  )}
+                  {analysis._techniqueRef && (
+                    <div style={{ padding: 10, borderRadius: 8, background: C.orange+"06", border: `1px solid ${C.orange}15`, fontSize: 11, color: C.muted, lineHeight: 1.5 }}>
+                      <span style={{ fontWeight: 700, color: C.orange }}>Técnica detectada:</span> {analysis._techniqueRef}
                     </div>
                   )}
                   {analysis.formula && (
