@@ -969,12 +969,28 @@ YOUR PROCESS (follow in order):
 2. MAP those elements to the visual technique provided
 3. GENERATE ImageFX prompts using ONLY those mapped elements
 
-VISUAL QUALITY RULES (CRITICAL):
-- Style: "hyperrealistic cinematic digital art, oil painting texture, dramatic chiaroscuro lighting, matte painting quality, AAA game cinematic trailer quality, trending on ArtStation, ultra-detailed 8K"
-- For historical/civilization themes: "epic historical documentary poster art, golden age illustration quality, museum-worthy composition"  
-- Include: "intricate fabric detail, weathered stone texture, atmospheric perspective, volumetric god rays, subsurface scattering on skin"
-- The output must look like a PROFESSIONAL YouTube thumbnail — the kind made by top channels with $5000+ budgets
-- NEVER say "photograph" or "camera" — these thumbnails are high-end digital composites, NOT photos
+IMAGEFX PROMPT FORMULA (researched from Google Imagen docs + top prompt engineers):
+
+Every prompt MUST follow this exact structure:
+1. STYLE OPENER: "Immersive, hyperrealistic cinematic scene depicting..."
+2. SCENE DESCRIPTION: Exact subjects with positions (left/center/right, % of frame)
+3. COMPOSITION: "Layered composition. Shallow depth of field with [foreground subject] sharply focused, [background] softly out of focus."
+4. LIGHTING: Specific type — "dramatic side lighting from the right", "warm golden hour rim light", "chiaroscuro with deep shadows"
+5. COLOR: "Color palette dominated by [hex colors]. Meticulous color grading, cinematic LUT applied."
+6. QUALITY TAGS: "High-budget historical documentary quality, polished Hollywood look, medium focal length lens, 16:9 landscape, ultra-detailed 8K"
+7. EXCLUSIONS: "No text, no letters, no watermarks, no logos"
+
+CRITICAL STYLE KEYWORDS that produce the best results in ImageFX/Imagen 3:
+- "Immersive, hyperrealistic cinematic scene" (NOT "digital art" or "illustration")
+- "high-budget film quality" / "stunning scene from a high-budget historical documentary"
+- "meticulous color grading" + "cinematic filters"
+- "volumetric god rays" + "atmospheric haze" + "dust particles in light"
+- "intricate engravings" + "ornate details" + "weathered stone texture"
+- "shallow depth of field" with specific focus description
+- "layered composition" (tells Imagen to create depth)
+- For people: "detailed facial features, intense gaze, realistic skin texture with subsurface scattering"
+
+DO NOT USE: "trending on ArtStation", "oil painting", "matte painting", "digital art" — these make Imagen generate illustration style instead of cinematic realism.
 
 STRICT RULES:
 - ALL prompts in ENGLISH
@@ -1002,7 +1018,7 @@ If GRID COLLAGE → each grid cell shows a different aspect of the title's theme
 Format: ${formatPrompt}
 
 RESPOND ONLY with this JSON (no markdown, no backticks):
-{"thumbType":"technique name","formula":"How you mapped the title to the technique: LEFT represents X, RIGHT represents Y, CENTER represents Z","whyItWorks":"Why this works for '${titleTheme}'. 3 sentences.","composition":"LAYER-BY-LAYER for this specific title: background (what from the title, position), main subject (what from the title, position, % of frame), secondary (what, where)","lightingAnalysis":"Lighting style that fits the title mood","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words. Hyperrealistic cinematic digital art, oil painting texture, dramatic chiaroscuro lighting, matte painting quality, AAA cinematic trailer quality, trending on ArtStation, ultra-detailed. Use the technique from Step B filled with ONLY elements from '${titleTheme}'. Describe exact positions, sizes (% of frame), lighting direction and color temperature, hex color palette, volumetric atmospheric effects, intricate texture details. Every person, building, artifact, landscape MUST represent something from '${titleTheme}'. ${formatPrompt}, epic documentary poster quality, absolutely no text no letters no watermarks, 8K resolution, museum-worthy composition, cinematic color grading.","promptVariation":"ENGLISH PROMPT 150+ words. Hyperrealistic cinematic digital art, oil painting texture. ALTERNATIVE ANGLE on '${titleTheme}' — same technique but viewed from a different perspective or emphasizing a different aspect of the title's story. Still 100% about '${titleTheme}', still the same structural technique. ${formatPrompt}, matte painting quality, no text, 8K, dramatic lighting.","textSuggestion":"Where to place text overlay","ctrTips":["tip 1 for '${titleTheme}'","tip 2","tip 3"]}` }
+{"thumbType":"technique name","formula":"How you mapped the title to the technique: LEFT represents X, RIGHT represents Y, CENTER represents Z","whyItWorks":"Why this works for '${titleTheme}'. 3 sentences.","composition":"LAYER-BY-LAYER for this specific title: background (what from the title, position), main subject (what from the title, position, % of frame), secondary (what, where)","lightingAnalysis":"Lighting style that fits the title mood","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words following this structure: 'Immersive, hyperrealistic cinematic scene depicting [your scene]. [FOREGROUND with exact position and % of frame]. [MIDGROUND elements]. [BACKGROUND with atmosphere]. Layered composition. Shallow depth of field with [foreground] sharply focused, [background] softly out of focus. [Specific lighting: direction, type, color temperature]. Color palette dominated by [hex colors]. Meticulous color grading with cinematic LUT. Volumetric god rays, atmospheric haze, dust particles catching light. Intricate texture details: weathered stone, ornate fabric, realistic skin with subsurface scattering. High-budget historical documentary quality, polished Hollywood look, medium focal length lens, ${formatPrompt}, ultra-detailed 8K. No text, no letters, no watermarks.' Fill this structure with ONLY elements from '${titleTheme}'.","promptVariation":"ENGLISH PROMPT 150+ words. Same structure as above but ALTERNATIVE perspective on '${titleTheme}'. 'Immersive, hyperrealistic cinematic scene depicting [different angle/aspect of the title story]. [Same technique but different viewpoint]. Layered composition. Dramatic chiaroscuro lighting. Cinematic color grading. High-budget documentary quality, ${formatPrompt}, 8K. No text.' Still 100% about '${titleTheme}'.","textSuggestion":"Where to place text overlay","ctrTips":["tip 1 for '${titleTheme}'","tip 2","tip 3"]}` }
         ], pg);
 
         const parsed = JSON.parse(step2Reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
@@ -1033,11 +1049,23 @@ LOOK AT THE IMAGE CAREFULLY:
 Then generate prompts that use the EXACT SAME VISUAL TECHNIQUE with different subjects.
 
 RESPOND ONLY JSON (no backticks):
-{"thumbType":"technique name","formula":"EXACT description of layers and positions","whyItWorks":"Why it works. 3+ sentences.","composition":"LAYER-BY-LAYER: background, main subject (position, % of frame), secondary elements, effects","lightingAnalysis":"Lighting description","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words. Hyperrealistic cinematic digital art, oil painting texture, dramatic chiaroscuro lighting, matte painting quality, AAA cinematic quality, trending on ArtStation, ultra-detailed. REPLICATE the exact same technique/layout with different subjects. ${formatPrompt}, epic poster quality, intricate textures, volumetric lighting, no text, 8K.","promptVariation":"ENGLISH PROMPT 150+ words. Hyperrealistic cinematic digital art, oil painting texture. RADICAL VARIATION: same technique, different genre. ${formatPrompt}, matte painting quality, dramatic lighting, no text, 8K.","textSuggestion":"Text placement advice","ctrTips":["tip1","tip2","tip3"]}` }
+{"thumbType":"technique name","formula":"EXACT description of layers and positions","whyItWorks":"Why it works. 3+ sentences.","composition":"LAYER-BY-LAYER: background, main subject (position, % of frame), secondary elements, effects","lightingAnalysis":"Lighting description","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words: 'Immersive, hyperrealistic cinematic scene depicting [scene]. [Foreground, position, % of frame]. [Midground]. [Background]. Layered composition. Shallow depth of field. [Lighting type and direction]. Color palette: [hex colors]. Meticulous color grading, cinematic LUT. Volumetric god rays, atmospheric haze. High-budget documentary quality, polished Hollywood look, medium focal length lens, ${formatPrompt}, ultra-detailed 8K. No text no letters no watermarks.' REPLICATE same technique/layout with different subjects.","promptVariation":"ENGLISH PROMPT 150+ words: 'Immersive, hyperrealistic cinematic scene depicting [radical variation]. Same technique, different genre. Layered composition. Dramatic lighting. Cinematic color grading. High-budget quality, ${formatPrompt}, 8K. No text.'","textSuggestion":"Text placement advice","ctrTips":["tip1","tip2","tip3"]}` }
         ];
 
         const reply = await aiCall([
-          { role: "system", content: `You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails. Identify the visual technique, decompose layers, and generate ENGLISH ImageFX prompts. ALL PROMPTS IN ENGLISH. Minimum 150 words per prompt. NEVER include text/letters in prompts. STYLE: Always use "hyperrealistic cinematic digital art, oil painting texture, dramatic lighting, matte painting quality, AAA cinematic quality, trending on ArtStation" — NOT "photograph" or "camera" since thumbnails are digital composites. SAFETY: no blood, weapons, violence.` },
+          { role: "system", content: `You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails. Identify the visual technique, decompose layers, and generate ENGLISH ImageFX prompts. ALL PROMPTS IN ENGLISH. Minimum 150 words per prompt. NEVER include text/letters in prompts.
+
+EVERY prompt must follow this structure:
+1. Open with "Immersive, hyperrealistic cinematic scene depicting..."
+2. Describe scene with exact positions (% of frame)
+3. "Layered composition. Shallow depth of field."
+4. Specific lighting description
+5. "Color palette: [hex]. Meticulous color grading, cinematic LUT."
+6. "Volumetric god rays, atmospheric haze. High-budget documentary quality, 8K."
+7. "No text, no letters, no watermarks."
+
+DO NOT USE: "oil painting", "digital art", "illustration", "matte painting", "ArtStation" — these produce cartoon/illustration results. USE: "hyperrealistic cinematic scene", "high-budget film quality", "polished Hollywood look".
+SAFETY: no blood, weapons, violence.` },
           { role: "user", content: userContent }
         ], pg);
 
