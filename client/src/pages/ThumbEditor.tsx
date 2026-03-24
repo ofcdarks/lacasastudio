@@ -5,6 +5,41 @@ import { aiApi, chatApi } from "../lib/api";
 import { C, Btn, Hdr, Label, Input, Select } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
 
+// Sanitize prompt for ImageFX safety filters
+function sanitizePrompt(prompt: string): string {
+  const replacements: [RegExp, string][] = [
+    [/\bsangue\b/gi, "tinta vermelha"], [/\bblood\b/gi, "red liquid"],
+    [/\bsangrento\b/gi, "intenso"], [/\bbloody\b/gi, "intense"],
+    [/\barma\b/gi, "objeto"], [/\barmas\b/gi, "objetos"],
+    [/\bweapon[s]?\b/gi, "object"], [/\bgun[s]?\b/gi, "device"],
+    [/\brifle[s]?\b/gi, "long device"], [/\bpistol[a]?\b/gi, "device"],
+    [/\bespada[s]?\b/gi, "bastão metálico"], [/\bsword[s]?\b/gi, "metal staff"],
+    [/\bfaca[s]?\b/gi, "objeto cortante"], [/\bknife\b/gi, "sharp object"],
+    [/\bnavalha\b/gi, "lâmina"], [/\bblade\b/gi, "edge"],
+    [/\bviolência\b/gi, "tensão"], [/\bviolence\b/gi, "tension"],
+    [/\bmatar\b/gi, "confrontar"], [/\bkill\b/gi, "confront"],
+    [/\bmorte\b/gi, "destino"], [/\bdeath\b/gi, "fate"],
+    [/\bmorto[s]?\b/gi, "caído"], [/\bdead\b/gi, "fallen"],
+    [/\bgore\b/gi, "dramatic"], [/\bhorror\b/gi, "suspense"],
+    [/\btortura\b/gi, "tensão"], [/\btorture\b/gi, "tension"],
+    [/\bexplosão\b/gi, "onda de energia"], [/\bexplosion\b/gi, "energy wave"],
+    [/\bexplod\w*/gi, "energy burst"], [/\bbomb[a]?\b/gi, "orb"],
+    [/\bdestru[iíç]\w*/gi, "transformação"], [/\bdestr\w+/gi, "transformation"],
+    [/\bnude\b/gi, ""], [/\bnaked\b/gi, ""], [/\bsexy\b/gi, "elegant"],
+    [/\bdripping blood\b/gi, "dripping liquid"], [/\bescorrendo sangue\b/gi, "escorrendo tinta"],
+    [/\bferimento\b/gi, "marca"], [/\bwound\b/gi, "mark"],
+    [/\bcadáver\b/gi, "figura"], [/\bcorpse\b/gi, "figure"],
+    [/\bcombate\b/gi, "confronto"], [/\bcombat\b/gi, "confrontation"],
+    [/\bbatalha\b/gi, "cena épica"], [/\bbattle\b/gi, "epic scene"],
+    [/\battack\w*/gi, "action"], [/\bataqu\w*/gi, "ação"],
+  ];
+  let clean = prompt;
+  for (const [pattern, replacement] of replacements) {
+    clean = clean.replace(pattern, replacement);
+  }
+  return clean.replace(/\s{2,}/g, " ").trim();
+}
+
 // Auto-save generated thumbnails to history
 function saveToHistory(data: { niche?: string; prompt?: string; imageUrl?: string; title?: string; style?: string; score?: number }) {
   const token = localStorage.getItem("lc_token");
@@ -239,7 +274,7 @@ function CriadorNinja({ toast, pg }) {
     setGenImgLoading(p => ({ ...p, [key]: true }));
     pg?.start("Gerando Imagem", ["ImageFX processando", "Finalizando"]);
     try {
-      const r = await aiApi.generateAsset({ prompt: prompt + ", YouTube thumbnail, 16:9 landscape, no text, ultra quality, 8K" });
+      const r = await aiApi.generateAsset({ prompt: sanitizePrompt(prompt + ", YouTube thumbnail, 16:9 landscape, no text, ultra quality, 8K") });
       if (r.url || r.b64) { const imgUrl = r.url || ("data:image/png;base64," + r.b64); setGenImages(p => ({ ...p, [key]: imgUrl })); setModalImg(imgUrl); saveToHistory({ niche, prompt: prompt.slice(0, 500), imageUrl: imgUrl.startsWith("data:") ? "" : imgUrl, title, style: titleStyle, score: 0 }); pg?.done(); toast?.success("Imagem gerada!"); }
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setGenImgLoading(p => ({ ...p, [key]: false }));
@@ -363,7 +398,8 @@ REGRAS DE OURO DO SEU TRABALHO:
 5. EFEITOS devem estar INTEGRADOS na cena de forma orgânica, não como filtro jogado por cima.
 6. PENSE MOBILE: a imagem precisa ser impactante mesmo em 120x68 pixels (tamanho no feed mobile).
 7. Os prompts devem funcionar no Google ImageFX / Imagen 3.5 — seja técnico, visual e cinematográfico.
-8. Cada variação deve ser genuinamente DIFERENTE em composição e ângulo, não apenas troca de cor.` },
+8. Cada variação deve ser genuinamente DIFERENTE em composição e ângulo, não apenas troca de cor.
+9. SEGURANÇA ImageFX: NUNCA use palavras como sangue, arma, violência, morte, explosão, combate, faca, espada, tiro, bomba. Substitua por alternativas visuais seguras (ex: "onda de energia" em vez de "explosão", "tensão dramática" em vez de "violência", "tinta vermelha" em vez de "sangue"). O ImageFX BLOQUEIA prompts com conteúdo violento.` },
       { role: "user", content: `BRIEFING DA THUMBNAIL:
 
 NICHO: ${nicheObj.l} (${nicheObj.i})
@@ -584,7 +620,7 @@ function RemixAI({ toast, pg }) {
     setGenImgLoading(p => ({ ...p, [key]: true }));
     pg?.start("Gerando Remix", ["ImageFX processando"]);
     try {
-      const r = await aiApi.generateAsset({ prompt: prompt + ", YouTube thumbnail, 16:9, no text, ultra quality" });
+      const r = await aiApi.generateAsset({ prompt: sanitizePrompt(prompt + ", YouTube thumbnail, 16:9, no text, ultra quality") });
       if (r.url || r.b64) { const imgUrl = r.url || ("data:image/png;base64," + r.b64); setGenImages(p => ({ ...p, [key]: imgUrl })); setModalImg(imgUrl); saveToHistory({ niche: "remix", prompt: prompt.slice(0, 500), imageUrl: imgUrl.startsWith("data:") ? "" : imgUrl, title: "Remix", style: "remix", score: 0 }); pg?.done(); toast?.success("Remix gerado!"); }
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setGenImgLoading(p => ({ ...p, [key]: false }));
@@ -829,26 +865,34 @@ function TrendsTab({ toast, pg }) {
     setSelected(video); setAnalyzing(true); setAnalysis(null);
     pg?.start("Analisando thumbnail viral", ["Decompondo composicao frame-a-frame", "Extraindo DNA visual", "Gerando prompts superiores"]);
     try {
-      const { reply } = await chatApi.send([{ role: "system", content: `Voce e um DIRETOR DE FOTOGRAFIA DE HOLLYWOOD que tambem e expert em thumbnails virais do YouTube. Voce trabalhou em filmes da Marvel, Nolan e Fincher. Voce ve uma thumbnail e DECOMPOE ela como se fosse um frame de filme:
+      const { reply } = await chatApi.send([{ role: "system", content: `Voce e o MAIOR ESPECIALISTA DO MUNDO em thumbnails virais do YouTube. Voce entende que thumbnails NÃO sao fotos — sao MONTAGENS (composites Photoshop). Voce identifica a FORMULA de cada thumbnail.
 
-SUA ABORDAGEM (obrigatoria):
-1. CAMERA: Identifique o angulo EXATO (low angle, worms eye, birds eye, dutch tilt, eye level, over-the-shoulder). Identifique a LENTE (wide 16mm, normal 50mm, telephoto 85mm, macro, fisheye).
-2. COMPOSICAO: Onde esta o ponto focal? Qual a regra (tercos, phi, central, diagonal)? O que ocupa quanto % do frame? Qual o leading line?
-3. ILUMINACAO: Tipo EXATO (Rembrandt, butterfly, split, rim light, backlight, practicals, neon, volumetric). De onde vem a luz? Qual a ratio key/fill?
-4. COR: Paleta EXATA em hex. Qual o color grading (teal&orange, bleach bypass, cross-process, natural)?
-5. ESCALA: Qual o truque de escala? (objeto gigante vs minusculo, macro detail, forced perspective)
-6. ATMOSFERA: Fog, rain, particles, sparks, bokeh, lens flare, grain, vignette?
-7. TEXTURA: Pele, metal, agua, fogo, escamas, tecido — qual a textura dominante?
+PRIMEIRO: Identifique o TIPO da thumbnail:
+- TIPO A (MONTAGEM/COMPOSITE): Pessoa recortada + elementos sobrepostos + logo/texto + fundo separado. Ex: YouTuber no centro + cenas de filme atras + logo Netflix + badge colorido. MAIORIA das thumbnails virais sao deste tipo.
+- TIPO B (CENA UNICA): Uma unica imagem cinematografica sem composicao de layers. Ex: close-up de olho, paisagem epica, macro de objeto.
 
-REGRA CRITICA para os prompts de RECRIACAO:
-- O prompt deve descrever a MESMA TECNICA CINEMATOGRAFICA, nao a mesma cena.
-- Se o original usa "extreme macro do olho de um monstro com navio minusculo", o prompt recriado deve usar A MESMA TECNICA: "extreme macro de [elemento diferente] com [escala contrastante]".
-- Se o original usa "low angle com silhuetas contra explosao", recriar com a MESMA TECNICA: "low angle com [silhuetas diferentes] contra [outro fenomeno dramatico]".
-- O prompt deve ser MELHOR que o original. Mais cinematografico. Mais impactante. Mais detalhado.
-- MINIMO 120 palavras por prompt. Cada palavra conta.
-- NUNCA texto/letras/palavras na imagem. NUNCA.
-- Especifique: camera angle, lens mm, lighting type, color palette hex, DOF, atmosphere, texture, render style.` },
-        { role: "user", content: `DECOMPONHA esta thumbnail viral e gere prompts SUPERIORES ao original:
+PARA TIPO A (MONTAGEM) — decomponha as LAYERS:
+1. LAYER FUNDO: qual a imagem/gradiente de fundo? Cor, atmosfera, blur level
+2. LAYER PERSONAGEM/PRINCIPAL: quem/o que esta recortado? Posicao (centro, esquerda, direita). Tamanho (% do frame). Expressao facial se pessoa.
+3. LAYER ELEMENTOS SECUNDARIOS: o que mais esta sobreposto? (cenas de filme, objetos, outros personagens menores). Onde posicionados?
+4. LAYER EFEITOS: glow, sombra, rim light artificial, color grading, vinheta, particulas
+5. LAYOUT ESPACIAL: como os elementos estao distribuidos? (triangular, simetrico, regra dos tercos, Z-pattern)
+6. PALETA: cores hex dominantes. Contraste entre layers.
+
+PARA TIPO B (CENA UNICA) — decomponha a FOTOGRAFIA:
+1. Camera angle, lente mm, DOF
+2. Iluminacao (tipo, direcao, ratio, cor)
+3. Composicao (ponto focal, regra, % do frame)
+4. Atmosfera e texturas
+
+REGRA CRITICA DOS PROMPTS:
+- REPRODUZA A MESMA FORMULA/LAYOUT mas com personagens e cenario DIFERENTES.
+- Se o original e "pessoa recortada no centro + logo atras + 2 cenas de filme nas laterais", seu prompt deve descrever EXATAMENTE esse layout: "pessoa em pose heroica centralizada, elemento grafico grande atras, duas cenas tematicas nas laterais esquerda e direita, iluminacao dramatica unificando tudo".
+- NAO descreva como foto unica se e montagem. Descreva como COMPOSITE com layers.
+- MINIMO 120 palavras por prompt.
+- NUNCA texto/letras na imagem.
+- SEGURANCA: Evite sangue, armas, violencia, morte, explosao. Use alternativas (onda de energia, tensao, tinta, marca). ImageFX bloqueia conteudo violento.` },
+        { role: "user", content: `IDENTIFIQUE A FORMULA desta thumbnail viral e gere prompts que REPLICAM a mesma formula:
 
 VIDEO: "${video.title}"
 CANAL: "${video.channel}" 
@@ -861,7 +905,7 @@ DECOMPONHA frame-a-frame: qual angulo de camera, qual lente, qual iluminacao, qu
 Depois gere prompts que usam as MESMAS TECNICAS CINEMATOGRAFICAS mas com cena ORIGINAL e SUPERIOR.
 
 JSON (sem backticks):
-{"whyItWorks":"Analise tecnica cinematografica: qual tecnica de camera/composicao/iluminacao faz funcionar. Cite angulo, lente, escala, cor. Minimo 3 frases tecnicas.","composition":"DECOMPOSICAO DETALHADA: foreground (o que, quanto % do frame), midground, background. Ponto focal. Leading lines. Regra composicional. Depth of field.","lightingAnalysis":"Tipo de iluminacao exata, direcao, cor da luz, ratio, efeitos atmosfericos","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"PROMPT CINEMATOGRAFICO 120+ palavras para ImageFX. Descreva: camera angle + lens mm, lighting setup (key/fill/rim), color palette exata, foreground/midground/background, atmosfera (fog/particles/rain), textura dominante, DOF, render style (photoreal/cinematic/concept art). Use a MESMA TECNICA do original mas cena diferente e SUPERIOR. ${video.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape"}, sem texto, 8K.","promptVariation":"VARIACAO RADICAL 120+ palavras. Mesma tecnica cinematografica mas genero visual completamente diferente. Se original e sci-fi, faca noir. Se e acao, faca horror. Manter o mesmo IMPACTO mas mudar tudo.","textSuggestion":"Onde posicionar texto sobre esta composicao para maximo CTR (canto, centro, tamanho, cor do texto vs fundo)","ctrTips":["dica tecnica 1 baseada na decomposicao desta thumb","dica 2 sobre o que o original faz melhor que 90% do nicho","dica 3: como SUPERAR este original"]}` }]);
+{"thumbType":"MONTAGEM ou CENA UNICA","formula":"Descricao da FORMULA exata: quantas layers, o que cada layer contem, como estao posicionados, qual o padrao visual que se repete. Se montagem: 'pessoa recortada centro + X atras + Y nas laterais'. Se cena unica: 'close-up macro com Z'.","whyItWorks":"Porque esta formula funciona: qual gatilho visual, qual truque psicologico, qual contraste. Minimo 3 frases.","composition":"DECOMPOSICAO DETALHADA: foreground (o que, quanto % do frame), midground, background. Ponto focal. Leading lines. Regra composicional. Depth of field.","lightingAnalysis":"Tipo de iluminacao exata, direcao, cor da luz, ratio, efeitos atmosfericos","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"PROMPT 120+ palavras para ImageFX que REPLICA A MESMA FORMULA/LAYOUT. Se o original e montagem: descreva a mesma estrutura de layers (pessoa centralizada + elementos atras + cenas laterais). Se cena unica: mesma tecnica de camera. MUDE os personagens e cenario mas MANTENHA a formula identica. Inclua: posicao de cada elemento, tamanho relativo, iluminacao, paleta hex, atmosfera, render style. ${video.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape"}, sem texto, 8K.","promptVariation":"VARIACAO RADICAL 120+ palavras. Mesma tecnica cinematografica mas genero visual completamente diferente. Se original e sci-fi, faca noir. Se e acao, faca horror. Manter o mesmo IMPACTO mas mudar tudo.","textSuggestion":"Onde posicionar texto sobre esta composicao para maximo CTR (canto, centro, tamanho, cor do texto vs fundo)","ctrTips":["dica tecnica 1 baseada na decomposicao desta thumb","dica 2 sobre o que o original faz melhor que 90% do nicho","dica 3: como SUPERAR este original"]}` }]);
       setAnalysis(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
       pg?.done();
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
@@ -973,6 +1017,18 @@ JSON (sem backticks):
                 <div style={{ textAlign: "center", padding: 20, color: C.dim }}>Analisando...</div>
               ) : analysis ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* Type badge + Formula */}
+                  {analysis.thumbType && (
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "4px 12px", borderRadius: 6, background: analysis.thumbType?.includes("MONTAGEM") ? C.purple+"20" : C.blue+"20", color: analysis.thumbType?.includes("MONTAGEM") ? C.purple : C.blue }}>{analysis.thumbType?.includes("MONTAGEM") ? "🎭 MONTAGEM" : "📸 CENA ÚNICA"}</span>
+                    </div>
+                  )}
+                  {analysis.formula && (
+                    <div style={{ padding: 12, borderRadius: 8, background: C.purple+"06", border: `1px solid ${C.purple}20` }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: C.purple, marginBottom: 6 }}>Formula da Thumbnail</div>
+                      <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6 }}>{analysis.formula}</div>
+                    </div>
+                  )}
                   <div style={{ padding: 12, borderRadius: 8, background: C.green+"08", border: `1px solid ${C.green}20` }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: C.green, marginBottom: 6 }}>Porque esta viral</div>
                     <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6 }}>{analysis.whyItWorks}</div>
@@ -991,7 +1047,7 @@ JSON (sem backticks):
                       <div style={{ padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, fontSize: 12, lineHeight: 1.6 }}>{analysis[p.k]}</div>
                       <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                         <button onClick={() => { navigator.clipboard.writeText(analysis[p.k]); toast?.success("Copiado!"); }} style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>Copiar</button>
-                        <button onClick={async () => { const k = p.k; setGenImgLoading(prev => ({...prev, [k]: true})); pg?.start("Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: analysis[p.k] + ", YouTube thumbnail, " + (selected.format === "portrait" ? "9:16 portrait" : "16:9 landscape") + ", no text, ultra quality, 8K" }); if (r.url || r.b64) { const url = r.url || ("data:image/png;base64," + r.b64); setModalImg(url); saveToHistory({ niche, prompt: analysis[p.k]?.slice(0, 500) || "", imageUrl: url.startsWith("data:") ? "" : url, title: selected?.title || "", style: "trends", score: 0 }); pg?.done(); toast?.success("Imagem gerada!"); } } catch (e) { pg?.fail(e.message); toast?.error(e.message); } setGenImgLoading(prev => ({...prev, [k]: false})); }} disabled={genImgLoading[p.k]} style={{ flex: 1, padding: "5px 12px", borderRadius: 6, border: "none", background: genImgLoading[p.k] ? "rgba(255,255,255,0.05)" : `${p.c}20`, color: genImgLoading[p.k] ? C.dim : p.c, cursor: genImgLoading[p.k] ? "wait" : "pointer", fontSize: 10, fontWeight: 600 }}>{genImgLoading[p.k] ? "Gerando..." : "Gerar Imagem (ImageFX)"}</button>
+                        <button onClick={async () => { const k = p.k; setGenImgLoading(prev => ({...prev, [k]: true})); pg?.start("Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: sanitizePrompt(analysis[p.k] + ", YouTube thumbnail, " + (selected.format === "portrait" ? "9:16 portrait" : "16:9 landscape") + ", no text, ultra quality, 8K") }); if (r.url || r.b64) { const url = r.url || ("data:image/png;base64," + r.b64); setModalImg(url); saveToHistory({ niche, prompt: analysis[p.k]?.slice(0, 500) || "", imageUrl: url.startsWith("data:") ? "" : url, title: selected?.title || "", style: "trends", score: 0 }); pg?.done(); toast?.success("Imagem gerada!"); } } catch (e) { pg?.fail(e.message); toast?.error(e.message); } setGenImgLoading(prev => ({...prev, [k]: false})); }} disabled={genImgLoading[p.k]} style={{ flex: 1, padding: "5px 12px", borderRadius: 6, border: "none", background: genImgLoading[p.k] ? "rgba(255,255,255,0.05)" : `${p.c}20`, color: genImgLoading[p.k] ? C.dim : p.c, cursor: genImgLoading[p.k] ? "wait" : "pointer", fontSize: 10, fontWeight: 600 }}>{genImgLoading[p.k] ? "Gerando..." : "Gerar Imagem (ImageFX)"}</button>
                       </div>
                     </div>
                   ))}
@@ -1174,7 +1230,7 @@ function EditorCanvas({ toast, pg }) {
   };
   const onMouseUp = () => setDragging(null);
 
-  const genBg = async () => { if (!aiPrompt.trim()) return; setGenLoading(true); pg?.start("Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: aiPrompt + ", YouTube thumbnail, 16:9, cinematic, 8K, no text" }); if (r.url || r.b64) { setAiBg(r.url || ("data:image/png;base64,"+r.b64)); setUserBg(null); pg?.done(); toast?.success("Background gerado!"); } } catch (e) { pg?.fail(e.message); } setGenLoading(false); };
+  const genBg = async () => { if (!aiPrompt.trim()) return; setGenLoading(true); pg?.start("Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: sanitizePrompt(aiPrompt + ", YouTube thumbnail, 16:9, cinematic, 8K, no text") }); if (r.url || r.b64) { setAiBg(r.url || ("data:image/png;base64,"+r.b64)); setUserBg(null); pg?.done(); toast?.success("Background gerado!"); } } catch (e) { pg?.fail(e.message); } setGenLoading(false); };
   const exp = (s=1) => { const c = cvs.current; if (!c) return; if (s===1) { const l = document.createElement("a"); l.download = "thumbnail.png"; l.href = c.toDataURL("image/png"); l.click(); } else { const h = document.createElement("canvas"); h.width=W*s; h.height=H*s; h.getContext("2d").drawImage(c,0,0,W*s,H*s); const l = document.createElement("a"); l.download = `thumb-${W*s}x${H*s}.png`; l.href = h.toDataURL("image/png"); l.click(); } toast?.success("Exportado!"); };
   const palette = NICHE_PALETTES[niche] || NICHE_PALETTES.outro;
 
