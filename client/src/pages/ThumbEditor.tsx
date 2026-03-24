@@ -778,6 +778,7 @@ JSON (sem backticks):
    ═══════════════════════════════════════ */
 function TrendsTab({ toast, pg }) {
   const [niche, setNiche] = useState("gaming");
+  const [format, setFormat] = useState("all");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -785,13 +786,26 @@ function TrendsTab({ toast, pg }) {
   const [analysis, setAnalysis] = useState(null);
   const [modalImg, setModalImg] = useState(null);
   const [genImgLoading, setGenImgLoading] = useState({});
+  const [autoNiche, setAutoNiche] = useState(null);
   const BASE = "/api";
   const getToken = () => localStorage.getItem("lc_token");
+
+  // Auto-detect user's niche on mount
+  useEffect(() => {
+    fetch(`${BASE}/trends/my-niche`, { headers: { Authorization: `Bearer ${getToken()}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d && d.niche) {
+          setNiche(d.niche);
+          setAutoNiche(d);
+        }
+      }).catch(() => {});
+  }, []);
 
   const fetchTrends = async () => {
     setLoading(true); setData(null); setSelected(null); setAnalysis(null);
     try {
-      const res = await fetch(`${BASE}/trends/thumbnails/${niche}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch(`${BASE}/trends/thumbnails/${niche}?format=${format}`, { headers: { Authorization: `Bearer ${getToken()}` } });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error);
       setData(d);
@@ -801,16 +815,16 @@ function TrendsTab({ toast, pg }) {
 
   const analyzeThumb = async (video) => {
     setSelected(video); setAnalyzing(true); setAnalysis(null);
-    pg?.start("🔍 Analisando thumbnail viral", ["Extraindo composicao", "Identificando padroes", "Gerando prompt"]);
+    pg?.start("Analisando thumbnail viral", ["Extraindo composicao", "Identificando padroes", "Gerando prompt"]);
     try {
       const { reply } = await chatApi.send([{ role: "system", content: "Voce e expert em thumbnails virais 2026. Analise a thumbnail deste video que esta VIRAL agora e gere um prompt para recriar algo similar mas original." },
-        { role: "user", content: `Video viral: "${video.title}" do canal "${video.channel}" com ${(video.views/1000).toFixed(0)}K views.
+        { role: "user", content: `Video viral: "${video.title}" do canal "${video.channel}" com ${(video.views/1000).toFixed(0)}K views. Formato: ${video.format || "landscape"}.
 Nicho: ${NICHES.find(n => n.id === niche)?.l || niche}.
 
 Analise porque esta thumbnail esta funcionando e gere prompts para eu criar algo no mesmo nivel.
 
 JSON (sem backticks):
-{"whyItWorks":"3 razoes porque esta thumb esta viral","composition":"descricao da composicao visual","colorPalette":["#hex1","#hex2","#hex3"],"promptRecreate":"prompt ImageFX 80+ palavras para criar thumb inspirada nessa mas ORIGINAL, 16:9, sem texto, photoreal 8K","promptVariation":"variacao mais ousada 80+ palavras","textSuggestion":"como posicionar texto sobre esta composicao","ctrTips":["3 dicas baseadas nesta thumb"]}` }]);
+{"whyItWorks":"3 razoes porque esta thumb esta viral","composition":"descricao da composicao visual","colorPalette":["#hex1","#hex2","#hex3"],"promptRecreate":"prompt ImageFX 80+ palavras para criar thumb inspirada nessa mas ORIGINAL, ${video.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape"}, sem texto, photoreal 8K","promptVariation":"variacao mais ousada 80+ palavras","textSuggestion":"como posicionar texto sobre esta composicao","ctrTips":["3 dicas baseadas nesta thumb"]}` }]);
       setAnalysis(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
       pg?.done();
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
@@ -822,17 +836,45 @@ JSON (sem backticks):
   return (
     <div>
       <ImageModal src={modalImg} onClose={() => setModalImg(null)} title="Thumbnail Gerada — Trends" />
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
+
+      {/* Auto-niche banner */}
+      {autoNiche && autoNiche.niche && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderRadius: 10, background: C.green + "08", border: `1px solid ${C.green}20`, marginBottom: 12, fontSize: 12 }}>
+          <span style={{ color: C.green, fontWeight: 700 }}>🎯 Nicho detectado:</span>
+          <span style={{ color: C.text, fontWeight: 600 }}>{NICHES.find(n => n.id === autoNiche.niche)?.l || autoNiche.niche}</span>
+          {autoNiche.channel && <span style={{ color: C.dim }}>({autoNiche.channel})</span>}
+          <span style={{ fontSize: 10, color: C.dim, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.04)" }}>{autoNiche.source === "channel" ? "Canal" : autoNiche.source === "detected" ? "Auto-detectado" : ""}</span>
+        </div>
+      )}
+
+      {/* Controls */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
         <select value={niche} onChange={e => setNiche(e.target.value)} style={{ padding: "8px 14px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, color: C.text, fontSize: 13 }}>
           {NICHES.map(n => <option key={n.id} value={n.id}>{n.i} {n.l}</option>)}
         </select>
+
+        {/* Format filter */}
+        <div style={{ display: "flex", gap: 2, borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
+          {[
+            { v: "all", l: "Todos", i: "📺" },
+            { v: "landscape", l: "Paisagem", i: "🖥️" },
+            { v: "portrait", l: "Shorts", i: "📱" },
+          ].map(f => (
+            <button key={f.v} onClick={() => setFormat(f.v)} style={{
+              padding: "8px 14px", border: "none", cursor: "pointer", fontSize: 11, fontWeight: format === f.v ? 700 : 400,
+              background: format === f.v ? C.blue + "20" : "rgba(255,255,255,0.02)",
+              color: format === f.v ? C.blue : C.muted,
+            }}>{f.i} {f.l}</button>
+          ))}
+        </div>
+
         <button onClick={fetchTrends} disabled={loading} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #DC2626, #F97316)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "wait" : "pointer", opacity: loading ? 0.6 : 1 }}>
           {loading ? "Buscando..." : "🔍 Buscar Thumbnails Virais"}
         </button>
-        {data && <span style={{ fontSize: 11, color: C.dim }}>Busca: "{data.query}" · {data.videos?.length} resultados</span>}
+        {data && <span style={{ fontSize: 11, color: C.dim }}>Busca: "{data.query}" · {data.videos?.length} resultados {data.format !== "all" ? `(${data.format})` : ""}</span>}
       </div>
 
-      {/* Niche palette suggestion */}
+      {/* Niche palette */}
       {NICHE_PALETTES[niche] && (
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `1px solid ${C.border}`, marginBottom: 16 }}>
           <span style={{ fontSize: 11, color: C.dim }}>Paleta {NICHES.find(n=>n.id===niche)?.l}:</span>
@@ -845,10 +887,14 @@ JSON (sem backticks):
         {/* Video grid */}
         <div>
           {data?.videos?.length > 0 ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: format === "portrait" ? "repeat(auto-fill, minmax(160px, 1fr))" : "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}>
               {data.videos.map(v => (
                 <div key={v.id} onClick={() => analyzeThumb(v)} style={{ cursor: "pointer", borderRadius: 12, overflow: "hidden", border: `2px solid ${selected?.id === v.id ? C.orange : C.border}`, background: "rgba(255,255,255,0.02)", transition: "0.2s" }}>
-                  <img src={v.thumbnail || v.thumbnailDefault} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
+                  <div style={{ position: "relative" }}>
+                    <img src={v.thumbnail || v.thumbnailDefault} style={{ width: "100%", aspectRatio: v.format === "portrait" ? "9/16" : "16/9", objectFit: "cover", display: "block" }} />
+                    {v.isShort && <span style={{ position: "absolute", top: 6, left: 6, background: "#FF0000", color: "#fff", fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>SHORT</span>}
+                    <span style={{ position: "absolute", bottom: 4, right: 4, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 9, padding: "1px 5px", borderRadius: 3 }}>{v.duration?.replace("PT","").replace("H",":").replace("M",":").replace("S","") || ""}</span>
+                  </div>
                   <div style={{ padding: "8px 10px" }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: C.text, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.title}</div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10 }}>
@@ -863,7 +909,7 @@ JSON (sem backticks):
             <div style={{ textAlign: "center", padding: 40, color: C.dim }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 6 }}>Descubra o que esta viralizando</div>
-              <div style={{ fontSize: 12 }}>Selecione um nicho e clique em "Buscar" para ver as thumbnails com mais views agora.</div>
+              <div style={{ fontSize: 12 }}>Selecione nicho e formato, clique em "Buscar" para ver thumbnails com mais views.</div>
             </div>
           )}
         </div>
@@ -893,7 +939,7 @@ JSON (sem backticks):
                       <div style={{ padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, fontSize: 12, lineHeight: 1.6 }}>{analysis[p.k]}</div>
                       <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                         <button onClick={() => { navigator.clipboard.writeText(analysis[p.k]); toast?.success("Copiado!"); }} style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>Copiar</button>
-                        <button onClick={async () => { const k = p.k; setGenImgLoading(prev => ({...prev, [k]: true})); pg?.start("Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: analysis[p.k] + ", YouTube thumbnail, 16:9, no text, ultra quality, 8K" }); if (r.url || r.b64) { const url = r.url || ("data:image/png;base64," + r.b64); setModalImg(url); pg?.done(); toast?.success("Imagem gerada!"); } } catch (e) { pg?.fail(e.message); toast?.error(e.message); } setGenImgLoading(prev => ({...prev, [k]: false})); }} disabled={genImgLoading[p.k]} style={{ flex: 1, padding: "5px 12px", borderRadius: 6, border: "none", background: genImgLoading[p.k] ? "rgba(255,255,255,0.05)" : `${p.c}20`, color: genImgLoading[p.k] ? C.dim : p.c, cursor: genImgLoading[p.k] ? "wait" : "pointer", fontSize: 10, fontWeight: 600 }}>{genImgLoading[p.k] ? "⏳ Gerando..." : "🎨 Gerar Imagem (ImageFX)"}</button>
+                        <button onClick={async () => { const k = p.k; setGenImgLoading(prev => ({...prev, [k]: true})); pg?.start("Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: analysis[p.k] + ", YouTube thumbnail, " + (selected.format === "portrait" ? "9:16 portrait" : "16:9 landscape") + ", no text, ultra quality, 8K" }); if (r.url || r.b64) { const url = r.url || ("data:image/png;base64," + r.b64); setModalImg(url); pg?.done(); toast?.success("Imagem gerada!"); } } catch (e) { pg?.fail(e.message); toast?.error(e.message); } setGenImgLoading(prev => ({...prev, [k]: false})); }} disabled={genImgLoading[p.k]} style={{ flex: 1, padding: "5px 12px", borderRadius: 6, border: "none", background: genImgLoading[p.k] ? "rgba(255,255,255,0.05)" : `${p.c}20`, color: genImgLoading[p.k] ? C.dim : p.c, cursor: genImgLoading[p.k] ? "wait" : "pointer", fontSize: 10, fontWeight: 600 }}>{genImgLoading[p.k] ? "Gerando..." : "Gerar Imagem (ImageFX)"}</button>
                       </div>
                     </div>
                   ))}
@@ -908,9 +954,7 @@ JSON (sem backticks):
   );
 }
 
-/* ═══════════════════════════════════════
-   YouTube Preview Component
-   ═══════════════════════════════════════ */
+
 function YouTubePreview({ canvasRef, title = "Titulo do Video", channel = "Seu Canal" }) {
   const [mode, setMode] = useState("home");
   const [thumbSrc, setThumbSrc] = useState("");
