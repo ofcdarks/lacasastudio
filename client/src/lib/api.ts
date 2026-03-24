@@ -192,6 +192,9 @@ export const settingsApi = {
   get: () => api.get<Record<string, string>>("/settings"),
   getRaw: (key: string) => api.get<{ key: string; value: string }>(`/settings/raw/${key}`),
   save: (data: Record<string, string>) => api.put<{ ok: boolean }>("/settings", data),
+  getUser: () => api.get<Record<string, string>>("/settings/user"),
+  saveUser: (data: Record<string, string>) => api.put<{ ok: boolean }>("/settings/user", data),
+  status: () => api.get<Record<string, boolean>>("/settings/status"),
 };
 
 export const aiApi = {

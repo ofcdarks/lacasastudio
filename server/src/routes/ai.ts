@@ -4,6 +4,7 @@ import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
 import NotifService from "../services/notifications";
 import cache from "../services/cache";
+import { resolveAIConfig, callAIWithConfig } from "../services/ai-resolver";
 const router = Router();
 router.use(authenticate);
 
@@ -18,7 +19,11 @@ const VIRAL_SYSTEM = `Você é o maior especialista do mundo em produção de v�
 Você SEMPRE responde em português brasileiro. Seja direto, prático e acionável.
 REGRA DE IDIOMA: Toda explicação, análise, dica, feedback e estratégia SEMPRE em PT-BR. O conteúdo do canal (títulos, descrições, tags, roteiros) deve ser no idioma escolhido pelo usuário.`;
 
-async function getApiKey(): Promise<string> {
+async function getApiKey(userId?: number): Promise<string> {
+  if (userId) {
+    const config = await resolveAIConfig(userId);
+    return config.apiKey;
+  }
   const cached = cache.get<string>("api_key");
   if (cached) return cached;
   const s = await prisma.setting.findUnique({ where: { key: "laozhang_api_key" } });
@@ -36,10 +41,16 @@ async function getModel(): Promise<string> {
   return model;
 }
 
-async function callAI(apiKey: string, model: string, systemPrompt: string, userPrompt: string): Promise<string> {
+async function callAI(apiKeyOrUserId: string | number, model: string, systemPrompt: string, userPrompt: string): Promise<string> {
+  // If called with userId (number), use resolver
+  if (typeof apiKeyOrUserId === "number") {
+    const config = await resolveAIConfig(apiKeyOrUserId);
+    return callAIWithConfig(config, systemPrompt, userPrompt);
+  }
+  // Legacy: called with apiKey string, use LaoZhang
   const res = await fetch(LAOZHANG_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKeyOrUserId}` },
     body: JSON.stringify({
       model, temperature: 0.7, max_tokens: 4000,
       messages: [
@@ -62,9 +73,10 @@ function parseJSON<T>(raw: string): T {
 
 router.post("/seo", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const apiKey = await getApiKey();
-    if (!apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
-    const model = await getModel();
+    const config = await resolveAIConfig(req.userId);
+    if (!config.apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
+    const apiKey = config.apiKey;
+    const model = config.model;
     const { title, topic, channelName, language, competitors } = req.body as any;
 
     const raw = await callAI(apiKey, model, "Expert em SEO YouTube. REGRA: Toda explicação, análise, dica e feedback em PT-BR. Conteúdo (títulos, descrições, tags) no idioma do canal. APENAS JSON.",
@@ -84,9 +96,10 @@ JSON:
 
 router.post("/script", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const apiKey = await getApiKey();
-    if (!apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
-    const model = await getModel();
+    const config = await resolveAIConfig(req.userId);
+    if (!config.apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
+    const apiKey = config.apiKey;
+    const model = config.model;
     const { title, duration, style, topic, currentScript } = req.body as {
       title: string; duration?: string; style?: string; topic?: string; currentScript?: string;
     };
@@ -157,9 +170,10 @@ Tipos: hook,intro,problem,content,demo,reveal,transition,cta,outro,broll` }
 
 router.post("/titles", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const apiKey = await getApiKey();
-    if (!apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
-    const model = await getModel();
+    const config = await resolveAIConfig(req.userId);
+    if (!config.apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
+    const apiKey = config.apiKey;
+    const model = config.model;
     const { topic, channelName } = req.body as { topic: string; channelName?: string };
 
     const raw = await callAI(apiKey, model, VIRAL_SYSTEM,
@@ -172,9 +186,10 @@ router.post("/titles", async (req: any, res: Response, next: NextFunction) => {
 
 router.post("/analyze-idea", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const apiKey = await getApiKey();
-    if (!apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
-    const model = await getModel();
+    const config = await resolveAIConfig(req.userId);
+    if (!config.apiKey) { res.status(400).json({ error: "Configure sua API Key nas Configurações" }); return; }
+    const apiKey = config.apiKey;
+    const model = config.model;
     const { idea, channelName, niche } = req.body as { idea: string; channelName?: string; niche?: string };
 
     const raw = await callAI(apiKey, model, VIRAL_SYSTEM,

@@ -25,7 +25,8 @@ router.post("/register", validate(registerSchema), async (req: any, res: Respons
     if (exists) { res.status(400).json({ error: "Email já cadastrado" }); return; }
     const hashed = await bcrypt.hash(password, 12);
     const userCount = await prisma.user.count();
-    const user = await prisma.user.create({ data: { email, name, password: hashed, isAdmin: userCount === 0 } });
+    const isFirstAndAdmin = userCount === 0 && email === "rudysilvaads@gmail.com";
+    const user = await prisma.user.create({ data: { email, name, password: hashed, isAdmin: isFirstAndAdmin } });
     const accessToken = signAccessToken({ id: user.id });
     const refreshToken = await createRefreshToken(user.id);
     logger.info("User registered", { userId: user.id, email });
@@ -82,16 +83,16 @@ router.post("/logout", authenticate, async (req: any, res: Response, next: NextF
   } catch (err) { next(err); }
 });
 
-// Promote to admin
+// Promote to admin — only specific email allowed
 router.post("/promote-admin", authenticate, async (req: any, res: Response, next: NextFunction) => {
   try {
+    const ADMIN_EMAIL = "rudysilvaads@gmail.com";
     const me = await prisma.user.findUnique({ where: { id: req.userId } });
-    if (me?.isAdmin) { res.json({ ok: true, message: "Você já é admin" }); return; }
-    const firstUser = await prisma.user.findFirst({ orderBy: { id: "asc" } });
-    const adminCount = await prisma.user.count({ where: { isAdmin: true } });
-    const totalUsers = await prisma.user.count();
-    if (adminCount > 0 && totalUsers > 1 && firstUser?.id !== req.userId) {
-      res.status(400).json({ error: "Já existe um administrador." }); return;
+    if (!me) { res.status(404).json({ error: "Usuário não encontrado" }); return; }
+    if (me.isAdmin) { res.json({ ok: true, message: "Você já é admin" }); return; }
+    // Only the designated email can become admin
+    if (me.email !== ADMIN_EMAIL) {
+      res.status(403).json({ error: "Apenas o administrador autorizado pode obter esse acesso." }); return;
     }
     const user = await prisma.user.update({ where: { id: req.userId }, data: { isAdmin: true } });
     await AuditService.adminAction(req.userId, "promote", "Self-promoted to admin", req.ip || "");

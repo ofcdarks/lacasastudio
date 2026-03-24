@@ -92,82 +92,150 @@ export default function Settings() {
     finally { setTesting(false); }
   };
 
+  // User API key state
+  const [userApiKey, setUserApiKey] = useState("");
+  const [userProvider, setUserProvider] = useState("openai");
+  const [userModel, setUserModel] = useState("");
+  const [userSaving, setUserSaving] = useState(false);
+
+  useEffect(() => {
+    if (isAdmin) return;
+    settingsApi.getUser().then(s => {
+      if (s.user_api_key) setUserApiKey(s.user_api_key);
+      if (s.user_api_provider) setUserProvider(s.user_api_provider);
+      if (s.user_api_model) setUserModel(s.user_api_model);
+    }).catch(() => {});
+  }, [isAdmin]);
+
+  const saveUserKey = async () => {
+    setUserSaving(true);
+    try {
+      await settingsApi.saveUser({
+        user_api_key: userApiKey,
+        user_api_provider: userProvider,
+        user_api_model: userModel || "",
+      });
+      toast?.success("Sua API Key salva!");
+    } catch (err) { toast?.error(err.message); }
+    finally { setUserSaving(false); }
+  };
+
+  const USER_PROVIDERS = [
+    { v: "openai", l: "OpenAI", d: "GPT-4o, GPT-4o-mini", placeholder: "sk-...", models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"] },
+    { v: "google", l: "Google Gemini", d: "Gemini 2.5 Flash/Pro", placeholder: "AIza...", models: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"] },
+    { v: "anthropic", l: "Anthropic", d: "Claude Sonnet, Haiku", placeholder: "sk-ant-...", models: ["claude-sonnet-4-6", "claude-haiku-4-5-20251001"] },
+    { v: "groq", l: "Groq", d: "Llama, Mixtral (grátis)", placeholder: "gsk_...", models: ["llama-3.3-70b-versatile", "mixtral-8x7b-32768"] },
+    { v: "deepseek", l: "DeepSeek", d: "DeepSeek V3 (barato)", placeholder: "sk-...", models: ["deepseek-chat", "deepseek-reasoner"] },
+  ];
+
+  const curProvider = USER_PROVIDERS.find(p => p.v === userProvider) || USER_PROVIDERS[0];
+
   // ═══════════════════════════════════════════════
   // NON-ADMIN VIEW
   // ═══════════════════════════════════════════════
   if (!isAdmin) {
     return (
       <div className="page-enter">
-        <Hdr title="Configurações" sub="Preferências do sistema" />
+        <Hdr title="Configurações" sub="Sua API Key e preferências" />
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20, maxWidth: 900 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20, maxWidth: 960 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-            {/* Model Selection - users CAN change this */}
-            <Card color={C.purple}>
-              <SecTitle t="Modelo de IA" />
-              <p style={{ fontSize: 12, color: C.muted, marginBottom: 14 }}>
-                Escolha o modelo usado para gerar roteiros, SEO e análises.
+            {/* USER API KEY */}
+            <Card color={C.blue}>
+              <SecTitle t="Sua API Key" />
+              <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 14 }}>
+                Configure sua própria chave de API para usar IA. Cada provedor tem modelos e preços diferentes. Sua chave é <strong style={{ color: C.green }}>privada</strong> — ninguém mais tem acesso.
               </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {MODELS.map(m => (
-                  <div key={m.v} onClick={() => setModel(m.v)}
-                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, cursor: "pointer",
-                      background: model === m.v ? `${C.purple}12` : "rgba(255,255,255,0.02)",
-                      border: `1px solid ${model === m.v ? `${C.purple}40` : C.border}` }}>
-                    <div style={{ width: 16, height: 16, borderRadius: "50%", border: `2px solid ${model === m.v ? C.purple : C.border}`, background: model === m.v ? C.purple : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {model === m.v && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff" }} />}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: model === m.v ? C.text : C.muted }}>{m.l}</div>
-                      <div style={{ fontSize: 11, color: C.dim }}>{m.d}</div>
-                    </div>
+
+              {/* Provider selector */}
+              <Label t="Provedor" />
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 14 }}>
+                {USER_PROVIDERS.map(p => (
+                  <div key={p.v} onClick={() => { setUserProvider(p.v); setUserModel(p.models[0]); }}
+                    style={{ padding: "8px 6px", borderRadius: 8, cursor: "pointer", textAlign: "center",
+                      background: userProvider === p.v ? `${C.blue}15` : "rgba(255,255,255,0.02)",
+                      border: `1px solid ${userProvider === p.v ? `${C.blue}40` : C.border}` }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: userProvider === p.v ? C.text : C.muted }}>{p.l}</div>
+                    <div style={{ fontSize: 9, color: C.dim, marginTop: 2 }}>{p.d}</div>
                   </div>
                 ))}
               </div>
-              <Btn onClick={saveModel} disabled={loading} style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
-                {saved ? "✓ Salvo!" : "Salvar Modelo"}
+
+              {/* API Key */}
+              <Label t={`API Key (${curProvider.l})`} />
+              <Input type="password" placeholder={curProvider.placeholder} value={userApiKey}
+                onChange={e => setUserApiKey(e.target.value)}
+                style={{ fontFamily: "var(--mono)", marginBottom: 12 }} />
+
+              {/* Model */}
+              <Label t="Modelo" />
+              <Select value={userModel || curProvider.models[0]} onChange={e => setUserModel(e.target.value)} style={{ marginBottom: 14 }}>
+                {curProvider.models.map(m => <option key={m} value={m}>{m}</option>)}
+              </Select>
+
+              <Btn onClick={saveUserKey} disabled={userSaving} style={{ width: "100%", justifyContent: "center" }}>
+                {userSaving ? "Salvando..." : userApiKey ? "Salvar Minha API Key" : "Salvar"}
               </Btn>
+
+              {userApiKey && (
+                <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: `${C.green}10`, fontSize: 12, color: C.green }}>
+                  ✓ Sua API Key está configurada — todas as features de IA usarão sua chave
+                </div>
+              )}
+            </Card>
+
+            {/* Info cards */}
+            <Card>
+              <SecTitle t="Como obter uma API Key" />
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  { p: "OpenAI", url: "platform.openai.com/api-keys", color: "#10A37F" },
+                  { p: "Google", url: "aistudio.google.com/apikey", color: "#4285F4" },
+                  { p: "Anthropic", url: "console.anthropic.com/settings/keys", color: "#D97706" },
+                  { p: "Groq", url: "console.groq.com/keys", color: "#F55036" },
+                  { p: "DeepSeek", url: "platform.deepseek.com/api_keys", color: "#4F46E5" },
+                ].map(p => (
+                  <div key={p.p} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: p.color, flexShrink: 0 }} />
+                    <span style={{ fontWeight: 600, color: C.text, width: 80 }}>{p.p}</span>
+                    <span style={{ color: C.blue, fontSize: 11 }}>{p.url}</span>
+                  </div>
+                ))}
+              </div>
             </Card>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* API Status - shows if configured, not the keys */}
             <Card>
-              <SecTitle t="Status das APIs" />
-              <p style={{ fontSize: 11, color: C.dim, marginBottom: 14 }}>Configuradas pelo administrador</p>
-              {[
-                { key: "laozhang_api_key", icon: "🤖", label: "IA (LaoZhang)", desc: "Roteiros, SEO, análises" },
-                { key: "youtube_api_key", icon: "📺", label: "YouTube Data", desc: "Dados de canais e vídeos" },
-                { key: "imagefx_cookie", icon: "🎨", label: "ImageFX", desc: "Geração de imagens" },
-              ].map(api => (
-                <div key={api.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
-                  <span style={{ fontSize: 18 }}>{api.icon}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{api.label}</div>
-                    <div style={{ fontSize: 11, color: C.dim }}>{api.desc}</div>
-                  </div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: apiStatus[api.key] ? C.green : C.red }}>
-                    {apiStatus[api.key] ? "✓ Ativa" : "✕ Não configurada"}
-                  </div>
+              <SecTitle t="Status" />
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ fontSize: 12, color: C.muted }}>🔑 Sua API Key</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: userApiKey ? C.green : C.red }}>{userApiKey ? "✓ Configurada" : "✕ Não configurada"}</span>
                 </div>
-              ))}
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ fontSize: 12, color: C.muted }}>🤖 Provedor</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{curProvider.l}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ fontSize: 12, color: C.muted }}>📊 Modelo</span>
+                  <span style={{ fontSize: 11, fontFamily: "var(--mono)", color: C.purple }}>{userModel || curProvider.models[0]}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
+                  <span style={{ fontSize: 12, color: C.muted }}>📺 YouTube API</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: apiStatus.youtube_api_key ? C.green : C.dim }}>{apiStatus.youtube_api_key ? "✓ Admin" : "—"}</span>
+                </div>
+              </div>
               <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(255,255,255,0.02)", borderRadius: 8, fontSize: 11, color: C.dim }}>
-                💡 As chaves de API são gerenciadas apenas pelo administrador. Se alguma API não estiver configurada, peça ao admin.
+                Se você não configurar sua API Key, o sistema usa a API do administrador (se disponível).
               </div>
             </Card>
 
-            <Card>
-              <SecTitle t="Modelo Selecionado" />
-              <div style={{ fontFamily: "var(--mono)", fontSize: 13, color: C.purple, padding: "8px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 8 }}>
-                {model}
-              </div>
-            </Card>
-
-            {/* Promote to admin */}
+            {/* Promote */}
             <Card>
               <SecTitle t="Administração" />
-              <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>Você não é administrador. Se nenhum admin existe no sistema, clique abaixo.</div>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>Não é admin? Se nenhum admin existe, clique abaixo.</div>
               <Btn onClick={async () => {
                 setPromoting(true);
                 try {
@@ -176,7 +244,7 @@ export default function Settings() {
                   toast?.success("Você agora é admin!");
                 } catch (err) { toast?.error(err.message); }
                 setPromoting(false);
-              }} disabled={promoting}>{promoting ? "Promovendo..." : "🛡 Tornar-me Administrador"}</Btn>
+              }} disabled={promoting}>{promoting ? "..." : "🛡 Tornar-me Admin"}</Btn>
             </Card>
           </div>
         </div>
