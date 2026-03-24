@@ -123,6 +123,57 @@ function Drop({ onFile, label, sub, accept = "image/*" }) {
 /* ═══════════════════════════════════════
    TAB 1: CRIADOR NINJA
    ═══════════════════════════════════════ */
+
+/* ═══════════════════════════════════════
+   NICHE COLOR PALETTES (auto-suggest)
+   ═══════════════════════════════════════ */
+const NICHE_PALETTES = {
+  gaming: { bg: "#0A0A1A", colors: ["#00FF88", "#7B2FFF", "#FF0055", "#00D4FF", "#FFFF00"], tip: "Neon saturado + fundo escuro. RGB gamer." },
+  reviews: { bg: "#F5F5F5", colors: ["#FF6B00", "#1A1A1A", "#FFD700", "#FFFFFF", "#333333"], tip: "Fundo clean, produto em destaque, estrelas douradas." },
+  podcast: { bg: "#1A0F00", colors: ["#FF8C00", "#FFD700", "#8B4513", "#FFF8DC", "#D2691E"], tip: "Tons quentes âmbar, intimista." },
+  musica: { bg: "#0A001A", colors: ["#FF00FF", "#00FFFF", "#FF6EC7", "#7B68EE", "#FFD700"], tip: "Neon vibrante, luzes de palco." },
+  tutoriais: { bg: "#0D1B2A", colors: ["#3B82F6", "#10B981", "#FFFFFF", "#F59E0B", "#1E293B"], tip: "Azul confiável + verde sucesso." },
+  fitness: { bg: "#1A0000", colors: ["#FF4500", "#FFD700", "#FF6347", "#000000", "#FFFFFF"], tip: "Laranja/vermelho energético, alto contraste." },
+  financas: { bg: "#001A00", colors: ["#00FF00", "#FFD700", "#006400", "#FFFFFF", "#000000"], tip: "Verde dinheiro + dourado premium." },
+  tecnologia: { bg: "#000A1A", colors: ["#00BFFF", "#00FFFF", "#4169E1", "#FFFFFF", "#7B68EE"], tip: "Azul/ciano tech, futurista." },
+  motivacional: { bg: "#1A0A00", colors: ["#FF6B00", "#FFD700", "#FF4500", "#FFFFFF", "#FF8C00"], tip: "Dourado/laranja quente, sunrise energy." },
+  comedia: { bg: "#FFFF00", colors: ["#FF0000", "#0000FF", "#00FF00", "#FF69B4", "#FFFFFF"], tip: "Cores saturadas e vivas, divertido." },
+  dark: { bg: "#000000", colors: ["#8B0000", "#4B0082", "#191970", "#C0C0C0", "#FF0000"], tip: "Escuro total, vermelho/roxo pontual." },
+  terror: { bg: "#0A0000", colors: ["#8B0000", "#FF0000", "#2F2F2F", "#FFFFFF", "#000000"], tip: "Preto + vermelho sangue, dessaturado." },
+  cinema: { bg: "#0A1520", colors: ["#E07020", "#1A8090", "#FFD700", "#FFFFFF", "#2C3E50"], tip: "Teal & orange cinematográfico." },
+  esportes: { bg: "#001A00", colors: ["#00FF00", "#FFFFFF", "#FF0000", "#FFD700", "#000000"], tip: "Cores do time, gramado verde, energia." },
+  ia: { bg: "#000A1A", colors: ["#00FFFF", "#7B2FFF", "#00FF88", "#FFFFFF", "#0000FF"], tip: "Ciano/roxo digital, Matrix vibes." },
+  noticias: { bg: "#8B0000", colors: ["#FFFFFF", "#FFFF00", "#FF0000", "#000000", "#FF6347"], tip: "Vermelho urgente + amarelo alerta." },
+  outro: { bg: "#1A1A2E", colors: ["#FFFFFF", "#3B82F6", "#F59E0B", "#EF4444", "#10B981"], tip: "Versátil, alto contraste." },
+};
+
+const LAYOUT_TEMPLATES = [
+  { id: "mrbeast", name: "MrBeast", desc: "Rosto + texto grande + fundo colorido", layout: { textPos: "left", facePos: "right", faceSize: 60, textSize: 40 }, colors: ["#FF0000", "#FFFF00", "#000000"] },
+  { id: "finance", name: "Finance", desc: "Número grande + gráfico + badge", layout: { textPos: "center", facePos: "none", textSize: 50 }, colors: ["#00FF00", "#FFD700", "#000000"] },
+  { id: "dark-minimal", name: "Dark Minimal", desc: "Fundo escuro + 1 elemento + texto neon", layout: { textPos: "top-left", facePos: "center", faceSize: 40, textSize: 30 }, colors: ["#000000", "#FF0000", "#FFFFFF"] },
+  { id: "tutorial-clean", name: "Tutorial Clean", desc: "Tela + setas + texto claro", layout: { textPos: "top", facePos: "bottom-right", faceSize: 30, textSize: 35 }, colors: ["#3B82F6", "#FFFFFF", "#1E293B"] },
+  { id: "reaction", name: "Reaction", desc: "Rosto chocado grande + emoji + texto curto", layout: { textPos: "top-left", facePos: "center", faceSize: 70, textSize: 25 }, colors: ["#FF4500", "#FFFFFF", "#000000"] },
+  { id: "versus", name: "VS / Compare", desc: "Dois lados divididos + VS no centro", layout: { textPos: "center", facePos: "both", textSize: 35 }, colors: ["#FF0000", "#0000FF", "#FFFFFF"] },
+  { id: "before-after", name: "Antes/Depois", desc: "Split screen + seta + transformação", layout: { textPos: "top", facePos: "split", textSize: 30 }, colors: ["#EF4444", "#22C55E", "#FFFFFF"] },
+  { id: "breaking", name: "Breaking News", desc: "Barra vermelha + texto urgente + alerta", layout: { textPos: "center", facePos: "none", textSize: 45 }, colors: ["#DC2626", "#FFFFFF", "#FFFF00"] },
+  { id: "cinema-wide", name: "Cinematic", desc: "Letterbox + color grade + texto elegante", layout: { textPos: "bottom-left", facePos: "center", faceSize: 50, textSize: 30 }, colors: ["#E07020", "#1A8090", "#FFFFFF"] },
+  { id: "list-number", name: "Top/Lista", desc: "Número enorme + item + badge", layout: { textPos: "right", facePos: "left", faceSize: 40, textSize: 50 }, colors: ["#FFD700", "#FFFFFF", "#000000"] },
+];
+
+const STICKERS = [
+  { id: "arrow-red", name: "Seta Vermelha", svg: "M10,25 L40,25 L35,15 L50,30 L35,45 L40,35 L10,35Z", color: "#EF4444" },
+  { id: "circle-yellow", name: "Círculo Destaque", svg: "circle", color: "#FBBF24" },
+  { id: "badge-new", name: "NOVO", text: "NOVO", bg: "#EF4444", color: "#fff" },
+  { id: "badge-free", name: "GRÁTIS", text: "GRÁTIS", bg: "#22C55E", color: "#fff" },
+  { id: "badge-top", name: "TOP", text: "TOP", bg: "#F59E0B", color: "#000" },
+  { id: "badge-viral", name: "VIRAL", text: "VIRAL", bg: "#7C3AED", color: "#fff" },
+  { id: "badge-urgent", name: "URGENTE", text: "URGENTE", bg: "#DC2626", color: "#fff" },
+  { id: "emoji-fire", name: "🔥", text: "🔥", emoji: true },
+  { id: "emoji-shock", name: "😱", text: "😱", emoji: true },
+  { id: "emoji-money", name: "💰", text: "💰", emoji: true },
+  { id: "emoji-100", name: "💯", text: "💯", emoji: true },
+  { id: "emoji-star", name: "⭐", text: "⭐", emoji: true },
+];
 function CriadorNinja({ toast, pg }) {
   const [niche, setNiche] = useState("gaming");
   const [title, setTitle] = useState("");
@@ -689,74 +740,417 @@ JSON (sem backticks):
 /* ═══════════════════════════════════════
    TAB 4: EDITOR CANVAS
    ═══════════════════════════════════════ */
+
+/* ═══════════════════════════════════════
+   TAB 5: TRENDS — Thumbnails virais do YouTube
+   ═══════════════════════════════════════ */
+function TrendsTab({ toast, pg }) {
+  const [niche, setNiche] = useState("gaming");
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+  const BASE = "/api";
+  const getToken = () => localStorage.getItem("lc_token");
+
+  const fetchTrends = async () => {
+    setLoading(true); setData(null); setSelected(null); setAnalysis(null);
+    try {
+      const res = await fetch(`${BASE}/trends/thumbnails/${niche}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setData(d);
+    } catch (e) { toast?.error(e.message); }
+    setLoading(false);
+  };
+
+  const analyzeThumb = async (video) => {
+    setSelected(video); setAnalyzing(true); setAnalysis(null);
+    pg?.start("🔍 Analisando thumbnail viral", ["Extraindo composicao", "Identificando padroes", "Gerando prompt"]);
+    try {
+      const { reply } = await chatApi.send([{ role: "system", content: "Voce e expert em thumbnails virais 2026. Analise a thumbnail deste video que esta VIRAL agora e gere um prompt para recriar algo similar mas original." },
+        { role: "user", content: `Video viral: "${video.title}" do canal "${video.channel}" com ${(video.views/1000).toFixed(0)}K views.
+Nicho: ${NICHES.find(n => n.id === niche)?.l || niche}.
+
+Analise porque esta thumbnail esta funcionando e gere prompts para eu criar algo no mesmo nivel.
+
+JSON (sem backticks):
+{"whyItWorks":"3 razoes porque esta thumb esta viral","composition":"descricao da composicao visual","colorPalette":["#hex1","#hex2","#hex3"],"promptRecreate":"prompt ImageFX 80+ palavras para criar thumb inspirada nessa mas ORIGINAL, 16:9, sem texto, photoreal 8K","promptVariation":"variacao mais ousada 80+ palavras","textSuggestion":"como posicionar texto sobre esta composicao","ctrTips":["3 dicas baseadas nesta thumb"]}` }]);
+      setAnalysis(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
+      pg?.done();
+    } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
+    setAnalyzing(false);
+  };
+
+  const fmtViews = v => v >= 1000000 ? (v/1000000).toFixed(1)+"M" : v >= 1000 ? (v/1000).toFixed(0)+"K" : v;
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
+        <select value={niche} onChange={e => setNiche(e.target.value)} style={{ padding: "8px 14px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, color: C.text, fontSize: 13 }}>
+          {NICHES.map(n => <option key={n.id} value={n.id}>{n.i} {n.l}</option>)}
+        </select>
+        <button onClick={fetchTrends} disabled={loading} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #DC2626, #F97316)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "wait" : "pointer", opacity: loading ? 0.6 : 1 }}>
+          {loading ? "Buscando..." : "🔍 Buscar Thumbnails Virais"}
+        </button>
+        {data && <span style={{ fontSize: 11, color: C.dim }}>Busca: "{data.query}" · {data.videos?.length} resultados</span>}
+      </div>
+
+      {/* Niche palette suggestion */}
+      {NICHE_PALETTES[niche] && (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `1px solid ${C.border}`, marginBottom: 16 }}>
+          <span style={{ fontSize: 11, color: C.dim }}>Paleta {NICHES.find(n=>n.id===niche)?.l}:</span>
+          <div style={{ display: "flex", gap: 4 }}>{NICHE_PALETTES[niche].colors.map((c, i) => <div key={i} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer" }} title={c} onClick={() => { navigator.clipboard.writeText(c); toast?.success("Cor copiada: "+c); }} />)}</div>
+          <span style={{ fontSize: 10, color: C.muted, flex: 1 }}>{NICHE_PALETTES[niche].tip}</span>
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: selected ? "1fr 1fr" : "1fr", gap: 16 }}>
+        {/* Video grid */}
+        <div>
+          {data?.videos?.length > 0 ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}>
+              {data.videos.map(v => (
+                <div key={v.id} onClick={() => analyzeThumb(v)} style={{ cursor: "pointer", borderRadius: 12, overflow: "hidden", border: `2px solid ${selected?.id === v.id ? C.orange : C.border}`, background: "rgba(255,255,255,0.02)", transition: "0.2s" }}>
+                  <img src={v.thumbnail || v.thumbnailDefault} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
+                  <div style={{ padding: "8px 10px" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.text, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.title}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10 }}>
+                      <span style={{ color: C.muted }}>{v.channel}</span>
+                      <span style={{ color: C.green, fontWeight: 700 }}>{fmtViews(v.views)} views</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : !loading && (
+            <div style={{ textAlign: "center", padding: 40, color: C.dim }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 6 }}>Descubra o que esta viralizando</div>
+              <div style={{ fontSize: 12 }}>Selecione um nicho e clique em "Buscar" para ver as thumbnails com mais views agora.</div>
+            </div>
+          )}
+        </div>
+
+        {/* Analysis panel */}
+        {selected && (
+          <div>
+            <Sec title={`Analise: ${selected.title.slice(0,50)}...`} icon="🔍">
+              {analyzing ? (
+                <div style={{ textAlign: "center", padding: 20, color: C.dim }}>Analisando...</div>
+              ) : analysis ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ padding: 12, borderRadius: 8, background: C.green+"08", border: `1px solid ${C.green}20` }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: C.green, marginBottom: 6 }}>Porque esta viral</div>
+                    <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6 }}>{analysis.whyItWorks}</div>
+                  </div>
+                  <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6 }}><strong>Composicao:</strong> {analysis.composition}</div>
+                  {analysis.colorPalette?.length > 0 && (
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: C.dim }}>Paleta:</span>
+                      {analysis.colorPalette.map((c, i) => <div key={i} style={{ width: 28, height: 28, borderRadius: 6, background: c, border: "1px solid rgba(255,255,255,0.1)" }} title={c} />)}
+                    </div>
+                  )}
+                  {[{ k: "promptRecreate", t: "Prompt para Recriar", c: C.orange }, { k: "promptVariation", t: "Variacao Ousada", c: C.purple }].map(p => analysis[p.k] && (
+                    <div key={p.k}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: p.c, marginBottom: 4 }}>{p.t}</div>
+                      <div style={{ padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, fontSize: 12, lineHeight: 1.6 }}>{analysis[p.k]}</div>
+                      <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                        <button onClick={() => { navigator.clipboard.writeText(analysis[p.k]); toast?.success("Copiado!"); }} style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>Copiar</button>
+                        <button onClick={async () => { pg?.start("Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: analysis[p.k] + ", YouTube thumbnail, 16:9, no text, ultra quality, 8K" }); if (r.url || r.b64) { const url = r.url || ("data:image/png;base64," + r.b64); window.open(url); pg?.done(); toast?.success("Imagem gerada!"); } } catch (e) { pg?.fail(e.message); } }} style={{ flex: 1, padding: "5px 12px", borderRadius: 6, border: "none", background: `${p.c}20`, color: p.c, cursor: "pointer", fontSize: 10, fontWeight: 600 }}>Gerar Imagem (ImageFX)</button>
+                      </div>
+                    </div>
+                  ))}
+                  {analysis.ctrTips?.length > 0 && <div>{analysis.ctrTips.map((t, i) => <div key={i} style={{ fontSize: 12, color: C.muted, padding: "4px 0 4px 12px", borderLeft: `2px solid ${C.orange}30`, marginBottom: 4 }}>{t}</div>)}</div>}
+                </div>
+              ) : null}
+            </Sec>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   YouTube Preview Component
+   ═══════════════════════════════════════ */
+function YouTubePreview({ canvasRef, title = "Titulo do Video", channel = "Seu Canal" }) {
+  const [mode, setMode] = useState("home");
+  const [thumbSrc, setThumbSrc] = useState("");
+
+  useEffect(() => {
+    const c = canvasRef?.current;
+    if (c) { try { setThumbSrc(c.toDataURL("image/png")); } catch {} }
+  });
+
+  const views = Math.floor(Math.random() * 900 + 100) + "K visualizacoes";
+  const time = ["2:34", "10:15", "8:42", "15:30", "5:17"][Math.floor(Math.random() * 5)];
+  const ago = ["ha 2 horas", "ha 5 horas", "ha 1 dia", "ha 3 dias"][Math.floor(Math.random() * 4)];
+
+  const thumbImg = thumbSrc ? <img src={thumbSrc} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: "#222" }} />;
+
+  return (
+    <Sec title="Preview YouTube" icon="📺" open={false}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+        {["home", "search", "sidebar", "mobile"].map(m => (
+          <Pill key={m} active={mode === m} onClick={() => setMode(m)} color={C.red}>
+            {m === "home" ? "Feed" : m === "search" ? "Busca" : m === "sidebar" ? "Sidebar" : "Mobile"}
+          </Pill>
+        ))}
+      </div>
+
+      <div style={{ background: mode === "mobile" ? "#000" : "#0F0F0F", borderRadius: 10, padding: mode === "mobile" ? "8px" : "14px", overflow: "hidden" }}>
+        {mode === "home" && (
+          <div style={{ maxWidth: 360 }}>
+            <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", aspectRatio: "16/9" }}>
+              {thumbImg}
+              <span style={{ position: "absolute", bottom: 6, right: 6, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 4 }}>{time}</span>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#333", flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{title || "Titulo do Video"}</div>
+                <div style={{ fontSize: 11, color: "#aaa", marginTop: 4 }}>{channel} · {views} · {ago}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {mode === "search" && (
+          <div style={{ display: "flex", gap: 12, maxWidth: 500 }}>
+            <div style={{ position: "relative", width: 200, flexShrink: 0, borderRadius: 8, overflow: "hidden", aspectRatio: "16/9" }}>
+              {thumbImg}
+              <span style={{ position: "absolute", bottom: 4, right: 4, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 9, padding: "1px 5px", borderRadius: 3 }}>{time}</span>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "#fff", lineHeight: 1.3, marginBottom: 6 }}>{title}</div>
+              <div style={{ fontSize: 10, color: "#aaa" }}>{views} · {ago}</div>
+              <div style={{ fontSize: 10, color: "#aaa", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#333" }} />
+                {channel}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {mode === "sidebar" && (
+          <div style={{ display: "flex", gap: 8, maxWidth: 350 }}>
+            <div style={{ position: "relative", width: 168, flexShrink: 0, borderRadius: 6, overflow: "hidden", aspectRatio: "16/9" }}>
+              {thumbImg}
+              <span style={{ position: "absolute", bottom: 3, right: 3, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 8, padding: "1px 4px", borderRadius: 2 }}>{time}</span>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: "#fff", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{title}</div>
+              <div style={{ fontSize: 10, color: "#aaa", marginTop: 4 }}>{channel}</div>
+              <div style={{ fontSize: 10, color: "#aaa" }}>{views}</div>
+            </div>
+          </div>
+        )}
+
+        {mode === "mobile" && (
+          <div style={{ maxWidth: 200, margin: "0 auto" }}>
+            <div style={{ position: "relative", borderRadius: 6, overflow: "hidden", aspectRatio: "16/9" }}>
+              {thumbImg}
+              <span style={{ position: "absolute", bottom: 3, right: 3, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 8, padding: "1px 4px", borderRadius: 2 }}>{time}</span>
+            </div>
+            <div style={{ marginTop: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: "#fff", lineHeight: 1.2 }}>{title}</div>
+              <div style={{ fontSize: 9, color: "#aaa", marginTop: 2 }}>{channel} · {views}</div>
+            </div>
+            <div style={{ marginTop: 8, padding: "6px 10px", borderRadius: 6, background: "#181818", fontSize: 9, color: C.orange, fontWeight: 600, textAlign: "center" }}>
+              Este e o tamanho real no feed mobile (120x68px)
+            </div>
+          </div>
+        )}
+      </div>
+    </Sec>
+  );
+}
+
+/* ═══════════════════════════════════════
+   TAB 4: EDITOR CANVAS (Enhanced)
+   ═══════════════════════════════════════ */
 function EditorCanvas({ toast, pg }) {
   const cvs = useRef(null);
-  const [title, setTitle] = useState("SEU TÍTULO AQUI");
-  const [subtitle, setSubtitle] = useState("");
+  const [layers, setLayers] = useState([{ id: 1, text: "SEU TITULO", x: 640, y: 320, size: 72, font: "Impact, sans-serif", weight: 900, color: "#FFFFFF", stroke: true, strokeColor: "#000000", strokeWidth: 5, shadow: true, shadowBlur: 16, visible: true }]);
+  const [selLayer, setSelLayer] = useState(1);
   const [template, setTemplate] = useState(0);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiBg, setAiBg] = useState(null);
   const [userBg, setUserBg] = useState(null);
   const [genLoading, setGenLoading] = useState(false);
-  const [imageOnly, setImageOnly] = useState(false);
   const [badge, setBadge] = useState("");
   const [emoji, setEmoji] = useState("");
-  const [titleStyle, setTitleStyle] = useState("impacto");
+  const [dragging, setDragging] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [niche, setNiche] = useState("outro");
   const W = 1280, H = 720;
   const bg = userBg || aiBg;
+  const nextId = useRef(2);
+
+  const addLayer = () => { const id = nextId.current++; setLayers(p => [...p, { id, text: "TEXTO", x: 640, y: 400, size: 48, font: "'Montserrat', sans-serif", weight: 700, color: "#FFFFFF", stroke: false, strokeColor: "#000", strokeWidth: 3, shadow: true, shadowBlur: 10, visible: true }]); setSelLayer(id); };
+  const updateLayer = (id, data) => setLayers(p => p.map(l => l.id === id ? { ...l, ...data } : l));
+  const removeLayer = (id) => { setLayers(p => p.filter(l => l.id !== id)); if (selLayer === id) setSelLayer(layers[0]?.id); };
+  const curLayer = layers.find(l => l.id === selLayer);
 
   const draw = useCallback(() => {
     const c = cvs.current; if (!c) return;
     const ctx = c.getContext("2d"); c.width = W; c.height = H;
     const t = TEMPLATES_CANVAS[template];
-    const style = TITLE_STYLES.find(s => s.id === titleStyle) || TITLE_STYLES[0];
-    const content = () => {
-      if (imageOnly) return;
+    const drawContent = () => {
       const vg = ctx.createRadialGradient(W/2, H/2, W*.2, W/2, H/2, W*.7);
-      vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,0.6)");
+      vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,0.5)");
       ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-      if (title) { ctx.font = `${style.weight} ${style.size}px ${style.font}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; if (style.stroke) { ctx.strokeStyle = "rgba(0,0,0,0.9)"; ctx.lineWidth = 6; ctx.strokeText(title.toUpperCase(), W/2, H/2-20); } if (style.glow) { ctx.shadowColor = style.color; ctx.shadowBlur = 30; } else { ctx.shadowColor = "rgba(0,0,0,.8)"; ctx.shadowBlur = 20; ctx.shadowOffsetY = 4; } ctx.fillStyle = style.color; ctx.fillText(title.toUpperCase(), W/2, H/2-20); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; }
-      if (subtitle) { ctx.fillStyle = t.accentColor; ctx.font = "bold 32px Arial"; ctx.textAlign = "center"; ctx.fillText(subtitle, W/2, H/2+70); }
+      layers.filter(l => l.visible).forEach(l => {
+        ctx.font = `${l.weight} ${l.size}px ${l.font}`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        if (l.stroke) { ctx.strokeStyle = l.strokeColor; ctx.lineWidth = l.strokeWidth; ctx.lineJoin = "round"; ctx.strokeText(l.text.toUpperCase(), l.x, l.y); }
+        if (l.shadow) { ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = l.shadowBlur; ctx.shadowOffsetY = 3; }
+        ctx.fillStyle = l.color; ctx.fillText(l.text.toUpperCase(), l.x, l.y);
+        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+      });
       if (badge) { ctx.fillStyle = t.accentColor; ctx.font = "bold 22px Arial"; const bw = ctx.measureText(badge).width+30; ctx.beginPath(); ctx.roundRect(W-bw-20, 20, bw, 44, 8); ctx.fill(); ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.fillText(badge, W-bw/2-20, 48); }
-      if (emoji) { ctx.font = "120px Arial"; ctx.textAlign = "left"; ctx.fillText(emoji, 40, H-60); }
-      if (title || subtitle) { ctx.fillStyle = t.accentColor; ctx.fillRect(W/2-60, H/2+100, 120, 4); }
+      if (emoji) { ctx.font = "100px Arial"; ctx.textAlign = "left"; ctx.fillText(emoji, 40, H-60); }
     };
     const fillGrad = () => { const grd = ctx.createLinearGradient(0,0,W,H); const colors = t.bg.match(/#[a-f0-9]{3,8}/gi) || ["#1a1a2e"]; colors.forEach((c, i) => grd.addColorStop(i/Math.max(colors.length-1,1), c)); ctx.fillStyle = grd; ctx.fillRect(0,0,W,H); };
-    if (bg) { const img = new Image(); img.crossOrigin = "anonymous"; img.src = bg; img.onload = () => { ctx.drawImage(img,0,0,W,H); content(); }; img.onerror = () => { fillGrad(); content(); }; } else { fillGrad(); content(); }
-  }, [title, subtitle, template, bg, badge, emoji, imageOnly, titleStyle]);
+    if (bg) { const img = new Image(); img.crossOrigin = "anonymous"; img.src = bg; img.onload = () => { ctx.drawImage(img,0,0,W,H); drawContent(); }; img.onerror = () => { fillGrad(); drawContent(); }; } else { fillGrad(); drawContent(); }
+  }, [layers, template, bg, badge, emoji]);
 
   useEffect(() => { draw(); }, [draw]);
 
-  const genBg = async () => { if (!aiPrompt.trim()) { toast?.error("Escreva um prompt"); return; } setGenLoading(true); pg?.start("🎨 Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: aiPrompt + ", YouTube thumbnail, 16:9, cinematic, 8K" }); if (r.url) { setAiBg(r.url); setUserBg(null); pg?.done(); toast?.success("Background gerado!"); } } catch (e) { pg?.fail(e.message); } setGenLoading(false); };
+  // Mouse drag for text layers
+  const onMouseDown = (e) => {
+    const c = cvs.current; if (!c) return;
+    const rect = c.getBoundingClientRect();
+    const scaleX = W / rect.width, scaleY = H / rect.height;
+    const mx = (e.clientX - rect.left) * scaleX, my = (e.clientY - rect.top) * scaleY;
+    for (let i = layers.length - 1; i >= 0; i--) {
+      const l = layers[i]; if (!l.visible) continue;
+      const tw = l.text.length * l.size * 0.5, th = l.size;
+      if (mx > l.x - tw/2 && mx < l.x + tw/2 && my > l.y - th/2 && my < l.y + th/2) {
+        setDragging({ id: l.id, offX: mx - l.x, offY: my - l.y }); setSelLayer(l.id); return;
+      }
+    }
+  };
+  const onMouseMove = (e) => {
+    if (!dragging) return;
+    const c = cvs.current; if (!c) return;
+    const rect = c.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (W / rect.width), my = (e.clientY - rect.top) * (H / rect.height);
+    updateLayer(dragging.id, { x: Math.round(mx - dragging.offX), y: Math.round(my - dragging.offY) });
+  };
+  const onMouseUp = () => setDragging(null);
+
+  const genBg = async () => { if (!aiPrompt.trim()) return; setGenLoading(true); pg?.start("Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: aiPrompt + ", YouTube thumbnail, 16:9, cinematic, 8K, no text" }); if (r.url || r.b64) { setAiBg(r.url || ("data:image/png;base64,"+r.b64)); setUserBg(null); pg?.done(); toast?.success("Background gerado!"); } } catch (e) { pg?.fail(e.message); } setGenLoading(false); };
   const exp = (s=1) => { const c = cvs.current; if (!c) return; if (s===1) { const l = document.createElement("a"); l.download = "thumbnail.png"; l.href = c.toDataURL("image/png"); l.click(); } else { const h = document.createElement("canvas"); h.width=W*s; h.height=H*s; h.getContext("2d").drawImage(c,0,0,W*s,H*s); const l = document.createElement("a"); l.download = `thumb-${W*s}x${H*s}.png`; l.href = h.toDataURL("image/png"); l.click(); } toast?.success("Exportado!"); };
+  const palette = NICHE_PALETTES[niche] || NICHE_PALETTES.outro;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 16 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16 }}>
       <div>
-        <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.border}` }}><canvas ref={cvs} style={{ width: "100%", height: "auto", display: "block" }} /></div>
-        <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-          <Btn onClick={() => exp(1)}>📥 1280×720</Btn>
-          <Btn onClick={() => exp(2)} style={{ background: C.blue+"15", color: C.blue }}>📐 2K HD</Btn>
-          <Btn onClick={() => setImageOnly(!imageOnly)} style={{ background: imageOnly ? C.green+"15" : "transparent", color: imageOnly ? C.green : C.dim }}>{imageOnly ? "🖼️ Só Imagem ✓" : "📝 Com Texto"}</Btn>
+        {/* Canvas with drag */}
+        <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.border}`, cursor: dragging ? "grabbing" : "grab", position: "relative" }}
+          onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}>
+          <canvas ref={cvs} style={{ width: "100%", height: "auto", display: "block" }} />
+          <div style={{ position: "absolute", top: 8, left: 8, fontSize: 9, color: "rgba(255,255,255,0.4)", background: "rgba(0,0,0,0.5)", padding: "2px 8px", borderRadius: 4 }}>Arraste o texto para posicionar</div>
         </div>
+        <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+          <Btn onClick={() => exp(1)}>1280x720</Btn>
+          <Btn onClick={() => exp(2)} style={{ background: C.blue+"15", color: C.blue }}>2K HD</Btn>
+          <Btn onClick={() => exp(3)} style={{ background: C.purple+"15", color: C.purple }}>4K</Btn>
+          <Btn onClick={() => setShowPreview(!showPreview)} style={{ background: showPreview ? C.red+"15" : "transparent", color: showPreview ? C.red : C.dim }}>{showPreview ? "Fechar Preview" : "📺 Preview YouTube"}</Btn>
+        </div>
+        {showPreview && <YouTubePreview canvasRef={cvs} title={layers[0]?.text} />}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: "75vh", overflowY: "auto" }}>
-        <Sec title="📝 Texto" icon="">
-          <Label t="Título" /><textarea value={title} onChange={e => setTitle(e.target.value)} style={{ width: "100%", background: "rgba(255,255,255,.04)", border: `1px solid ${C.border}`, borderRadius: 8, padding: 8, color: C.text, fontSize: 13, outline: "none", minHeight: 44, resize: "vertical" }} />
-          <Label t="Estilo" /><div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 3, marginBottom: 8 }}>{TITLE_STYLES.map(s => <button key={s.id} onClick={() => setTitleStyle(s.id)} style={{ padding: "5px 2px", borderRadius: 5, border: `1px solid ${titleStyle === s.id ? C.red : C.border}`, background: titleStyle === s.id ? C.red+"12" : "transparent", cursor: "pointer" }}><div style={{ fontFamily: s.font, fontSize: 9, fontWeight: s.weight, color: s.color }}>{s.ex}</div><div style={{ fontSize: 7, color: C.dim }}>{s.l}</div></button>)}</div>
-          <Label t="Subtítulo" /><Input value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="Texto secundário" />
-          <Label t="Badge" /><Input value={badge} onChange={e => setBadge(e.target.value)} placeholder="NOVO, TOP 10" />
-          <Label t="Emoji" /><Input value={emoji} onChange={e => setEmoji(e.target.value)} placeholder="🔥 😱 💰" />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: "80vh", overflowY: "auto" }}>
+        {/* Text Layers */}
+        <Sec title={`Camadas de Texto (${layers.length})`} icon="📝">
+          {layers.map(l => (
+            <div key={l.id} onClick={() => setSelLayer(l.id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, marginBottom: 4, cursor: "pointer", background: selLayer === l.id ? C.blue+"12" : "rgba(255,255,255,0.02)", border: `1px solid ${selLayer === l.id ? C.blue+"40" : C.border}` }}>
+              <span style={{ fontSize: 9, color: C.dim, width: 14 }}>#{l.id}</span>
+              <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: l.color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.text || "(vazio)"}</span>
+              <button onClick={e => { e.stopPropagation(); updateLayer(l.id, { visible: !l.visible }); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: l.visible ? C.green : C.dim }}>{l.visible ? "👁" : "👁‍🗨"}</button>
+              {layers.length > 1 && <button onClick={e => { e.stopPropagation(); removeLayer(l.id); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: C.red }}>✕</button>}
+            </div>
+          ))}
+          <button onClick={addLayer} style={{ width: "100%", padding: "8px", borderRadius: 8, border: `1px dashed ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 11 }}>+ Adicionar Texto</button>
+
+          {curLayer && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
+              <Label t="Texto" /><input value={curLayer.text} onChange={e => updateLayer(curLayer.id, { text: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: 6, border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.04)", color: C.text, outline: "none", fontSize: 13, marginBottom: 8 }} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                <div><Label t="Tamanho" /><input type="range" min="20" max="120" value={curLayer.size} onChange={e => updateLayer(curLayer.id, { size: +e.target.value })} style={{ width: "100%" }} /><span style={{ fontSize: 10, color: C.dim }}>{curLayer.size}px</span></div>
+                <div><Label t="Cor" /><input type="color" value={curLayer.color} onChange={e => updateLayer(curLayer.id, { color: e.target.value })} style={{ width: "100%", height: 30, border: "none", borderRadius: 6, cursor: "pointer" }} /></div>
+              </div>
+              <Label t="Fonte" /><select value={curLayer.font} onChange={e => updateLayer(curLayer.id, { font: e.target.value })} style={{ width: "100%", padding: "6px", borderRadius: 6, border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.04)", color: C.text, fontSize: 11, marginBottom: 8 }}>
+                {TITLE_STYLES.map(s => <option key={s.id} value={s.font}>{s.l} ({s.font.split(",")[0].replace(/'/g,"")})</option>)}
+              </select>
+              <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                <Pill active={curLayer.stroke} onClick={() => updateLayer(curLayer.id, { stroke: !curLayer.stroke })} color={C.red}>Outline</Pill>
+                <Pill active={curLayer.shadow} onClick={() => updateLayer(curLayer.id, { shadow: !curLayer.shadow })} color={C.blue}>Sombra</Pill>
+                <Pill active={curLayer.weight >= 700} onClick={() => updateLayer(curLayer.id, { weight: curLayer.weight >= 700 ? 400 : 900 })} color={C.orange}>Bold</Pill>
+              </div>
+              {curLayer.stroke && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                  <div><Label t="Cor Outline" /><input type="color" value={curLayer.strokeColor} onChange={e => updateLayer(curLayer.id, { strokeColor: e.target.value })} style={{ width: "100%", height: 24, border: "none", borderRadius: 4, cursor: "pointer" }} /></div>
+                  <div><Label t="Espessura" /><input type="range" min="1" max="15" value={curLayer.strokeWidth} onChange={e => updateLayer(curLayer.id, { strokeWidth: +e.target.value })} style={{ width: "100%" }} /></div>
+                </div>
+              )}
+            </div>
+          )}
         </Sec>
-        <Sec title="🎨 Template" icon=""><div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4 }}>{TEMPLATES_CANVAS.map((t, i) => <button key={i} onClick={() => { setTemplate(i); setAiBg(null); setUserBg(null); }} style={{ height: 32, borderRadius: 6, border: template===i ? `2px solid ${C.red}` : `1px solid ${C.border}`, background: t.bg, cursor: "pointer" }}><span style={{ fontSize: 7, fontWeight: 700, color: t.textColor }}>{t.name}</span></button>)}</div></Sec>
-        <Sec title="📷 Sua Imagem" icon="">
+
+        {/* Palette */}
+        <Sec title="Paleta do Nicho" icon="🎨" open={false}>
+          <select value={niche} onChange={e => setNiche(e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: 6, border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.04)", color: C.text, fontSize: 11, marginBottom: 8 }}>
+            {NICHES.map(n => <option key={n.id} value={n.id}>{n.i} {n.l}</option>)}
+          </select>
+          <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
+            {palette.colors.map((c, i) => <div key={i} onClick={() => { if (curLayer) updateLayer(curLayer.id, { color: c }); }} style={{ flex: 1, height: 32, borderRadius: 6, background: c, cursor: "pointer", border: "1px solid rgba(255,255,255,0.1)" }} title={c} />)}
+          </div>
+          <div style={{ fontSize: 10, color: C.dim }}>{palette.tip}</div>
+        </Sec>
+
+        {/* Templates */}
+        <Sec title="Templates Layout" icon="📐" open={false}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 4 }}>
+            {LAYOUT_TEMPLATES.map(t => (
+              <button key={t.id} onClick={() => { toast?.success("Template: " + t.name); }} style={{ padding: "8px 6px", borderRadius: 8, border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.02)", cursor: "pointer", textAlign: "center" }}>
+                <div style={{ display: "flex", gap: 2, justifyContent: "center", marginBottom: 4 }}>{t.colors.map((c, i) => <div key={i} style={{ width: 12, height: 12, borderRadius: 3, background: c }} />)}</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: C.text }}>{t.name}</div>
+                <div style={{ fontSize: 8, color: C.dim }}>{t.desc}</div>
+              </button>
+            ))}
+          </div>
+        </Sec>
+
+        {/* Badge + Emoji */}
+        <Sec title="Badge + Emoji" icon="🏷️" open={false}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+            <div><Label t="Badge" /><Input value={badge} onChange={e => setBadge(e.target.value)} placeholder="NOVO, TOP" /></div>
+            <div><Label t="Emoji" /><Input value={emoji} onChange={e => setEmoji(e.target.value)} placeholder="🔥😱" /></div>
+          </div>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {STICKERS.filter(s => s.text && !s.emoji).map(s => <button key={s.id} onClick={() => setBadge(s.text)} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: s.bg, color: s.color, cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{s.text}</button>)}
+          </div>
+          <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+            {STICKERS.filter(s => s.emoji).map(s => <button key={s.id} onClick={() => setEmoji(p => p + s.text)} style={{ width: 32, height: 32, borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", cursor: "pointer", fontSize: 18 }}>{s.text}</button>)}
+          </div>
+        </Sec>
+
+        {/* Background Template */}
+        <Sec title="Background" icon="🎨">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginBottom: 8 }}>
+            {TEMPLATES_CANVAS.map((t, i) => <button key={i} onClick={() => { setTemplate(i); setAiBg(null); setUserBg(null); }} style={{ height: 32, borderRadius: 6, border: template===i ? `2px solid ${C.red}` : `1px solid ${C.border}`, background: t.bg, cursor: "pointer" }}><span style={{ fontSize: 7, fontWeight: 700, color: t.textColor }}>{t.name}</span></button>)}
+          </div>
           <Drop onFile={f => { setUserBg(URL.createObjectURL(f)); setAiBg(null); }} label="Upload fundo" sub="Foto ou screenshot" />
-          {userBg && <button onClick={() => setUserBg(null)} style={{ marginTop: 6, width: "100%", padding: "5px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, cursor: "pointer", fontSize: 10 }}>✕ Remover</button>}
-        </Sec>
-        <Sec title="🤖 Background IA" icon="">
-          <Input value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="cidade futurista, explosão..." style={{ marginBottom: 8 }} />
-          <Btn onClick={genBg} disabled={genLoading} style={{ width: "100%", justifyContent: "center", fontSize: 11 }}>{genLoading ? "⏳..." : "🎨 Gerar (ImageFX)"}</Btn>
-          {aiBg && <button onClick={() => setAiBg(null)} style={{ marginTop: 6, width: "100%", padding: "5px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, cursor: "pointer", fontSize: 10 }}>✕ Remover IA</button>}
+          {userBg && <button onClick={() => setUserBg(null)} style={{ marginTop: 6, width: "100%", padding: "5px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, cursor: "pointer", fontSize: 10 }}>Remover</button>}
+          <div style={{ marginTop: 8 }}><Input value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Prompt para ImageFX..." style={{ marginBottom: 6 }} />
+          <Btn onClick={genBg} disabled={genLoading} style={{ width: "100%", justifyContent: "center", fontSize: 11 }}>{genLoading ? "Gerando..." : "Gerar Background (ImageFX)"}</Btn></div>
+          {aiBg && <button onClick={() => setAiBg(null)} style={{ marginTop: 6, width: "100%", padding: "5px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, cursor: "pointer", fontSize: 10 }}>Remover IA</button>}
         </Sec>
       </div>
     </div>
@@ -764,12 +1158,13 @@ function EditorCanvas({ toast, pg }) {
 }
 
 /* ═══════════════════════════════════════
-   MAIN
+   MAIN PAGE
    ═══════════════════════════════════════ */
 const TABS = [
   { id: "criador", l: "Criador Pro", i: "🎨", color: "#DC2626" },
+  { id: "trends", l: "Trends", i: "📊", color: "#22C55E", badge: "NOVO" },
   { id: "remix", l: "Remix AI", i: "🔄", color: "#7C3AED", badge: "NOVO" },
-  { id: "analisador", l: "AnalisadorViral", i: "🔍", color: "#F97316", badge: "NOVO" },
+  { id: "analisador", l: "Analisador Viral", i: "🔍", color: "#F97316", badge: "NOVO" },
   { id: "editor", l: "Editor Canvas", i: "🖌️", color: "#3B82F6" },
 ];
 
@@ -778,7 +1173,6 @@ export default function ThumbEditor() {
   const pg = useProgress();
   const [tab, setTab] = useState("criador");
 
-  // Load Google Fonts for title styles
   useEffect(() => {
     if (!document.getElementById("thumb-fonts")) {
       const link = document.createElement("link");
@@ -788,6 +1182,7 @@ export default function ThumbEditor() {
       document.head.appendChild(link);
     }
   }, []);
+
   return (
     <div className="page-enter">
       <Hdr title="LaCasa ThumbStudio 🎨" sub="Editor profissional de thumbnails com IA" />
@@ -797,6 +1192,7 @@ export default function ThumbEditor() {
         </button>)}
       </div>
       {tab === "criador" && <CriadorNinja toast={toast} pg={pg} />}
+      {tab === "trends" && <TrendsTab toast={toast} pg={pg} />}
       {tab === "remix" && <RemixAI toast={toast} pg={pg} />}
       {tab === "analisador" && <AnalisadorViral toast={toast} pg={pg} />}
       {tab === "editor" && <EditorCanvas toast={toast} pg={pg} />}
