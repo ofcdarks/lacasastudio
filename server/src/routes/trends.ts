@@ -27,7 +27,8 @@ const NICHE_QUERIES: Record<string, string[]> = {
   esportes: ["melhores gols 2026", "lance incrível esporte", "futebol viral"],
   geek: ["anime 2026 novo", "marvel dc geek", "nerd cultura pop"],
   misterio: ["mistério não resolvido", "caso misterioso real", "investigação"],
-  educacao: ["história civilizações antigas", "curiosidades história", "educação viral", "documentário história"],
+  historia: ["história civilizações antigas", "civilização antiga documentário", "império romano", "egito antigo", "história antiga"],
+  educacao: ["curiosidades incríveis educação", "você sabia que", "educação viral", "aula online"],
   empreendedorismo: ["empreendedorismo 2026 negócio", "startup do zero", "renda online"],
   espiritualidade: ["espiritualidade despertar", "meditação guiada", "energia"],
   ia: ["inteligência artificial 2026 novidade", "chatgpt novo", "IA ferramenta"],
@@ -46,11 +47,8 @@ router.get("/my-niche", async (req: any, res: Response, next: NextFunction) => {
       });
     } catch { channels = []; }
 
-    const withNiche = channels.filter((c: any) => c.niche && c.niche.trim() !== "");
-    if (withNiche.length > 0) {
-      res.json({ niche: withNiche[0].niche, channel: withNiche[0].name, source: "channel" });
-      return;
-    }
+    // Don't blindly trust saved niche — always re-verify against videos
+    const savedNiche = channels.find((c: any) => c.niche && c.niche.trim() !== "")?.niche || "";
 
     // 2. Try to detect from user's videos in DB
     let videos: any[] = [];
@@ -67,11 +65,11 @@ router.get("/my-niche", async (req: any, res: Response, next: NextFunction) => {
       const allText = videos.map((v: any) => `${v.title || ""} ${v.tags || ""}`).join(" ").toLowerCase();
       const detected = detectNicheFromText(allText);
       if (detected) {
-        // Save detected niche to first channel if possible
+        // Save/update detected niche to channel
         if (channels.length > 0) {
           try { await prisma.channel.update({ where: { id: channels[0].id }, data: { niche: detected } }); } catch {}
         }
-        res.json({ niche: detected, channel: channels[0]?.name || "Seu Canal", source: "detected" });
+        res.json({ niche: detected, channel: channels[0]?.name || "Seu Canal", source: "detected", confidence: 1 });
         return;
       }
     }
@@ -109,6 +107,11 @@ router.get("/my-niche", async (req: any, res: Response, next: NextFunction) => {
       } catch {}
     }
 
+    // Fallback to saved niche if re-detection failed
+    if (savedNiche) {
+      res.json({ niche: savedNiche, channel: channels[0]?.name || "", source: "channel" });
+      return;
+    }
     res.json({ niche: "", channel: channels[0]?.name || "", source: "none" });
   } catch (err: any) {
     res.json({ niche: "", channel: "", source: "none" });
@@ -122,14 +125,15 @@ function detectNicheFromText(text: string): string | null {
     tecnologia: ["tech", "celular", "notebook", "app", "software", "programação", "código", "iphone", "android", "samsung", "review tech", "unboxing tech"],
     fitness: ["treino", "academia", "dieta", "musculação", "saúde", "emagrecer", "shape", "whey", "hipertrofia", "cardio", "exercício"],
     comedia: ["humor", "comédia", "piada", "engraçado", "meme", "zoeira", "react", "tente não rir"],
-    educacao: ["aprender", "ensinar", "aula", "curso", "estudo", "escola", "faculdade", "enem", "vestibular", "concurso", "historia", "história", "civilização", "civilizacao", "império", "imperio", "guerra", "batalha", "antigo", "medieval", "reis", "faraó", "roma", "grécia", "grecia", "egito", "inca", "asteca", "azteca", "maia", "maya", "zapoteca", "tolteca", "latin", "américa latina", "america latina", "mesoamerica", "pré-colombiano", "arqueologia", "mitologia", "dinastia", "revolução", "revolucao"],
+    historia: ["historia", "história", "civilização", "civilizacao", "império", "imperio", "guerra mundial", "batalha", "antigo", "antiga", "medieval", "reis", "faraó", "farao", "roma", "romano", "grécia", "grecia", "egito", "egípcio", "inca", "incas", "asteca", "azteca", "aztecas", "maia", "maya", "zapoteca", "tolteca", "mesoamerica", "pré-colombiano", "arqueologia", "mitologia", "dinastia", "revolução", "revolucao", "civilizações", "antiguidade", "mesopotâmia", "babilônia", "samurai", "viking", "cruzadas", "feudal", "mongol", "persa", "otomano", "colonial"],
+    educacao: ["aprender", "ensinar", "aula", "curso", "estudo", "escola", "faculdade", "enem", "vestibular", "concurso", "professor", "matéria", "prova"],
     dark: ["dark", "psicologia", "manipulação", "sombrio", "obscuro", "mente", "comportamento", "narcisista"],
     musica: ["música", "cover", "cantando", "violão", "guitarra", "beat", "rap", "funk", "sertanejo", "pagode"],
     cinema: ["filme", "cinema", "trailer", "série", "review filme", "análise", "marvel", "dc", "netflix"],
     esportes: ["futebol", "gol", "esporte", "lance", "campeonato", "nba", "ufc", "libertadores"],
     motivacional: ["motivação", "sucesso", "mindset", "superação", "foco", "disciplina", "produtividade"],
     terror: ["terror", "horror", "medo", "assombrado", "fantasma", "creepy", "paranormal", "sobrenatural"],
-    ia: ["inteligência artificial", "ia ", "chatgpt", "claude", "machine learning", "openai", "prompt", "automação"],
+    ia: ["inteligência artificial", "chatgpt", "claude", "machine learning", "openai", "prompt engineering", "automação ia", "deep learning", "neural", "llm", "gpt-4", "midjourney", "stable diffusion"],
     noticias: ["notícia", "urgente", "breaking", "aconteceu", "plantão", "política", "governo"],
     empreendedorismo: ["empreender", "negócio", "startup", "empresa", "marketing", "vendas", "dropshipping", "loja"],
     podcast: ["podcast", "entrevista", "conversa", "papo", "bate-papo", "episódio"],

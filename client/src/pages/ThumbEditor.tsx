@@ -26,7 +26,7 @@ const NICHES = [
   { id: "terror", l: "Terror", i: "👻" }, { id: "dramatico", l: "Dramático", i: "🎭" },
   { id: "cinema", l: "Cinematográfico", i: "🎬" }, { id: "esportes", l: "Esportes", i: "⚽" },
   { id: "geek", l: "Geek / Nerd", i: "🤓" }, { id: "misterio", l: "Mistério", i: "🔍" },
-  { id: "educacao", l: "Educação", i: "🎓" }, { id: "empreendedorismo", l: "Empreendedorismo", i: "🚀" },
+  { id: "historia", l: "História", i: "🏛️" }, { id: "educacao", l: "Educação", i: "🎓" }, { id: "empreendedorismo", l: "Empreendedorismo", i: "🚀" },
   { id: "espiritualidade", l: "Espiritualidade", i: "🙏" }, { id: "ia", l: "Inteligência Artificial", i: "🤖" },
   { id: "outro", l: "Outro", i: "📎" },
 ];
@@ -182,6 +182,7 @@ const NICHE_PALETTES = {
   esportes: { bg: "#001A00", colors: ["#00FF00", "#FFFFFF", "#FF0000", "#FFD700", "#000000"], tip: "Cores do time, gramado verde, energia." },
   ia: { bg: "#000A1A", colors: ["#00FFFF", "#7B2FFF", "#00FF88", "#FFFFFF", "#0000FF"], tip: "Ciano/roxo digital, Matrix vibes." },
   noticias: { bg: "#8B0000", colors: ["#FFFFFF", "#FFFF00", "#FF0000", "#000000", "#FF6347"], tip: "Vermelho urgente + amarelo alerta." },
+  historia: { bg: "#1A0F00", colors: ["#C4956A", "#FFD700", "#8B6914", "#2C1810", "#D4A574"], tip: "Sépia + dourado envelhecido + pedra. Épico e antigo." },
   outro: { bg: "#1A1A2E", colors: ["#FFFFFF", "#3B82F6", "#F59E0B", "#EF4444", "#10B981"], tip: "Versátil, alto contraste." },
 };
 
@@ -277,6 +278,7 @@ function CriadorNinja({ toast, pg }) {
         esportes: "estádio lotado, gramado verde, iluminação de arena, movimento congelado (splash, suor), cores do time, composição dinâmica com ângulo baixo, energia atlética",
         geek: "estante de colecionáveis, quadrinhos, figuras de ação, logos de franquias, luzes de LED coloridas, setup nerd, pôsters no fundo, atmosfera de comic-con",
         misterio: "lupa, pegadas, detetive silhueta, fundo nebuloso, cena do crime com fita amarela, tons de azul escuro/cinza, iluminação low-key, suspense visual",
+        historia: "ruínas antigas, templos, pirâmides, estátuas de pedra desgastadas, mapas antigos, pergaminhos, armaduras, espadas, artefatos arqueológicos, composição épica como poster de documentário, iluminação golden hour dramática, tons de sépia, dourado envelhecido, pedra, areia do deserto, céu dramático, sensação de grandiosidade e mistério do passado",
         educacao: "lousa/quadro branco, livros empilhados, sala de aula moderna, ícones didáticos, composição organizada e limpa, cores confiáveis e profissionais, iluminação neutra",
         empreendedorismo: "arranha-céus, gráficos subindo, homem de terno confiante, laptop, escritório moderno, skyline urbana, tons de azul marinho/dourado, iluminação corporativa premium",
         espiritualidade: "raios de luz celestiais, meditação, natureza serena, mandala, cores etéreas (branco, dourado, lilás), atmosfera transcendental, nuvens divinas, aura luminosa",
