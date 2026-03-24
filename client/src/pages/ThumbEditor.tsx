@@ -441,14 +441,15 @@ SEU CONHECIMENTO DE TENDÊNCIAS 2026 (DADOS REAIS):
 
 REGRAS DE OURO DO SEU TRABALHO:
 1. NUNCA gere texto/letras/palavras dentro da imagem. A thumbnail é SÓ background visual — texto será sobreposto depois.
-2. Cada prompt DEVE ter 80-120 palavras ultra-específicas: composição, iluminação (tipo exato: Rembrandt, rim light, butterfly, split), paleta de cores em hex, câmera (ângulo, lens, DOF), textura, atmosfera.
-3. RESPEITE o nicho — cada nicho tem DNA visual próprio que o viewer reconhece inconscientemente.
-4. COMPOSIÇÃO: deixe espaço clean onde o texto será sobreposto (baseado na posição informada). Use regra dos terços. Ponto focal único.
-5. EFEITOS devem estar INTEGRADOS na cena de forma orgânica, não como filtro jogado por cima.
-6. PENSE MOBILE: a imagem precisa ser impactante mesmo em 120x68 pixels (tamanho no feed mobile).
-7. Os prompts devem funcionar no Google ImageFX / Imagen 3.5 — seja técnico, visual e cinematográfico.
-8. Cada variação deve ser genuinamente DIFERENTE em composição e ângulo, não apenas troca de cor.
-9. SEGURANÇA ImageFX: NUNCA use palavras como sangue, arma, violência, morte, explosão, combate, faca, espada, tiro, bomba. Substitua por alternativas visuais seguras (ex: "onda de energia" em vez de "explosão", "tensão dramática" em vez de "violência", "tinta vermelha" em vez de "sangue"). O ImageFX BLOQUEIA prompts com conteúdo violento.` },
+2. TODOS OS PROMPTS ImageFX DEVEM SER EM INGLÊS — o Google ImageFX só funciona com prompts em inglês. Escreva cada prompt inteiro em inglês técnico.
+3. Cada prompt DEVE ter 120-150 palavras ultra-específicas em INGLÊS: composição, iluminação (tipo exato: Rembrandt, rim light, butterfly, split), paleta de cores em hex, câmera (ângulo, lens, DOF), textura, atmosfera.
+4. RESPEITE o nicho — cada nicho tem DNA visual próprio que o viewer reconhece inconscientemente.
+5. COMPOSIÇÃO: deixe espaço clean onde o texto será sobreposto (baseado na posição informada). Use regra dos terços. Ponto focal único.
+6. EFEITOS devem estar INTEGRADOS na cena de forma orgânica, não como filtro jogado por cima.
+7. PENSE MOBILE: a imagem precisa ser impactante mesmo em 120x68 pixels (tamanho no feed mobile).
+8. Os prompts devem funcionar no Google ImageFX / Imagen 3.5 — seja técnico, visual e cinematográfico. SEMPRE EM INGLÊS.
+9. Cada variação deve ser genuinamente DIFERENTE em composição e ângulo, não apenas troca de cor.
+10. SEGURANÇA ImageFX: NUNCA use palavras como blood, weapon, violence, death, explosion, combat, knife, sword, gun, bomb. Use safe alternatives (energy wave, tension, red paint, dramatic marks).` },
       { role: "user", content: `BRIEFING DA THUMBNAIL:
 
 NICHO: ${nicheObj.l} (${nicheObj.i})
@@ -476,7 +477,7 @@ GERE 3 VARIAÇÕES:
 3. OUSADA — conceito visual criativo e inesperado que quebra padrões do nicho
 
 RESPONDA APENAS este JSON (sem markdown, sem backticks):
-{"promptImageFX":"[prompt 1 - mínimo 80 palavras, ultra específico, SEM texto na imagem, 16:9 landscape, photoreal 8K]","promptVariation2":"[prompt 2 - mínimo 80 palavras]","promptVariation3":"[prompt 3 - mínimo 80 palavras, ousado]","textOverlay":{"title":"${title}","titleStyle":"${styleObj.l}: como posicionar o texto sobre esta imagem para máximo impacto","subtitle":"${subtitle || "sugestão de subtítulo"}","badge":"sugestão de badge contextual (ex: NOVO, TOP, VIRAL, GRÁTIS)","emoji":"1 emoji que representa o vídeo"},"tips":["dica 1 específica para ${nicheObj.l}","dica 2 sobre composição","dica 3 sobre cores/CTR"],"ctrEstimate":85}` }], pg);
+{"promptImageFX":"[ENGLISH prompt 1 - minimum 120 words, ultra specific, NO text in image, 16:9 landscape, photorealistic 8K, include exact lighting, hex palette, composition]","promptVariation2":"[ENGLISH prompt 2 - minimum 120 words, different angle]","promptVariation3":"[ENGLISH prompt 3 - minimum 120 words, bold creative]","textOverlay":{"title":"${title}","titleStyle":"${styleObj.l}: como posicionar o texto sobre esta imagem para máximo impacto","subtitle":"${subtitle || "sugestão de subtítulo"}","badge":"sugestão de badge contextual (ex: NOVO, TOP, VIRAL, GRÁTIS)","emoji":"1 emoji que representa o vídeo"},"tips":["dica 1 específica para ${nicheObj.l}","dica 2 sobre composição","dica 3 sobre cores/CTR"],"ctrEstimate":85}` }], pg);
       const parsed = JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
       setOutput(parsed); pg?.done();
     } catch (e) { pg?.fail(e.message, () => generate()); toast?.error(e.message); }
@@ -680,18 +681,18 @@ function RemixAI({ toast, pg }) {
     setLoading(true);
     pg?.start("🔄 Engenharia Reversa", ["Analisando composição", "Extraindo estilo", "Gerando variações"]);
     try {
-      const reply = await aiCall([{ role: "system", content: "Você é o MAIOR ESPECIALISTA DO MUNDO em engenharia reversa de thumbnails virais (2026). Tendências atuais: neo-minimalismo (muito espaço negativo, 1 ponto focal), mobile-first (70% tráfego mobile, decisão em 0.5s), texto máx 5 palavras no canto superior esquerdo, rostos com emoção extrema (+30% CTR), alto contraste neon, evitar bottom-right (timestamp). Ao analisar, identifique: paleta hex exata, tipo de iluminação (Rembrandt/rim/butterfly/split), composição (regra dos terços/diagonal/central), DOF, estilo (neo-minimal/cinematográfico/flat/3D), mood psicológico. Prompts de recriação: 80-120 palavras, 16:9, photoreal, SEM texto na imagem, ultra técnico para Google ImageFX." },
-      { role: "user", content: `Faça ENGENHARIA REVERSA completa desta thumbnail de YouTube.
+      const reply = await aiCall([{ role: "system", content: "You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails (2026). You decompose thumbnails into their EXACT composite layers. ALL PROMPTS MUST BE IN ENGLISH for Google ImageFX. Identify: exact hex palette, lighting type (Rembrandt/rim/butterfly/split), composition (rule of thirds/diagonal/central), DOF, style (neo-minimal/cinematic/flat/3D), psychological mood. Prompts: 120+ words, 16:9, photorealistic composite, NO text in image, ultra technical for ImageFX. REPLICATE the exact same layer structure — same number of layers, same spatial arrangement, same scale tricks." },
+      { role: "user", content: `Do a COMPLETE REVERSE ENGINEERING of this YouTube thumbnail.
 
-Extraia: estilo visual (cinematográfico? flat? 3D? illustration?), paleta de cores EXATA em hex, composição e layout, estilo de iluminação (rembrandt? flat? rim light? neon?), mood/atmosfera, e qualquer efeito visual (bokeh, smoke, glitch, etc).
+Extract: visual style (cinematic? flat? 3D? illustration?), EXACT hex color palette, composition and layout with all LAYERS identified (background layer, main subject cutout, secondary overlaid elements, effects layer), lighting style, mood/atmosphere, and any visual effects (bokeh, smoke, glitch, etc).
 
-Depois gere 3 PROMPTS para Google ImageFX/Imagen 3.5 que recriam variações:
-1. FIEL — mesmo estilo e composição, variação sutil
-2. REINTERPRETAÇÃO — mesmo conceito com ângulo/iluminação diferente  
-3. TRANSFORMAÇÃO — conceito completamente reimaginado mantendo o mood
+Then generate 3 ENGLISH PROMPTS for Google ImageFX/Imagen 3.5 that recreate variations KEEPING THE EXACT SAME COMPOSITE STRUCTURE:
+1. FAITHFUL — same style, composition, and layer arrangement, subtle subject variation
+2. REINTERPRETATION — same concept and layout with different angle/lighting
+3. TRANSFORMATION — completely reimagined while keeping the same mood and composite formula
 
-RESPONDA JSON (sem backticks):
-{"analysis":{"style":"descrição detalhada do estilo visual","colors":["#hex1","#hex2","#hex3","#hex4","#hex5"],"composition":"como os elementos estão posicionados, regra dos terços, ponto focal","lighting":"tipo de iluminação específica","mood":"atmosfera psicológica"},"remixPrompts":[{"name":"Variação Fiel","prompt":"prompt ImageFX 80+ palavras, 16:9, photoreal, SEM texto, descrição completa de cena, iluminação, cores, câmera, atmosfera","changes":"o que muda"},{"name":"Reinterpretação","prompt":"prompt 80+ palavras com novo ângulo","changes":"mudanças"},{"name":"Transformação Criativa","prompt":"prompt 80+ palavras completamente reimaginado","changes":"mudanças"}],"improvements":["melhoria 1 específica e acionável","melhoria 2","melhoria 3"]}` }], pg);
+RESPOND JSON (no backticks):
+{"analysis":{"style":"detailed visual style description","colors":["#hex1","#hex2","#hex3","#hex4","#hex5"],"composition":"how elements are layered and positioned, rule of thirds, focal point, scale relationships","lighting":"specific lighting type and direction","mood":"psychological atmosphere"},"remixPrompts":[{"name":"Faithful Variation","prompt":"ENGLISH ImageFX prompt 120+ words, 16:9 landscape, photorealistic composite, NO text, complete scene description with exact layer positions, lighting, colors, camera, atmosphere","changes":"what changes from original"},{"name":"Reinterpretation","prompt":"ENGLISH 120+ words with new angle but same layout","changes":"changes"},{"name":"Creative Transformation","prompt":"ENGLISH 120+ words completely reimagined but same composite formula","changes":"changes"}],"improvements":["specific actionable improvement 1","improvement 2","improvement 3"]}` }], pg);
       setOutput(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
       pg?.done();
     } catch (e) { pg?.fail(e.message, () => analyze()); toast?.error(e.message); }
@@ -919,7 +920,7 @@ function TrendsTab({ toast, pg }) {
       isCombo ? `Combo IA: Analisando thumbnail` : "Analisando thumbnail viral",
       isCombo
         ? [`Modelo 1 (${combo.analysisModel.split("-").slice(0,2).join("-")}): Análise visual profunda`, `Modelo 2 (${combo.promptModel.split("-").slice(0,2).join("-")}): Gerando prompts ImageFX`, "Finalizando"]
-        : ["Decompondo composicao frame-a-frame", "Extraindo DNA visual", "Gerando prompts superiores"]
+        : ["Decompondo layers frame-a-frame", "Extraindo DNA visual + composição", "Gerando prompts em inglês"]
     );
 
     try {
@@ -927,53 +928,63 @@ function TrendsTab({ toast, pg }) {
       const formatLabel = video.format === "portrait" ? "9:16 portrait (Short)" : "16:9 landscape";
       const formatPrompt = video.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape";
 
-      const ANALYSIS_SYSTEM = `Voce e o MAIOR ESPECIALISTA DO MUNDO em thumbnails virais do YouTube. Voce entende que thumbnails NÃO sao fotos — sao MONTAGENS (composites Photoshop). Voce identifica a FORMULA de cada thumbnail.
+      const ANALYSIS_SYSTEM = `You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails. You understand that viral thumbnails are NOT photos — they are PHOTOSHOP COMPOSITES with multiple layers.
 
-PRIMEIRO: Identifique o TIPO da thumbnail:
-- TIPO A (MONTAGEM/COMPOSITE): Pessoa recortada + elementos sobrepostos + logo/texto + fundo separado.
-- TIPO B (CENA UNICA): Uma unica imagem cinematografica sem composicao de layers.
+YOUR JOB: Decompose the thumbnail into its EXACT layers, then generate ImageFX prompts that REPLICATE THE SAME LAYER STRUCTURE with different subjects.
 
-PARA TIPO A (MONTAGEM) — decomponha as LAYERS:
-1. LAYER FUNDO: qual a imagem/gradiente de fundo? Cor, atmosfera, blur level
-2. LAYER PERSONAGEM/PRINCIPAL: quem/o que esta recortado? Posicao, Tamanho (% do frame). Expressao facial.
-3. LAYER ELEMENTOS SECUNDARIOS: o que mais esta sobreposto? Onde posicionados?
-4. LAYER EFEITOS: glow, sombra, rim light artificial, color grading, vinheta, particulas
-5. LAYOUT ESPACIAL: como os elementos estao distribuidos? (triangular, simetrico, regra dos tercos, Z-pattern)
-6. PALETA: cores hex dominantes. Contraste entre layers.
+STEP 1 — IDENTIFY THUMBNAIL TYPE:
+- TYPE A (COMPOSITE/MONTAGE): Cutout person + overlaid elements + separate background. MOST viral thumbnails are this type.
+- TYPE B (SINGLE SCENE): One unified cinematic image without layer compositing.
 
-PARA TIPO B (CENA UNICA):
-1. Camera angle, lente mm, DOF. 2. Iluminacao. 3. Composicao. 4. Atmosfera e texturas.
+STEP 2 — FOR TYPE A (COMPOSITE), decompose EVERY LAYER:
+1. BACKGROUND LAYER: What image/gradient? Color temperature, blur level, atmosphere
+2. MAIN SUBJECT LAYER: Who/what is cut out? EXACT position (left/center/right, what % of frame). Expression if person. Scale relative to background (impossible scale = viral trick).
+3. SECONDARY ELEMENTS LAYER: What else is overlaid? (movie scenes, objects, logos, other smaller characters). EXACT position of each.
+4. EFFECTS LAYER: Glow, drop shadow, artificial rim light, color grading, vignette, particles, fog
+5. SPATIAL LAYOUT: How are elements distributed? (triangular, symmetrical, rule of thirds, Z-pattern, diagonal)
+6. PALETTE: Dominant hex colors. Contrast between warm/cold layers.
 
-SEGURANCA: Evite sangue, armas, violencia, morte, explosao. Use alternativas seguras.`;
+CRITICAL RULES FOR PROMPTS:
+- ALL PROMPTS MUST BE IN ENGLISH (ImageFX only works with English prompts)
+- REPLICATE the EXACT SAME LAYOUT/FORMULA but with DIFFERENT subjects and scenery
+- If original is "person cutout center + pyramids behind + movie scenes on sides" → your prompt must describe EXACTLY that structure: "person in heroic pose centered, large architectural element behind, two thematic scenes flanking left and right"
+- PRESERVE impossible scale, layer overlapping, compositing style
+- If original has person at 60% of frame with background at impossible scale → keep that ratio
+- MINIMUM 150 words per prompt — ultra specific
+- NEVER include text/letters in the image
+- SAFETY: No blood, weapons, violence, death, explosion. Use alternatives (energy wave, tension, paint, mark).`;
 
-      const ANALYSIS_USER = `IDENTIFIQUE A FORMULA desta thumbnail viral:
+      const ANALYSIS_USER = `REVERSE-ENGINEER this viral thumbnail and generate prompts that CLONE ITS FORMULA:
+
 VIDEO: "${video.title}"
-CANAL: "${video.channel}"
+CHANNEL: "${video.channel}"
 VIEWS: ${(video.views/1000).toFixed(0)}K
-NICHO: ${nicheLabel}
-FORMATO: ${formatLabel}
+NICHE: ${nicheLabel}
+FORMAT: ${formatLabel}
 
-DECOMPONHA frame-a-frame: angulo de camera, lente, iluminacao, truque de escala/composicao que faz esta thumbnail IMPOSSIVEL de ignorar.`;
+Decompose EVERY SINGLE LAYER: what is the background, what is cut out in front, what secondary elements are overlaid, what effects unify the composite, what is the exact spatial arrangement and scale relationship.
 
-      const JSON_TEMPLATE = `{"thumbType":"MONTAGEM ou CENA UNICA","formula":"FORMULA exata","whyItWorks":"Porque funciona (3+ frases)","composition":"DECOMPOSICAO: foreground, midground, background, ponto focal, regra composicional, DOF","lightingAnalysis":"Iluminacao exata","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"PROMPT 120+ palavras ImageFX, ${formatPrompt}, sem texto, 8K","promptVariation":"VARIACAO RADICAL 120+ palavras","textSuggestion":"Onde posicionar texto","ctrTips":["dica 1","dica 2","dica 3"]}`;
+Then generate prompts that use the EXACT SAME composite structure/layout/scale-tricks but with a COMPLETELY DIFFERENT subject while maintaining the same visual impact.
+
+RESPOND ONLY with this JSON (no markdown, no backticks):
+{"thumbType":"COMPOSITE or SINGLE SCENE","formula":"EXACT formula description: how many layers, what each layer contains, positions, scale relationships. E.g.: 'Person cutout at 60% frame right side + ancient ruins at impossible scale behind left + fire particles overlay + sepia-gold color grade + heavy vignette'","whyItWorks":"Why this formula works: visual triggers, psychological tricks, contrast techniques. Minimum 3 sentences.","composition":"DETAILED DECOMPOSITION: foreground (what, % of frame, position), midground (what, % of frame), background (what). Focal point. Leading lines. Compositional rule. Depth of field simulation.","lightingAnalysis":"Exact lighting type, direction, color temperature, ratio, atmospheric effects, how it unifies the composite layers","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words for ImageFX. REPLICATE THE EXACT SAME COMPOSITE LAYOUT: same number of layers, same spatial arrangement, same scale relationships, same lighting direction. CHANGE the subject/characters/scenery but KEEP the formula identical. Include: exact position of each element (left/center/right, % of frame), size relationships, lighting (type + color temp + direction), color palette in hex, atmospheric effects, render style. ${formatPrompt}, photorealistic composite, no text, 8K resolution.","promptVariation":"ENGLISH PROMPT 150+ words. RADICAL VARIATION: same cinematographic technique but completely different visual genre. If original is ancient history, do sci-fi. If action, do noir. Keep the SAME IMPACT and SAME LAYOUT STRUCTURE but transform everything else. ${formatPrompt}, no text, 8K.","textSuggestion":"Where to position text overlay on this composition for maximum CTR (corner, center, size, text color vs background contrast)","ctrTips":["technical tip 1 based on this thumb decomposition","tip 2 about what the original does better than 90% of the niche","tip 3: how to SURPASS this original"]}`;
 
       let reply;
 
       if (isCombo) {
-        // ═══ COMBO MODE: 2 models in sequence ═══
-        const PROMPT_SYSTEM = `Voce e um PROMPT ENGINEER expert em Google ImageFX / Imagen 3.5. Voce recebe uma analise visual detalhada de uma thumbnail e transforma em prompts PERFEITOS para ImageFX.
-REGRAS: Minimo 120 palavras por prompt. NUNCA texto/letras. Descreva como COMPOSITE com layers se for montagem. Inclua posicao, tamanho relativo, iluminacao, paleta hex, atmosfera. SEGURANCA: sem sangue, armas, violencia.`;
+        const PROMPT_SYSTEM = `You are an expert PROMPT ENGINEER for Google ImageFX / Imagen 3.5. You receive a detailed visual analysis of a thumbnail and transform it into PERFECT ImageFX prompts.
+RULES: ALL OUTPUT IN ENGLISH. Minimum 150 words per prompt. NEVER text/letters. Describe as COMPOSITE with layers if it's a montage. Include exact position, relative size, lighting, hex palette, atmosphere. SAFETY: no blood, weapons, violence.`;
 
-        const PROMPT_TEMPLATE = `Com base nesta ANALISE VISUAL PROFUNDA feita por IA especialista:
+        const PROMPT_TEMPLATE = `Based on this DEEP VISUAL ANALYSIS by a specialist AI:
 
----ANALISE---
+---ANALYSIS---
 {analysis}
----FIM ANALISE---
+---END ANALYSIS---
 
-AGORA gere prompts ImageFX que REPLICAM a mesma formula mas com personagens e cenario DIFERENTES e SUPERIORES.
+NOW generate ImageFX prompts that REPLICATE THE EXACT SAME FORMULA/LAYOUT but with DIFFERENT subjects and SUPERIOR execution.
 
-RESPONDA APENAS este JSON (sem markdown, sem backticks):
-${JSON_TEMPLATE}`;
+RESPOND ONLY with this JSON (no markdown, no backticks):
+{"thumbType":"COMPOSITE or SINGLE SCENE","formula":"exact formula","whyItWorks":"why it works","composition":"detailed decomposition","lightingAnalysis":"lighting details","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words, ${formatPrompt}, no text, 8K","promptVariation":"ENGLISH RADICAL VARIATION 150+ words, ${formatPrompt}, no text, 8K","textSuggestion":"text positioning advice","ctrTips":["tip1","tip2","tip3"]}`;
 
         const result = await aiComboCall(
           ANALYSIS_SYSTEM, ANALYSIS_USER, PROMPT_SYSTEM, PROMPT_TEMPLATE,
@@ -981,10 +992,9 @@ ${JSON_TEMPLATE}`;
         );
         reply = result.reply;
       } else {
-        // ═══ SINGLE MODE: 1 model does everything ═══
         reply = await aiCall([
-          { role: "system", content: ANALYSIS_SYSTEM + `\n\nREGRA CRITICA DOS PROMPTS:\n- REPRODUZA A MESMA FORMULA/LAYOUT mas com personagens e cenario DIFERENTES.\n- MINIMO 120 palavras por prompt.\n- NUNCA texto/letras na imagem.` },
-          { role: "user", content: ANALYSIS_USER + `\n\nDepois gere prompts que usam as MESMAS TECNICAS CINEMATOGRAFICAS mas com cena ORIGINAL e SUPERIOR.\n\nJSON (sem backticks):\n${JSON_TEMPLATE}` }
+          { role: "system", content: ANALYSIS_SYSTEM },
+          { role: "user", content: ANALYSIS_USER }
         ], pg);
       }
 

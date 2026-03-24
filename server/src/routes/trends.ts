@@ -27,7 +27,7 @@ const NICHE_QUERIES: Record<string, string[]> = {
   esportes: ["melhores gols 2026", "lance incrível esporte", "futebol viral"],
   geek: ["anime 2026 novo", "marvel dc geek", "nerd cultura pop"],
   misterio: ["mistério não resolvido", "caso misterioso real", "investigação"],
-  historia: ["história civilizações antigas", "civilização antiga documentário", "império romano", "egito antigo", "história antiga"],
+  historia: ["ancient civilizations documentary", "lost civilizations history", "ancient history documentary", "civilização antiga documentário", "história civilizações perdidas", "ancient egypt mystery", "aztec maya inca documentary", "mesoamerica ancient history"],
   educacao: ["curiosidades incríveis educação", "você sabia que", "educação viral", "aula online"],
   empreendedorismo: ["empreendedorismo 2026 negócio", "startup do zero", "renda online"],
   espiritualidade: ["espiritualidade despertar", "meditação guiada", "energia"],
@@ -125,12 +125,43 @@ function detectNicheFromText(text: string): string | null {
     tecnologia: ["tech", "celular", "notebook", "app", "software", "programação", "código", "iphone", "android", "samsung", "review tech", "unboxing tech"],
     fitness: ["treino", "academia", "dieta", "musculação", "saúde", "emagrecer", "shape", "whey", "hipertrofia", "cardio", "exercício"],
     comedia: ["humor", "comédia", "piada", "engraçado", "meme", "zoeira", "react", "tente não rir"],
-    historia: ["historia", "história", "civilização", "civilizacao", "império", "imperio", "guerra mundial", "batalha", "antigo", "antiga", "medieval", "reis", "faraó", "farao", "roma", "romano", "grécia", "grecia", "egito", "egípcio", "inca", "incas", "asteca", "azteca", "aztecas", "maia", "maya", "zapoteca", "tolteca", "mesoamerica", "pré-colombiano", "arqueologia", "mitologia", "dinastia", "revolução", "revolucao", "civilizações", "antiguidade", "mesopotâmia", "babilônia", "samurai", "viking", "cruzadas", "feudal", "mongol", "persa", "otomano", "colonial"],
+    historia: [
+      // Geral
+      "historia", "história", "civilização", "civilizacao", "civilizações", "civilizacoes",
+      "império", "imperio", "impérios", "guerra mundial", "batalha", "antigo", "antiga", "antiguidade",
+      "medieval", "reis", "reis e", "dinastia", "revolução", "revolucao",
+      "arqueologia", "arqueológic", "mitologia", "mitológic", "lenda", "lendas",
+      // Civilizações específicas
+      "faraó", "farao", "egito", "egípcio", "egipcio", "pirâmide", "piramide",
+      "roma", "romano", "romanos", "grécia", "grecia", "grego", "gregos",
+      "mesopotâmia", "mesopotamia", "babilônia", "babilonia", "suméri", "sumeri", "assíri",
+      "persa", "persas", "otomano", "otomanos", "bizantin",
+      "viking", "vikings", "nórdic", "nordico", "samurai", "samurais",
+      "cruzadas", "feudal", "mongol", "mongóis",
+      // América Latina / Mesoamérica — PRIORIDADE ALTA
+      "inca", "incas", "asteca", "astecas", "azteca", "aztecas",
+      "maia", "maias", "maya", "mayas",
+      "olmeca", "olmecas", "tolteca", "toltecas", "zapoteca", "zapotecas",
+      "mesoamerica", "mesoamérica", "pré-colombian", "pre-colombian",
+      "teotihuacan", "tenochtitlan", "chichen itza", "machu picchu", "nazca",
+      "quetzalcoatl", "tlaloc", "huitzilopochtli", "pachamama", "viracocha",
+      "tiahuanaco", "tiwanaku", "chan chan", "caral", "moai", "rapa nui",
+      "civilização antiga", "civilizacao antiga", "ancient civilization",
+      "civilizações perdidas", "civilizacoes perdidas",
+      "história antiga", "historia antiga", "mundo antigo",
+      // Documentário histórico
+      "documentário", "documentario", "discovery", "history channel",
+      "graham hancock", "ancient aliens", "lost civilization",
+      "construções antigas", "construcoes antigas", "templo", "templos",
+      "ruínas", "ruinas", "artefato", "artefatos", "relíquia", "reliquia",
+      "tumba", "tumbas", "sarcófago", "sarcofago", "múmia", "mumia",
+      "hieróglifo", "hieroglifo", "calendário maia", "calendario maia",
+    ],
     educacao: ["aprender", "ensinar", "aula", "curso", "estudo", "escola", "faculdade", "enem", "vestibular", "concurso", "professor", "matéria", "prova"],
     dark: ["dark", "psicologia", "manipulação", "sombrio", "obscuro", "mente", "comportamento", "narcisista"],
     musica: ["música", "cover", "cantando", "violão", "guitarra", "beat", "rap", "funk", "sertanejo", "pagode"],
     cinema: ["filme", "cinema", "trailer", "série", "review filme", "análise", "marvel", "dc", "netflix"],
-    esportes: ["futebol", "gol", "esporte", "lance", "campeonato", "nba", "ufc", "libertadores"],
+    esportes: ["futebol", "gol", "esporte", "campeonato", "nba", "ufc", "libertadores", "copa do mundo", "olimpíada"],
     motivacional: ["motivação", "sucesso", "mindset", "superação", "foco", "disciplina", "produtividade"],
     terror: ["terror", "horror", "medo", "assombrado", "fantasma", "creepy", "paranormal", "sobrenatural"],
     ia: ["inteligência artificial", "chatgpt", "claude", "machine learning", "openai", "prompt engineering", "automação ia", "deep learning", "neural", "llm", "gpt-4", "midjourney", "stable diffusion"],
@@ -145,8 +176,10 @@ function detectNicheFromText(text: string): string | null {
   for (const [niche, kws] of Object.entries(keywords)) {
     let score = 0;
     for (const kw of kws) {
-      const matches = text.split(kw).length - 1;
-      score += matches;
+      const matches = text.split(kw.toLowerCase()).length - 1;
+      // Give double weight to longer/more specific keywords (3+ words)
+      const weight = kw.split(" ").length >= 3 ? 2 : 1;
+      score += matches * weight;
     }
     if (score > 0) scores.push([niche, score]);
   }
