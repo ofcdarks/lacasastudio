@@ -29,7 +29,7 @@ export default function Shorts() {
   const cp = txt => { try { const ta = document.createElement("textarea"); ta.value = txt; ta.style.cssText = "position:fixed;left:-9999px"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); toast?.success("Copiado!"); } catch {} };
 
   return (
-    <div className="page-enter" style={{ maxWidth: 1000, margin: "0 auto" }}>
+    <div className="page-enter" role="main" aria-label="Shorts" style={{ maxWidth: 1000, margin: "0 auto" }}>
       <Hdr title="Gerador de Shorts/Reels" sub="Transforme roteiros longos em shorts virais com IA" />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 16, marginBottom: 24 }}>

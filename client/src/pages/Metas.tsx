@@ -56,7 +56,7 @@ export default function Metas() {
   const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
   return (
-    <div className="page-enter">
+    <div className="page-enter" role="main" aria-label="Metas">
       <Hdr title="Metas & OKRs" sub="Acompanhe e gerencie seus objetivos" action={<Btn onClick={() => setShowF(!showF)}>{showF ? "✕ Fechar" : "+ Nova Meta"}</Btn>} />
 
       <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Metas & OKRs</div>

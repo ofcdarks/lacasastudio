@@ -24,7 +24,7 @@ export default function FullScript(){
   const copyFull=()=>{if(!result)return;const txt=result.sections?.map(s=>`[${s.timestamp}] ${s.title}\n🎙️ ${s.narration}\n🎬 Visual: ${s.visualCue}\n📹 B-roll: ${s.broll}\n🎵 Música: ${s.music}\n✂️ Edição: ${s.editNote}`).join("\n\n---\n\n");cp(`ROTEIRO: ${result.title}\nDuração: ${result.totalDuration}\n\n${txt}`);};
   const copyNarration=()=>{if(!result)return;cp(result.sections?.map(s=>`[${s.timestamp}] ${s.narration}`).join("\n\n"));};
 
-  return<div className="page-enter" style={{maxWidth:1000,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="FullScript" style={{maxWidth:1000,margin:"0 auto"}}>
     <Hdr title="Roteiro Completo" sub="Palavra por palavra · cues visuais · B-roll · música · edição"/>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
       <div><Label t="Título do Vídeo *"/><Input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ex: A Queda de Roma..."/></div>

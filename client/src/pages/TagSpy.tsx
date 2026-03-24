@@ -23,7 +23,7 @@ export default function TagSpy() {
 
   const STR = { forte: { c: C.green, bg: `${C.green}12` }, médio: { c: "#F59E0B", bg: "#F59E0B12" }, fraco: { c: C.dim, bg: "rgba(255,255,255,.04)" } };
 
-  return <div className="page-enter" style={{ maxWidth: 1000, margin: "0 auto" }}>
+  return <div className="page-enter" role="main" aria-label="TagSpy" style={{ maxWidth: 1000, margin: "0 auto" }}>
     <Hdr title="Tag Spy" sub="Descubra TODAS as tags de qualquer vídeo do YouTube" />
     <div style={{ display: "flex", gap: 10, marginBottom: 20, alignItems: "end" }}>
       <div style={{ flex: 1 }}><Label t="URL ou ID do Vídeo *" /><Input value={url} onChange={e => setUrl(e.target.value)} placeholder="Cole a URL do YouTube ou ID do vídeo..." onKeyDown={e => e.key === "Enter" && analyze()} /></div>

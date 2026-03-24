@@ -118,7 +118,7 @@ export default function Planner() {
   };
 
   return (
-    <div className="page-enter">
+    <div className="page-enter" role="main" aria-label="Planner">
       {editVideo && <EditModal video={editVideo} channels={channels} onClose={() => setEditVideo(null)} onSave={saveEdit} />}
 
       <Hdr title="Planner Kanban" sub="Arraste os cards entre colunas para mudar o status"

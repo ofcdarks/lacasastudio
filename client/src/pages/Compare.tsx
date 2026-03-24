@@ -57,7 +57,7 @@ export default function Compare() {
     catch (e) { pg?.fail(e.message); } setLoading(false);
   };
 
-  return <div className="page-enter" style={{ maxWidth: 1000, margin: "0 auto" }}>
+  return <div className="page-enter" role="main" aria-label="Compare" style={{ maxWidth: 1000, margin: "0 auto" }}>
     <Hdr title="Comparador Head-to-Head" sub="Compare até 4 canais lado a lado com dados reais" />
 
     {/* Channel Selector */}

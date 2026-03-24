@@ -42,7 +42,7 @@ export default function Keywords() {
     catch (e) { pg?.fail(e.message); } setLoading(false);
   };
 
-  return <div className="page-enter" style={{ maxWidth: 1000, margin: "0 auto" }}>
+  return <div className="page-enter" role="main" aria-label="Keywords" style={{ maxWidth: 1000, margin: "0 auto" }}>
     <Hdr title="Keyword Research" sub="Volume · Competição · Score · Tags — dados reais da YouTube API" />
 
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, marginBottom: 20, alignItems: "end" }}>

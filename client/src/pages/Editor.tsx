@@ -94,7 +94,7 @@ export default function Editor() {
   };
 
   return (
-    <div className="page-enter">
+    <div className="page-enter" role="main" aria-label="Editor">
       <Hdr title="Editor de Roteiro" sub="Roteiros salvos automaticamente no banco — com IA viral" action={
         <div style={{ display: "flex", gap: 8 }}>
           <Select style={{ width: 200 }} value={selV || ""} onChange={e => setSelV(Number(e.target.value))}>

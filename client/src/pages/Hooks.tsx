@@ -73,7 +73,7 @@ Hooks base: ${ALL_HOOKS.sort(() => Math.random() - 0.5).slice(0, 10).map(h => h.
   };
 
   return (
-    <div className="page-enter" style={{ maxWidth: 1000, margin: "0 auto" }}>
+    <div className="page-enter" role="main" aria-label="Hooks" style={{ maxWidth: 1000, margin: "0 auto" }}>
       <Hdr title="Banco de Hooks Virais" sub={`${ALL_HOOKS.length}+ hooks organizados por categoria · IA adapta pro seu nicho`} />
 
       {/* Adapt section */}

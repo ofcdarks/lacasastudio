@@ -34,7 +34,7 @@ export default function Repurpose(){
 
   const selectVideo=(v)=>{setTitle(v.title);setTab("generate");};
 
-  return<div className="page-enter" style={{maxWidth:1000,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="Repurpose" style={{maxWidth:1000,margin:"0 auto"}}>
     <Hdr title="Repurpose Machine" sub="1 vídeo → 10+ peças · Shorts · Tweets · Carrossel · Blog · Newsletter · LinkedIn · TikTok"/>
 
     <MagicTabs tabs={[

@@ -61,7 +61,7 @@ export default function Checklist() {
   };
 
   return (
-    <div className="page-enter">
+    <div className="page-enter" role="main" aria-label="Checklist">
       <Hdr title="Checklist de Publicação" sub="Garanta que tudo está pronto antes de publicar" action={
         <Select style={{ width: 220 }} value={selV || ""} onChange={e => setSelV(Number(e.target.value))}>
           {videos.map(v => {

@@ -19,7 +19,7 @@ export default function Calendario() {
   const isCurrentMonth = offset === 0;
 
   return (
-    <div className="page-enter">
+    <div className="page-enter" role="main" aria-label="Calendario">
       <Hdr title="Calendário" sub="Visualize sua agenda de publicações" />
 
       <Card>

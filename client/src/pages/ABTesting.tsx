@@ -34,7 +34,7 @@ export default function ABTesting(){
   const running=tests.filter(t=>t.status==="running");
   const completed=tests.filter(t=>t.status==="completed");
 
-  return<div className="page-enter" style={{maxWidth:1000,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="ABTesting" style={{maxWidth:1000,margin:"0 auto"}}>
     <Hdr title="A/B Testing Engine" sub="Teste thumbnails, títulos e descrições com dados reais via YouTube API"/>
     <MagicTabs tabs={[{key:"create",icon:"🧪",label:"Novo Teste",color:C.red},{key:"running",icon:"🔄",label:`Rodando (${running.length})`,color:C.green},{key:"history",icon:"📊",label:"Histórico",color:C.blue}]} active={tab} onChange={setTab}/>
 

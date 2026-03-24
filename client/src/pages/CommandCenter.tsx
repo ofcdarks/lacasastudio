@@ -41,7 +41,7 @@ export default function CommandCenter(){
 
   const v=r?.video||{};const lc=LAYER_COLORS[r?.layer]||C.dim;
 
-  return<div className="page-enter" style={{maxWidth:1000,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="CommandCenter" style={{maxWidth:1000,margin:"0 auto"}}>
     <Hdr title="Command Center — 48h" sub="Monitore + IA diz exatamente o que fazer agora"/>
 
     {latestVids.length>0&&<div style={{marginBottom:16}}>

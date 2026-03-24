@@ -29,7 +29,7 @@ export default function CatalogOptimizer(){
     catch(e){pg?.fail(e.message);}setFixing(null);
   };
 
-  return<div className="page-enter" style={{maxWidth:1000,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="CatalogOptimizer" style={{maxWidth:1000,margin:"0 auto"}}>
     <Hdr title="Catalog Re-Optimizer" sub="Escaneie todos os vídeos — IA corrige SEO de cada um com dados reais"/>
     <Btn onClick={scan} disabled={loading} style={{marginBottom:24}}>{loading?"⏳":"🔍 Escanear Meu Catálogo (50 vídeos)"}</Btn>
 

@@ -33,7 +33,7 @@ export default function StreakTracker(){
     weeks.push(days);
   }
 
-  return<div className="page-enter" style={{maxWidth:900,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="StreakTracker" style={{maxWidth:900,margin:"0 auto"}}>
     <Hdr title="Upload Streak" sub="Consistência é fator de ranking — mantenha seu streak vivo"/>
 
     {data&&<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:24}}>

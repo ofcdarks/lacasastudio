@@ -237,7 +237,7 @@ export default function Research(){
   const isSaved=id=>saved.some(s=>s.ytChannelId===id);
   const dR=filterTier==="Todos"?results:results.filter(r=>r.tier===filterTier);
 
-  return<div className="page-enter" style={{maxWidth:1200,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="Research" style={{maxWidth:1200,margin:"0 auto"}}>
     {analysis&&<AnalysisPanel data={analysis} onClose={()=>setAnalysis(null)} onSave={saveC} saved={isSaved(analysis.ytChannelId)} toast={toast}/>}
     <Hdr title="Inteligência de Mercado" sub="DNA · Blueprint · Monetização · Títulos · Calendário · Preview de Canal"/>
     <div style={{display:"flex",gap:2,marginBottom:20,borderBottom:`1px solid ${C.border}`,overflowX:"auto",flexShrink:0}}>

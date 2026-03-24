@@ -5,6 +5,16 @@ import { aiApi, chatApi } from "../lib/api";
 import { C, Btn, Hdr, Label, Input, Select } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
 
+// Auto-save generated thumbnails to history
+function saveToHistory(data: { niche?: string; prompt?: string; imageUrl?: string; title?: string; style?: string; score?: number }) {
+  const token = localStorage.getItem("lc_token");
+  fetch("/api/trends/thumb-history", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  }).catch(() => {});
+}
+
 const NICHES = [
   { id: "gaming", l: "Gaming", i: "🎮" }, { id: "reviews", l: "Reviews", i: "⭐" },
   { id: "podcast", l: "Podcast", i: "🎙️" }, { id: "musica", l: "Música", i: "🎵" },
@@ -229,7 +239,7 @@ function CriadorNinja({ toast, pg }) {
     pg?.start("Gerando Imagem", ["ImageFX processando", "Finalizando"]);
     try {
       const r = await aiApi.generateAsset({ prompt: prompt + ", YouTube thumbnail, 16:9 landscape, no text, ultra quality, 8K" });
-      if (r.url || r.b64) { const imgUrl = r.url || ("data:image/png;base64," + r.b64); setGenImages(p => ({ ...p, [key]: imgUrl })); setModalImg(imgUrl); pg?.done(); toast?.success("Imagem gerada!"); }
+      if (r.url || r.b64) { const imgUrl = r.url || ("data:image/png;base64," + r.b64); setGenImages(p => ({ ...p, [key]: imgUrl })); setModalImg(imgUrl); saveToHistory({ niche, prompt: prompt.slice(0, 500), imageUrl: imgUrl.startsWith("data:") ? "" : imgUrl, title, style: titleStyle, score: 0 }); pg?.done(); toast?.success("Imagem gerada!"); }
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setGenImgLoading(p => ({ ...p, [key]: false }));
   };
@@ -573,7 +583,7 @@ function RemixAI({ toast, pg }) {
     pg?.start("Gerando Remix", ["ImageFX processando"]);
     try {
       const r = await aiApi.generateAsset({ prompt: prompt + ", YouTube thumbnail, 16:9, no text, ultra quality" });
-      if (r.url || r.b64) { const imgUrl = r.url || ("data:image/png;base64," + r.b64); setGenImages(p => ({ ...p, [key]: imgUrl })); setModalImg(imgUrl); pg?.done(); toast?.success("Remix gerado!"); }
+      if (r.url || r.b64) { const imgUrl = r.url || ("data:image/png;base64," + r.b64); setGenImages(p => ({ ...p, [key]: imgUrl })); setModalImg(imgUrl); saveToHistory({ niche: "remix", prompt: prompt.slice(0, 500), imageUrl: imgUrl.startsWith("data:") ? "" : imgUrl, title: "Remix", style: "remix", score: 0 }); pg?.done(); toast?.success("Remix gerado!"); }
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setGenImgLoading(p => ({ ...p, [key]: false }));
   };
@@ -815,16 +825,41 @@ function TrendsTab({ toast, pg }) {
 
   const analyzeThumb = async (video) => {
     setSelected(video); setAnalyzing(true); setAnalysis(null);
-    pg?.start("Analisando thumbnail viral", ["Extraindo composicao", "Identificando padroes", "Gerando prompt"]);
+    pg?.start("Analisando thumbnail viral", ["Decompondo composicao frame-a-frame", "Extraindo DNA visual", "Gerando prompts superiores"]);
     try {
-      const { reply } = await chatApi.send([{ role: "system", content: "Voce e expert em thumbnails virais 2026. Analise a thumbnail deste video que esta VIRAL agora e gere um prompt para recriar algo similar mas original." },
-        { role: "user", content: `Video viral: "${video.title}" do canal "${video.channel}" com ${(video.views/1000).toFixed(0)}K views. Formato: ${video.format || "landscape"}.
-Nicho: ${NICHES.find(n => n.id === niche)?.l || niche}.
+      const { reply } = await chatApi.send([{ role: "system", content: `Voce e um DIRETOR DE FOTOGRAFIA DE HOLLYWOOD que tambem e expert em thumbnails virais do YouTube. Voce trabalhou em filmes da Marvel, Nolan e Fincher. Voce ve uma thumbnail e DECOMPOE ela como se fosse um frame de filme:
 
-Analise porque esta thumbnail esta funcionando e gere prompts para eu criar algo no mesmo nivel.
+SUA ABORDAGEM (obrigatoria):
+1. CAMERA: Identifique o angulo EXATO (low angle, worms eye, birds eye, dutch tilt, eye level, over-the-shoulder). Identifique a LENTE (wide 16mm, normal 50mm, telephoto 85mm, macro, fisheye).
+2. COMPOSICAO: Onde esta o ponto focal? Qual a regra (tercos, phi, central, diagonal)? O que ocupa quanto % do frame? Qual o leading line?
+3. ILUMINACAO: Tipo EXATO (Rembrandt, butterfly, split, rim light, backlight, practicals, neon, volumetric). De onde vem a luz? Qual a ratio key/fill?
+4. COR: Paleta EXATA em hex. Qual o color grading (teal&orange, bleach bypass, cross-process, natural)?
+5. ESCALA: Qual o truque de escala? (objeto gigante vs minusculo, macro detail, forced perspective)
+6. ATMOSFERA: Fog, rain, particles, sparks, bokeh, lens flare, grain, vignette?
+7. TEXTURA: Pele, metal, agua, fogo, escamas, tecido — qual a textura dominante?
+
+REGRA CRITICA para os prompts de RECRIACAO:
+- O prompt deve descrever a MESMA TECNICA CINEMATOGRAFICA, nao a mesma cena.
+- Se o original usa "extreme macro do olho de um monstro com navio minusculo", o prompt recriado deve usar A MESMA TECNICA: "extreme macro de [elemento diferente] com [escala contrastante]".
+- Se o original usa "low angle com silhuetas contra explosao", recriar com a MESMA TECNICA: "low angle com [silhuetas diferentes] contra [outro fenomeno dramatico]".
+- O prompt deve ser MELHOR que o original. Mais cinematografico. Mais impactante. Mais detalhado.
+- MINIMO 120 palavras por prompt. Cada palavra conta.
+- NUNCA texto/letras/palavras na imagem. NUNCA.
+- Especifique: camera angle, lens mm, lighting type, color palette hex, DOF, atmosphere, texture, render style.` },
+        { role: "user", content: `DECOMPONHA esta thumbnail viral e gere prompts SUPERIORES ao original:
+
+VIDEO: "${video.title}"
+CANAL: "${video.channel}" 
+VIEWS: ${(video.views/1000).toFixed(0)}K
+NICHO: ${NICHES.find(n => n.id === niche)?.l || niche}
+FORMATO: ${video.format === "portrait" ? "9:16 portrait (Short)" : "16:9 landscape"}
+
+DECOMPONHA frame-a-frame: qual angulo de camera, qual lente, qual iluminacao, qual truque de escala/composicao faz esta thumbnail IMPOSSIVEL de ignorar no feed.
+
+Depois gere prompts que usam as MESMAS TECNICAS CINEMATOGRAFICAS mas com cena ORIGINAL e SUPERIOR.
 
 JSON (sem backticks):
-{"whyItWorks":"3 razoes porque esta thumb esta viral","composition":"descricao da composicao visual","colorPalette":["#hex1","#hex2","#hex3"],"promptRecreate":"prompt ImageFX 80+ palavras para criar thumb inspirada nessa mas ORIGINAL, ${video.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape"}, sem texto, photoreal 8K","promptVariation":"variacao mais ousada 80+ palavras","textSuggestion":"como posicionar texto sobre esta composicao","ctrTips":["3 dicas baseadas nesta thumb"]}` }]);
+{"whyItWorks":"Analise tecnica cinematografica: qual tecnica de camera/composicao/iluminacao faz funcionar. Cite angulo, lente, escala, cor. Minimo 3 frases tecnicas.","composition":"DECOMPOSICAO DETALHADA: foreground (o que, quanto % do frame), midground, background. Ponto focal. Leading lines. Regra composicional. Depth of field.","lightingAnalysis":"Tipo de iluminacao exata, direcao, cor da luz, ratio, efeitos atmosfericos","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"PROMPT CINEMATOGRAFICO 120+ palavras para ImageFX. Descreva: camera angle + lens mm, lighting setup (key/fill/rim), color palette exata, foreground/midground/background, atmosfera (fog/particles/rain), textura dominante, DOF, render style (photoreal/cinematic/concept art). Use a MESMA TECNICA do original mas cena diferente e SUPERIOR. ${video.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape"}, sem texto, 8K.","promptVariation":"VARIACAO RADICAL 120+ palavras. Mesma tecnica cinematografica mas genero visual completamente diferente. Se original e sci-fi, faca noir. Se e acao, faca horror. Manter o mesmo IMPACTO mas mudar tudo.","textSuggestion":"Onde posicionar texto sobre esta composicao para maximo CTR (canto, centro, tamanho, cor do texto vs fundo)","ctrTips":["dica tecnica 1 baseada na decomposicao desta thumb","dica 2 sobre o que o original faz melhor que 90% do nicho","dica 3: como SUPERAR este original"]}` }]);
       setAnalysis(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
       pg?.done();
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
@@ -889,17 +924,21 @@ JSON (sem backticks):
           {data?.videos?.length > 0 ? (
             <div style={{ display: "grid", gridTemplateColumns: format === "portrait" ? "repeat(auto-fill, minmax(160px, 1fr))" : "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}>
               {data.videos.map(v => (
-                <div key={v.id} onClick={() => analyzeThumb(v)} style={{ cursor: "pointer", borderRadius: 12, overflow: "hidden", border: `2px solid ${selected?.id === v.id ? C.orange : C.border}`, background: "rgba(255,255,255,0.02)", transition: "0.2s" }}>
-                  <div style={{ position: "relative" }}>
+                <div key={v.id} style={{ borderRadius: 12, overflow: "hidden", border: `2px solid ${selected?.id === v.id ? C.orange : C.border}`, background: "rgba(255,255,255,0.02)", transition: "0.2s" }}>
+                  <div onClick={() => analyzeThumb(v)} style={{ cursor: "pointer", position: "relative" }}>
                     <img src={v.thumbnail || v.thumbnailDefault} style={{ width: "100%", aspectRatio: v.format === "portrait" ? "9/16" : "16/9", objectFit: "cover", display: "block" }} />
                     {v.isShort && <span style={{ position: "absolute", top: 6, left: 6, background: "#FF0000", color: "#fff", fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>SHORT</span>}
                     <span style={{ position: "absolute", bottom: 4, right: 4, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 9, padding: "1px 5px", borderRadius: 3 }}>{v.duration?.replace("PT","").replace("H",":").replace("M",":").replace("S","") || ""}</span>
                   </div>
                   <div style={{ padding: "8px 10px" }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: C.text, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.title}</div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10 }}>
+                    <div onClick={() => analyzeThumb(v)} style={{ cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.text, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.title}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, alignItems: "center" }}>
                       <span style={{ color: C.muted }}>{v.channel}</span>
                       <span style={{ color: C.green, fontWeight: 700 }}>{fmtViews(v.views)} views</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+                      <button onClick={(e) => { e.stopPropagation(); analyzeThumb(v); }} style={{ flex: 1, padding: "5px 8px", borderRadius: 6, border: `1px solid ${C.orange}30`, background: `${C.orange}08`, color: C.orange, cursor: "pointer", fontSize: 9, fontWeight: 600 }}>🔍 Analisar</button>
+                      <button onClick={(e) => { e.stopPropagation(); const url = v.thumbnail || v.thumbnailDefault; if (!url) return; fetch(url).then(r => r.blob()).then(blob => { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `thumb-${v.channel.replace(/[^a-z0-9]/gi,"_")}-${v.id}.jpg`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href); toast?.success("Thumbnail baixada!"); }).catch(() => { window.open(url, "_blank"); }); }} style={{ flex: 1, padding: "5px 8px", borderRadius: 6, border: `1px solid ${C.green}30`, background: `${C.green}08`, color: C.green, cursor: "pointer", fontSize: 9, fontWeight: 600 }}>💾 Baixar Thumb</button>
                     </div>
                   </div>
                 </div>
@@ -927,6 +966,7 @@ JSON (sem backticks):
                     <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6 }}>{analysis.whyItWorks}</div>
                   </div>
                   <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6 }}><strong>Composicao:</strong> {analysis.composition}</div>
+                  {analysis.lightingAnalysis && <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6, marginTop: 4 }}><strong style={{ color: C.orange }}>Iluminacao:</strong> {analysis.lightingAnalysis}</div>}
                   {analysis.colorPalette?.length > 0 && (
                     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                       <span style={{ fontSize: 11, color: C.dim }}>Paleta:</span>
@@ -939,7 +979,7 @@ JSON (sem backticks):
                       <div style={{ padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, fontSize: 12, lineHeight: 1.6 }}>{analysis[p.k]}</div>
                       <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                         <button onClick={() => { navigator.clipboard.writeText(analysis[p.k]); toast?.success("Copiado!"); }} style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>Copiar</button>
-                        <button onClick={async () => { const k = p.k; setGenImgLoading(prev => ({...prev, [k]: true})); pg?.start("Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: analysis[p.k] + ", YouTube thumbnail, " + (selected.format === "portrait" ? "9:16 portrait" : "16:9 landscape") + ", no text, ultra quality, 8K" }); if (r.url || r.b64) { const url = r.url || ("data:image/png;base64," + r.b64); setModalImg(url); pg?.done(); toast?.success("Imagem gerada!"); } } catch (e) { pg?.fail(e.message); toast?.error(e.message); } setGenImgLoading(prev => ({...prev, [k]: false})); }} disabled={genImgLoading[p.k]} style={{ flex: 1, padding: "5px 12px", borderRadius: 6, border: "none", background: genImgLoading[p.k] ? "rgba(255,255,255,0.05)" : `${p.c}20`, color: genImgLoading[p.k] ? C.dim : p.c, cursor: genImgLoading[p.k] ? "wait" : "pointer", fontSize: 10, fontWeight: 600 }}>{genImgLoading[p.k] ? "Gerando..." : "Gerar Imagem (ImageFX)"}</button>
+                        <button onClick={async () => { const k = p.k; setGenImgLoading(prev => ({...prev, [k]: true})); pg?.start("Gerando", ["ImageFX processando"]); try { const r = await aiApi.generateAsset({ prompt: analysis[p.k] + ", YouTube thumbnail, " + (selected.format === "portrait" ? "9:16 portrait" : "16:9 landscape") + ", no text, ultra quality, 8K" }); if (r.url || r.b64) { const url = r.url || ("data:image/png;base64," + r.b64); setModalImg(url); saveToHistory({ niche, prompt: analysis[p.k]?.slice(0, 500) || "", imageUrl: url.startsWith("data:") ? "" : url, title: selected?.title || "", style: "trends", score: 0 }); pg?.done(); toast?.success("Imagem gerada!"); } } catch (e) { pg?.fail(e.message); toast?.error(e.message); } setGenImgLoading(prev => ({...prev, [k]: false})); }} disabled={genImgLoading[p.k]} style={{ flex: 1, padding: "5px 12px", borderRadius: 6, border: "none", background: genImgLoading[p.k] ? "rgba(255,255,255,0.05)" : `${p.c}20`, color: genImgLoading[p.k] ? C.dim : p.c, cursor: genImgLoading[p.k] ? "wait" : "pointer", fontSize: 10, fontWeight: 600 }}>{genImgLoading[p.k] ? "Gerando..." : "Gerar Imagem (ImageFX)"}</button>
                       </div>
                     </div>
                   ))}
@@ -1197,7 +1237,40 @@ function EditorCanvas({ toast, pg }) {
         <Sec title="Templates Layout" icon="📐" open={false}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 4 }}>
             {LAYOUT_TEMPLATES.map(t => (
-              <button key={t.id} onClick={() => { toast?.success("Template: " + t.name); }} style={{ padding: "8px 6px", borderRadius: 8, border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.02)", cursor: "pointer", textAlign: "center" }}>
+              <button key={t.id} onClick={() => {
+                const newLayers = [];
+                const lid = () => nextId.current++;
+                if (t.id === "mrbeast") {
+                  newLayers.push({ id: lid(), text: "TEXTO AQUI", x: 320, y: 300, size: 80, font: "Impact, sans-serif", weight: 900, color: "#FFFFFF", stroke: true, strokeColor: "#000", strokeWidth: 6, shadow: true, shadowBlur: 16, visible: true });
+                  newLayers.push({ id: lid(), text: "SUBTITULO", x: 320, y: 420, size: 36, font: "'Montserrat', sans-serif", weight: 700, color: "#FFFF00", stroke: false, strokeColor: "#000", strokeWidth: 3, shadow: true, shadowBlur: 10, visible: true });
+                } else if (t.id === "finance") {
+                  newLayers.push({ id: lid(), text: "R$10.000", x: 640, y: 260, size: 96, font: "Impact, sans-serif", weight: 900, color: "#00FF00", stroke: true, strokeColor: "#000", strokeWidth: 6, shadow: true, shadowBlur: 20, visible: true });
+                  newLayers.push({ id: lid(), text: "COMO GANHAR", x: 640, y: 420, size: 42, font: "'Oswald', sans-serif", weight: 700, color: "#FFD700", stroke: false, strokeColor: "#000", strokeWidth: 3, shadow: true, shadowBlur: 12, visible: true });
+                } else if (t.id === "dark-minimal") {
+                  newLayers.push({ id: lid(), text: "TITULO", x: 200, y: 120, size: 56, font: "'Bebas Neue', sans-serif", weight: 400, color: "#FF0000", stroke: false, strokeColor: "#000", strokeWidth: 3, shadow: false, shadowBlur: 0, visible: true, glow: true });
+                } else if (t.id === "reaction") {
+                  newLayers.push({ id: lid(), text: "OMG", x: 200, y: 150, size: 90, font: "'Bangers', cursive", weight: 400, color: "#FFFF00", stroke: true, strokeColor: "#000", strokeWidth: 7, shadow: true, shadowBlur: 20, visible: true });
+                } else if (t.id === "versus") {
+                  newLayers.push({ id: lid(), text: "VS", x: 640, y: 360, size: 100, font: "Impact, sans-serif", weight: 900, color: "#FFFFFF", stroke: true, strokeColor: "#FF0000", strokeWidth: 8, shadow: true, shadowBlur: 20, visible: true });
+                  newLayers.push({ id: lid(), text: "LADO A", x: 320, y: 150, size: 44, font: "'Oswald', sans-serif", weight: 700, color: "#FF4444", stroke: true, strokeColor: "#000", strokeWidth: 4, shadow: true, shadowBlur: 10, visible: true });
+                  newLayers.push({ id: lid(), text: "LADO B", x: 960, y: 150, size: 44, font: "'Oswald', sans-serif", weight: 700, color: "#4488FF", stroke: true, strokeColor: "#000", strokeWidth: 4, shadow: true, shadowBlur: 10, visible: true });
+                } else if (t.id === "before-after") {
+                  newLayers.push({ id: lid(), text: "ANTES", x: 320, y: 100, size: 48, font: "Impact, sans-serif", weight: 900, color: "#EF4444", stroke: true, strokeColor: "#000", strokeWidth: 4, shadow: true, shadowBlur: 10, visible: true });
+                  newLayers.push({ id: lid(), text: "DEPOIS", x: 960, y: 100, size: 48, font: "Impact, sans-serif", weight: 900, color: "#22C55E", stroke: true, strokeColor: "#000", strokeWidth: 4, shadow: true, shadowBlur: 10, visible: true });
+                } else if (t.id === "breaking") {
+                  newLayers.push({ id: lid(), text: "URGENTE", x: 640, y: 280, size: 88, font: "Impact, sans-serif", weight: 900, color: "#FFFFFF", stroke: true, strokeColor: "#DC2626", strokeWidth: 6, shadow: true, shadowBlur: 20, visible: true });
+                  newLayers.push({ id: lid(), text: "ACONTECEU AGORA", x: 640, y: 420, size: 36, font: "'Oswald', sans-serif", weight: 700, color: "#FFFF00", stroke: false, strokeColor: "#000", strokeWidth: 3, shadow: true, shadowBlur: 10, visible: true });
+                } else if (t.id === "cinema-wide") {
+                  newLayers.push({ id: lid(), text: "TITULO", x: 300, y: 560, size: 52, font: "'Playfair Display', serif", weight: 900, color: "#FFD700", stroke: false, strokeColor: "#000", strokeWidth: 3, shadow: true, shadowBlur: 14, visible: true });
+                } else if (t.id === "list-number") {
+                  newLayers.push({ id: lid(), text: "TOP 10", x: 200, y: 300, size: 100, font: "Impact, sans-serif", weight: 900, color: "#FFD700", stroke: true, strokeColor: "#000", strokeWidth: 7, shadow: true, shadowBlur: 20, visible: true });
+                  newLayers.push({ id: lid(), text: "MELHORES", x: 200, y: 440, size: 38, font: "'Montserrat', sans-serif", weight: 700, color: "#FFFFFF", stroke: false, strokeColor: "#000", strokeWidth: 3, shadow: true, shadowBlur: 10, visible: true });
+                } else {
+                  newLayers.push({ id: lid(), text: "TITULO", x: 640, y: 360, size: 72, font: "Impact, sans-serif", weight: 900, color: "#FFFFFF", stroke: true, strokeColor: "#000", strokeWidth: 5, shadow: true, shadowBlur: 16, visible: true });
+                }
+                setLayers(newLayers); setSelLayer(newLayers[0].id);
+                toast?.success("Template " + t.name + " aplicado!");
+              }} style={{ padding: "8px 6px", borderRadius: 8, border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.02)", cursor: "pointer", textAlign: "center" }}>
                 <div style={{ display: "flex", gap: 2, justifyContent: "center", marginBottom: 4 }}>{t.colors.map((c, i) => <div key={i} style={{ width: 12, height: 12, borderRadius: 3, background: c }} />)}</div>
                 <div style={{ fontSize: 10, fontWeight: 600, color: C.text }}>{t.name}</div>
                 <div style={{ fontSize: 8, color: C.dim }}>{t.desc}</div>
@@ -1239,12 +1312,106 @@ function EditorCanvas({ toast, pg }) {
 /* ═══════════════════════════════════════
    MAIN PAGE
    ═══════════════════════════════════════ */
+/* ═══════════════════════════════════════
+   TAB 6: HISTORY + GALLERY
+   ═══════════════════════════════════════ */
+function HistoryGallery({ toast }) {
+  const [history, setHistory] = useState([]);
+  const [stats, setStats] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [filterNiche, setFilterNiche] = useState("");
+  const [modalImg, setModalImg] = useState(null);
+  const BASE = "/api";
+  const getToken = () => localStorage.getItem("lc_token");
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${BASE}/trends/thumb-history${filterNiche ? `?niche=${filterNiche}` : ""}`, { headers: { Authorization: `Bearer ${getToken()}` } }).then(r => r.ok ? r.json() : []),
+      fetch(`${BASE}/trends/thumb-stats`, { headers: { Authorization: `Bearer ${getToken()}` } }).then(r => r.ok ? r.json() : {}),
+    ]).then(([h, s]) => { setHistory(h); setStats(s); setLoading(false); }).catch(() => setLoading(false));
+  }, [filterNiche]);
+
+  const del = async (id) => {
+    await fetch(`${BASE}/trends/thumb-history/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } });
+    setHistory(p => p.filter(h => h.id !== id));
+    toast?.success("Removido");
+  };
+
+  const topNiches = Object.entries(stats).sort((a, b) => b[1].count - a[1].count).slice(0, 5);
+
+  return (
+    <div>
+      <ImageModal src={modalImg} onClose={() => setModalImg(null)} title="Thumbnail do Historico" />
+
+      {/* Stats */}
+      {topNiches.length > 0 && (
+        <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+          {topNiches.map(([niche, data]) => (
+            <div key={niche} onClick={() => setFilterNiche(filterNiche === niche ? "" : niche)} style={{ padding: "10px 16px", borderRadius: 10, background: filterNiche === niche ? C.blue + "15" : "rgba(255,255,255,0.02)", border: `1px solid ${filterNiche === niche ? C.blue + "40" : C.border}`, cursor: "pointer" }}>
+              <div style={{ fontSize: 11, color: C.muted }}>{NICHES.find(n => n.id === niche)?.i} {NICHES.find(n => n.id === niche)?.l || niche}</div>
+              <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                <span style={{ fontSize: 16, fontWeight: 700 }}>{data.count}</span>
+                <span style={{ fontSize: 11, color: C.green, alignSelf: "center" }}>avg {data.avgScore}pts</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Filter */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
+        <select value={filterNiche} onChange={e => setFilterNiche(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, color: C.text, fontSize: 12 }}>
+          <option value="">Todos os nichos</option>
+          {NICHES.map(n => <option key={n.id} value={n.id}>{n.i} {n.l}</option>)}
+        </select>
+        <span style={{ fontSize: 12, color: C.dim }}>{history.length} thumbnails geradas</span>
+      </div>
+
+      {/* Grid */}
+      {loading ? <div style={{ textAlign: "center", padding: 40, color: C.dim }}>Carregando...</div> :
+        history.length === 0 ? (
+          <div style={{ textAlign: "center", padding: 40, color: C.dim }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🎨</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 6 }}>Nenhuma thumbnail gerada ainda</div>
+            <div style={{ fontSize: 12 }}>Use o Criador Pro ou Trends para gerar thumbnails. Elas aparecerao aqui automaticamente.</div>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+            {history.map(h => (
+              <div key={h.id} style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.02)" }}>
+                {h.imageUrl && <img src={h.imageUrl} onClick={() => setModalImg(h.imageUrl)} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", cursor: "pointer", display: "block" }} />}
+                <div style={{ padding: "10px 12px" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 4 }}>{h.title || "Sem titulo"}</div>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
+                    {h.niche && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: C.blue + "15", color: C.blue }}>{h.niche}</span>}
+                    {h.style && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: C.purple + "15", color: C.purple }}>{h.style}</span>}
+                    {h.score > 0 && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 4, background: (h.score >= 80 ? C.green : C.orange) + "15", color: h.score >= 80 ? C.green : C.orange }}>CTR {h.score}</span>}
+                  </div>
+                  {h.prompt && <div style={{ fontSize: 10, color: C.dim, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: 6 }}>{h.prompt}</div>}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 9, color: C.dim }}>{h.createdAt ? new Date(h.createdAt).toLocaleDateString("pt-BR") : ""}</span>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {h.prompt && <button onClick={() => { navigator.clipboard.writeText(h.prompt); toast?.success("Prompt copiado!"); }} style={{ padding: "3px 8px", borderRadius: 4, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 9 }}>Copiar</button>}
+                      {h.imageUrl && <a href={h.imageUrl} download={`thumb-${h.id}.png`} style={{ padding: "3px 8px", borderRadius: 4, border: `1px solid ${C.green}30`, background: "transparent", color: C.green, cursor: "pointer", fontSize: 9, textDecoration: "none" }}>Baixar</a>}
+                      <button onClick={() => del(h.id)} style={{ padding: "3px 8px", borderRadius: 4, border: `1px solid ${C.red}30`, background: "transparent", color: C.red, cursor: "pointer", fontSize: 9 }}>Remover</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+    </div>
+  );
+}
+
 const TABS = [
   { id: "criador", l: "Criador Pro", i: "🎨", color: "#DC2626" },
   { id: "trends", l: "Trends", i: "📊", color: "#22C55E", badge: "NOVO" },
   { id: "remix", l: "Remix AI", i: "🔄", color: "#7C3AED", badge: "NOVO" },
   { id: "analisador", l: "Analisador Viral", i: "🔍", color: "#F97316", badge: "NOVO" },
   { id: "editor", l: "Editor Canvas", i: "🖌️", color: "#3B82F6" },
+  { id: "history", l: "Historico", i: "📁", color: "#8B5CF6" },
 ];
 
 export default function ThumbEditor() {
@@ -1263,7 +1430,7 @@ export default function ThumbEditor() {
   }, []);
 
   return (
-    <div className="page-enter">
+    <div className="page-enter" role="main" aria-label="ThumbEditor">
       <Hdr title="LaCasa ThumbStudio 🎨" sub="Editor profissional de thumbnails com IA" />
       <div style={{ display: "flex", gap: 6, marginBottom: 20, borderBottom: `1px solid ${C.border}`, paddingBottom: 12, overflowX: "auto" }}>
         {TABS.map(t => <button key={t.id} onClick={() => setTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 18px", borderRadius: 10, border: "none", cursor: "pointer", background: tab===t.id ? t.color+"18" : "transparent", borderBottom: tab===t.id ? `3px solid ${t.color}` : "3px solid transparent", color: tab===t.id ? "#fff" : C.muted, fontSize: 13, fontWeight: tab===t.id ? 700 : 400, transition: "0.2s", whiteSpace: "nowrap" }}>
@@ -1275,6 +1442,7 @@ export default function ThumbEditor() {
       {tab === "remix" && <RemixAI toast={toast} pg={pg} />}
       {tab === "analisador" && <AnalisadorViral toast={toast} pg={pg} />}
       {tab === "editor" && <EditorCanvas toast={toast} pg={pg} />}
+      {tab === "history" && <HistoryGallery toast={toast} />}
     </div>
   );
 }

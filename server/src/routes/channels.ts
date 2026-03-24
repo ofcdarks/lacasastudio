@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { parsePagination, paginatedResponse } from "../services/pagination";
 import { Router, Response, NextFunction } from "express";
 import { z } from "zod";

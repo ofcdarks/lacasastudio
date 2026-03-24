@@ -25,7 +25,7 @@ export default function AlgoTools(){
   const loadTrends=async()=>{setTrLoading(true);pg?.start("📈 Buscando Tendências",["Trending YouTube","Virais do nicho","Analisando padrões"]);try{const r=await researchApi.trendDetector({niche:trNiche,country:trCountry});pg?.done();setTrends(r);}catch(e){pg?.fail(e.message);}setTrLoading(false);};
   const loadEngage=async()=>{if(!egTitle){toast?.error("Título obrigatório");return;}setEgLoading(true);pg?.start("💬 Gerando Engajamento",["Comentários","CTAs","Estratégia"]);try{const r=await researchApi.engagementGen({title:egTitle,niche:egNiche});pg?.done();setEngage(r);}catch(e){pg?.fail(e.message);}setEgLoading(false);};
 
-  return<div className="page-enter" style={{maxWidth:1000,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="AlgoTools" style={{maxWidth:1000,margin:"0 auto"}}>
     <Hdr title="Armas do Algoritmo" sub="Spy Alerts · Melhor Horário · Tendências · Engajamento"/>
     <MagicTabs tabs={[{key:"alerts",icon:"🔔",label:"Spy Alerts",color:C.red},{key:"time",icon:"⏰",label:"Melhor Horário",color:C.blue},{key:"trends",icon:"📈",label:"Tendências",color:C.green},{key:"engage",icon:"💬",label:"Engajamento",color:C.purple}]} active={tab} onChange={setTab}/>
 

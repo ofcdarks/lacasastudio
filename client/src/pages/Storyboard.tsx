@@ -312,7 +312,7 @@ export default function Storyboard(){
     w.document.write(html);w.document.close();
   };
 
-  return(<div className="page-enter" style={{maxWidth:1100,margin:"0 auto"}}>
+  return(<div className="page-enter" role="main" aria-label="Storyboard" style={{maxWidth:1100,margin:"0 auto"}}>
     <style>{CSS}</style>
     {editScene&&<EditModal scene={editScene} onClose={()=>setEditScene(null)} onSave={saveEdit}/>}
     {assetScene&&<AssetModal scene={assetScene} onClose={()=>setAssetScene(null)}/>}

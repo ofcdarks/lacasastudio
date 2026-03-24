@@ -70,7 +70,7 @@ export default function Orcamento(){
     cp(txt);
   };
 
-  return<div className="page-enter" style={{maxWidth:1000,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="Orcamento" style={{maxWidth:1000,margin:"0 auto"}}>
     <Hdr title="Controle Financeiro" sub="Gastos + Receitas · ROI · Lucro · Exportação" action={<div style={{display:"flex",gap:6}}>
       <Btn onClick={exportCSV} style={{fontSize:10,background:"transparent",border:`1px solid ${C.border}`,color:C.dim}}>📥 CSV</Btn>
       <Btn onClick={exportReport} style={{fontSize:10,background:"transparent",border:`1px solid ${C.border}`,color:C.dim}}>📋 Relatório</Btn>

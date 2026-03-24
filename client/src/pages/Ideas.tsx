@@ -411,7 +411,7 @@ export default function Ideas(){
 
   /* ── Board list ─────────────────────────── */
   if(showList)return(
-    <div className="page-enter" style={{maxWidth:960,margin:"0 auto"}}>
+    <div className="page-enter" role="main" aria-label="Ideas" style={{maxWidth:960,margin:"0 auto"}}>
       <Hdr title="Banco de Ideias" sub="Whiteboard para brainstorm e planejamento" action={<div style={{display:"flex",gap:8}}><Btn vr="ghost" onClick={()=>setFavOnly(!favOnly)} style={{fontSize:11}}>{favOnly?"★ Favoritos":"☆ Mostrar Favoritos"}</Btn><Btn onClick={newB}>+ Novo Quadro</Btn></div>}/>
       <div style={{marginBottom:16}}><input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar quadros..." style={{width:"100%",background:"rgba(255,255,255,.04)",border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 14px",color:C.text,fontSize:13,outline:"none"}}/></div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:16}}>

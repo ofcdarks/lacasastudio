@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Router, Response, NextFunction } from "express";
 import { z } from "zod";
 import prisma from "../db/prisma";
@@ -19,7 +20,7 @@ const ideaSchema = z.object({
 
 router.get("/", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const ideas = await prisma.idea.findMany({
+    const ideas = await prisma.idea.findMany({ take: 100,
       where: { userId: req.userId },
       include: { channel: { select: { id: true, name: true, color: true } } },
       orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],

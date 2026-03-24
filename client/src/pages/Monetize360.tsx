@@ -39,7 +39,7 @@ export default function Monetize360(){
     catch(e){pg?.fail(e.message);}setLoading(false);
   };
 
-  return<div className="page-enter" style={{maxWidth:1000,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="Monetize360" style={{maxWidth:1000,margin:"0 auto"}}>
     <Hdr title="Monetização 360°" sub="AdSense · Afiliados · Cursos · Patrocínios · Membership · Merch"/>
 
     {/* OAuth Revenue Card */}

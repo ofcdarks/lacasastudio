@@ -500,7 +500,7 @@ export default function Ativos() {
   Object.keys(TYPES).forEach(k => { typeCounts[k] = filtered.filter(a => a.type === k).length; });
 
   return (
-    <div className="page-enter">
+    <div className="page-enter" role="main" aria-label="Ativos">
       {editAsset && <EditModal asset={editAsset} channels={channels} folders={folders} onClose={() => setEditAsset(null)} onSave={saveEdit} />}
 
       <Hdr title="Banco de Ativos" sub={`${assets.length} recursos · ${folders.length - 1} pastas`}

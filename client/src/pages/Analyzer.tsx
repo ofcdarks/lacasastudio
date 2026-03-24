@@ -48,7 +48,7 @@ export default function Analyzer(){
 
   const genThumbImg=async(key,prompt)=>{setGenningKey(key);pg?.start("🎨 Gerando Thumbnail",["Enviando ao ImageFX","Imagen 3.5 processando"]);try{const r=await aiApi.generateAsset({prompt:prompt+", YouTube thumbnail, 16:9, high quality, viral"});if(r.url){setGenThumb(p=>({...p,[key]:r.url}));pg?.done();}else{pg?.fail("Sem resultado");}}catch(e){pg?.fail(e.message);}setGenningKey(null);};
 
-  return<div className="page-enter" style={{maxWidth:1100,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="Analyzer" style={{maxWidth:1100,margin:"0 auto"}}>
     <Hdr title="Analisador de Prints" sub="Suba prints de canais e a IA analisa títulos, thumbs e descobre oportunidades"/>
 
     {/* Upload area */}

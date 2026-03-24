@@ -75,7 +75,7 @@ export default function Admin() {
   const blocked = config.block_registration === "true";
 
   return (
-    <div className="page-enter" style={{ maxWidth: 1000, margin: "0 auto" }}>
+    <div className="page-enter" role="main" aria-label="Admin" style={{ maxWidth: 1000, margin: "0 auto" }}>
       <Hdr title="Painel Admin" sub="Gerenciamento do sistema" />
       <MagicTabs tabs={[{key:"dashboard",icon:"📊",label:"Dashboard",color:C.red},{key:"users",icon:"👥",label:"Usuários",color:C.blue},{key:"config",icon:"⚙️",label:"Configurações",color:C.green}]} active={tab} onChange={setTab}/>
 

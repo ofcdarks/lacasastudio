@@ -26,7 +26,7 @@ export default function CommunityPlanner(){
     catch(e){pg?.fail(e.message);}setLoading(false);
   };
 
-  return<div className="page-enter" style={{maxWidth:1000,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="CommunityPlanner" style={{maxWidth:1000,margin:"0 auto"}}>
     <Hdr title="Community Planner" sub="Posts de comunidade + templates de resposta a comentários"/>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:10,marginBottom:20,alignItems:"end"}}>
       <div><Label t="Próximo Vídeo"/><Input value={videoTitle} onChange={e=>setVideoTitle(e.target.value)} placeholder="Título do vídeo..."/></div>

@@ -73,7 +73,7 @@ export default function SeoAudit() {
   const CAT_ICONS = { title: "✍️", description: "📝", tags: "🏷️", engagement: "💬" };
   const failCount = r ? r.checks?.filter(c => !c.pass).length : 0;
 
-  return <div className="page-enter" style={{ maxWidth: 1000, margin: "0 auto" }}>
+  return <div className="page-enter" role="main" aria-label="SeoAudit" style={{ maxWidth: 1000, margin: "0 auto" }}>
     <Hdr title="SEO Score Audit" sub="Audite + IA corrige tudo automaticamente" />
 
     <MagicTabs tabs={[{key:"published",icon:"📺",label:"Vídeo Publicado",color:C.blue},{key:"pre",icon:"📝",label:"Pré-Publicação",color:C.green}]} active={tab} onChange={setTab}/>

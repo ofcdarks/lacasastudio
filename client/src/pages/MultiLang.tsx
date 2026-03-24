@@ -24,7 +24,7 @@ export default function MultiLang(){
 
   const copyAll=()=>{const txt=Object.entries(result||{}).map(([lang,d])=>`=== ${lang.toUpperCase()} ===\nTitle: ${d.title}\nDescription: ${d.description}\nTags: ${d.tags?.join(", ")}\nHashtags: ${d.hashtags?.join(" ")}`).join("\n\n");cp(txt);};
 
-  return<div className="page-enter" style={{maxWidth:1000,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="MultiLang" style={{maxWidth:1000,margin:"0 auto"}}>
     <Hdr title="Multi-Idioma Automático" sub="Traduza e otimize título, descrição e tags em múltiplos idiomas"/>
     <div style={{marginBottom:12}}><Label t="Título do Vídeo *"/><Input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Título original do vídeo..."/></div>
     <div style={{marginBottom:12}}><Label t="Descrição"/><textarea value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Descrição..." style={{width:"100%",background:"rgba(255,255,255,.04)",border:`1px solid ${C.border}`,borderRadius:10,padding:12,color:C.text,fontSize:13,outline:"none",minHeight:60,resize:"vertical"}}/></div>

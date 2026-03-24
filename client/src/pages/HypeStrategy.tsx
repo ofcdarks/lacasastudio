@@ -19,7 +19,7 @@ export default function HypeStrategy(){
     catch(e){pg?.fail(e.message);}setLoading(false);
   };
 
-  return<div className="page-enter" style={{maxWidth:900,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="HypeStrategy" style={{maxWidth:900,margin:"0 auto"}}>
     <Hdr title="Hype Strategy" sub="Maximize Hypes nos primeiros 7 dias — feature YouTube 2026 (500-500K subs)"/>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,marginBottom:20,alignItems:"end"}}>
       <div><Label t="Título do Vídeo *"/><Input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Título..."/></div>

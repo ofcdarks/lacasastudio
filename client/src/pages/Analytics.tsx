@@ -32,7 +32,7 @@ export default function Analytics(){
   const identities=saved.filter(ch=>{try{return JSON.parse(ch.notes||"{}").mockup;}catch{return false;}});
   const a=qaResult?.analysis;const ch=qaResult?.channel;
 
-  return<div className="page-enter">
+  return<div className="page-enter" role="main" aria-label="Analytics">
     <Hdr title="Analytics" sub="Analise qualquer canal · Monitore seus salvos · Dicas de crescimento" action={saved.length?<Btn onClick={refresh} disabled={loading}>{loading?"⏳":"🔄"}</Btn>:null}/>
 
     {/* QUICK ANALYZER */}

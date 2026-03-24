@@ -18,7 +18,7 @@ export default function ShortsOptimizer(){
     catch(e){pg?.fail(e.message);}setLoading(false);
   };
 
-  return<div className="page-enter" style={{maxWidth:900,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="ShortsOptimizer" style={{maxWidth:900,margin:"0 auto"}}>
     <Hdr title="Shorts Optimizer" sub="Otimize para o algoritmo de Shorts 2026 — 200B views/dia"/>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,marginBottom:10,alignItems:"end"}}>
       <div><Label t="Título do Short *"/><Input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Título..."/></div>

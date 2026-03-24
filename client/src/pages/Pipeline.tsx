@@ -39,7 +39,7 @@ export default function Pipeline(){
     toast?.success("Pipeline exportado!");
   };
 
-  return<div className="page-enter" style={{maxWidth:1000,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="Pipeline" style={{maxWidth:1000,margin:"0 auto"}}>
     <Hdr title="Pipeline: Ideia → Canal" sub="Do zero ao canal pronto em 4 passos"/>
 
     {/* Progress steps */}

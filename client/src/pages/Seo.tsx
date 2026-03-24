@@ -44,7 +44,7 @@ export default function Seo(){
 
   const copyAll=()=>{if(!results)return;const t=(results.titles||[]).map(t=>t.text||t).join("\n");cp(`TÍTULOS:\n${t}\n\nDESCRIÇÃO:\n${results.description||""}\n\nTAGS:\n${(results.tags||[]).join(", ")}\n\nHASHTAGS:\n${(results.hashtags||[]).join(" ")}\n\nTIMESTAMPS:\n${(results.timestamps||[]).join("\n")}\n\nHOOK:\n${results.hookScript||""}\n\nCOMENTÁRIO FIXADO:\n${results.pinComment||""}\n\nEND SCREEN:\n${results.endScreen||""}`);};
 
-  return<div className="page-enter">
+  return<div className="page-enter" role="main" aria-label="Seo">
     <Hdr title="SEO Viral Completo" sub="10 títulos · descrição · 15 tags · timestamps · hook · multi-idioma"/>
 
     <Card style={{marginBottom:20}}>

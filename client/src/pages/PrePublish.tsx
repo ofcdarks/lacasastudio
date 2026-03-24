@@ -20,7 +20,7 @@ export default function PrePublish(){
     catch(e){pg?.fail(e.message);toast?.error(e.message);}setLoading(false);
   };
 
-  return<div className="page-enter" style={{maxWidth:900,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="PrePublish" style={{maxWidth:900,margin:"0 auto"}}>
     <Hdr title="Score Pré-Publicação" sub="Analise título + descrição + tags antes de publicar — receba nota 0-100"/>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
       <div><Label t="Título do Vídeo *"/><Input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Cole o título aqui..."/></div>

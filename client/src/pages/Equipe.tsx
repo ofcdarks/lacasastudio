@@ -44,7 +44,7 @@ export default function Equipe() {
   };
 
   return (
-    <div className="page-enter">
+    <div className="page-enter" role="main" aria-label="Equipe">
       <Hdr title="Equipe" sub="Gerencie editores, designers e colaboradores" action={<Btn onClick={() => setShowF(!showF)}>{showF ? "✕ Fechar" : "+ Novo Membro"}</Btn>} />
 
       <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>

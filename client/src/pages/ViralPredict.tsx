@@ -20,7 +20,7 @@ export default function ViralPredict(){
     catch(e){pg?.fail(e.message);}setLoading(false);
   };
 
-  return<div className="page-enter" style={{maxWidth:900,margin:"0 auto"}}>
+  return<div className="page-enter" role="main" aria-label="ViralPredict" style={{maxWidth:900,margin:"0 auto"}}>
     <Hdr title="Preditor de Viralização" sub="Preveja views, CTR e receita ANTES de publicar"/>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
       <div><Label t="Título do Vídeo *"/><Input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Título que vai publicar..."/></div>

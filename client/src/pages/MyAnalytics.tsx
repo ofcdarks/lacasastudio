@@ -86,7 +86,7 @@ export default function MyAnalytics() {
   useEffect(() => { if (connected && selChannel) loadData("overview"); }, [connected, selChannel]);
 
   // ── NOT CONNECTED ──
-  if (!connected) return <div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center", padding: 60 }}>
+  if (!connected) return <div className="page-enter" role="main" aria-label="MyAnalytics" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center", padding: 60 }}>
     <Hdr title="Meus Canais — Dados Reais" sub="Conecte seus canais YouTube para ver métricas reais + IA" />
     <div style={{ fontSize: 48, marginBottom: 20 }}>🔗</div>
     <div style={{ fontSize: 14, color: C.muted, marginBottom: 24, lineHeight: 1.7 }}>Conecte via OAuth para puxar dados REAIS: CTR, retenção, satisfaction e mais. A IA analisa os dados e diz EXATAMENTE o que fazer.</div>
@@ -97,7 +97,7 @@ export default function MyAnalytics() {
   const t = overview?.totals || {};
   const IMP = { alto: { c: C.red, bg: `${C.red}12` }, medio: { c: "#F59E0B", bg: "#F59E0B12" }, baixo: { c: C.blue, bg: `${C.blue}12` } };
 
-  return <div className="page-enter" style={{ maxWidth: 1100, margin: "0 auto" }}>
+  return <div className="page-enter" role="main" aria-label="MyAnalytics" style={{ maxWidth: 1100, margin: "0 auto" }}>
     {/* ── HEADER + CHANNEL SELECTOR ── */}
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
       <div>

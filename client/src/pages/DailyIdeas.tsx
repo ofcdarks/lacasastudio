@@ -56,7 +56,7 @@ export default function DailyIdeas() {
   const todayDB = ideas.filter(i => new Date(i.createdAt).toDateString() === new Date().toDateString());
   const pastIdeas = ideas.filter(i => new Date(i.createdAt).toDateString() !== new Date().toDateString());
 
-  return <div className="page-enter" style={{ maxWidth: 1100, margin: "0 auto" }}>
+  return <div className="page-enter" role="main" aria-label="DailyIdeas" style={{ maxWidth: 1100, margin: "0 auto" }}>
     <Hdr title="Ideias do Dia" sub="Ideias baseadas em trends reais por país + nicho dos seus canais OAuth" />
 
     {/* Controls */}

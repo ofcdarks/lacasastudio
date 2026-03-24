@@ -48,7 +48,7 @@ export default function ShortsClipper() {
     cp(r.shorts.map((s, i) => `=== SHORT ${i + 1}: ${s.title} ===\n🎣 Hook: ${s.hook}\n\n${s.script}\n\n📍 De: ${s.timecodeStart} → ${s.timecodeEnd}\n🎯 CTA: ${s.cta}\n${s.hashtags?.join(" ")}`).join("\n\n---\n\n"));
   };
 
-  return <div className="page-enter" style={{ maxWidth: 1000, margin: "0 auto" }}>
+  return <div className="page-enter" role="main" aria-label="ShortsClipper" style={{ maxWidth: 1000, margin: "0 auto" }}>
     <Hdr title="Shorts Clipper" sub="Extraia 5 Shorts virais do seu roteiro longo — com hooks, CTAs e hashtags" />
 
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>

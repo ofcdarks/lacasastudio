@@ -592,3 +592,19 @@ model UserSetting {
   @@unique([userId, key])
   @@index([userId])
 }
+
+model ThumbHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  niche     String   @default("")
+  prompt    String   @default("")
+  imageUrl  String   @default("")
+  title     String   @default("")
+  style     String   @default("")
+  score     Int      @default(0)
+  metadata  String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, niche])
+}

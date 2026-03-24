@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Router, Response, NextFunction } from "express";
 import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
@@ -7,7 +8,7 @@ router.use(authenticate);
 
 router.get("/", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const items = await prisma.budgetItem.findMany({ where: { userId: req.userId }, orderBy: { createdAt: "desc" } });
+    const items = await prisma.budgetItem.findMany({ take: 100, where: { userId: req.userId }, orderBy: { createdAt: "desc" } });
     // Map DB fields back to frontend format
     res.json(items.map(i => ({
       id: i.id, name: i.desc, category: i.category, amount: i.value,

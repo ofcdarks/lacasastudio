@@ -63,7 +63,7 @@ export default function Dashboard(){
   const g=oauthData?.growth||{};
   const hasOAuth=channels.length>0;
 
-  return<div className="page-enter">
+  return<div className="page-enter" role="main" aria-label="Dashboard">
     {showOnboarding&&<Onboarding onClose={()=>{setShowOnboarding(false);localStorage.setItem("lcs_onboarded","1");}}/>}
 
     <div style={{marginBottom:24,display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>

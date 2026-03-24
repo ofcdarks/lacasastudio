@@ -36,7 +36,7 @@ export default function Templates() {
   };
 
   return (
-    <div className="page-enter">
+    <div className="page-enter" role="main" aria-label="Templates">
       <Hdr title="Templates de Série" sub="Crie estruturas reutilizáveis para seus vídeos" action={<Btn onClick={() => setShowF(!showF)}>{showF ? "✕ Fechar" : "+ Novo Template"}</Btn>} />
 
       {showF && (

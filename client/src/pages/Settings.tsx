@@ -135,7 +135,7 @@ export default function Settings() {
   // ═══════════════════════════════════════════════
   if (!isAdmin) {
     return (
-      <div className="page-enter">
+      <div className="page-enter" role="main" aria-label="Settings">
         <Hdr title="Configurações" sub="Sua API Key e preferências" />
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20, maxWidth: 960 }}>
@@ -256,7 +256,7 @@ export default function Settings() {
   // ADMIN VIEW - full access
   // ═══════════════════════════════════════════════
   return (
-    <div className="page-enter">
+    <div className="page-enter" role="main" aria-label="Settings">
       <Hdr title="Configurações" sub="APIs, modelo de IA e preferências do sistema" action={
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 11, color: C.green, fontWeight: 600 }}>🛡 Admin</span>
