@@ -1,29 +1,31 @@
 # ============================================================
-# LaCasaStudio V2.5 — Production Build
+# LaCasaStudio V2.5 — Production Build (Optimized)
 # ============================================================
 
 FROM node:20-slim AS client-build
 WORKDIR /app/client
 COPY client/package*.json client/tsconfig*.json client/tailwind.config.js client/postcss.config.js ./
-RUN npm install
+RUN npm install --prefer-offline --no-audit --no-fund || npm install --prefer-offline --no-audit --no-fund
 COPY client/ ./
 RUN npx tsc --noEmit && npx vite build
+
+FROM node:20-slim AS server-deps
+WORKDIR /app/server
+RUN apt-get update -y && apt-get install -y openssl sqlite3 && rm -rf /var/lib/apt/lists/*
+COPY server/package*.json ./
+COPY server/prisma ./prisma/
+RUN npm install --no-audit --no-fund || npm install --no-audit --no-fund
+RUN npx prisma generate
 
 FROM node:20-slim AS server-build
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/server
+COPY --from=server-deps /app/server/node_modules ./node_modules
 COPY server/package*.json server/tsconfig.json ./
 COPY server/prisma ./prisma/
-RUN npm install && npx prisma generate
+RUN npx prisma generate
 COPY server/src ./src/
 RUN npx tsc
-
-FROM node:20-slim AS server-deps
-WORKDIR /app/server
-COPY server/package*.json ./
-COPY server/prisma ./prisma/
-RUN apt-get update -y && apt-get install -y openssl sqlite3 && rm -rf /var/lib/apt/lists/*
-RUN npm install --omit=dev && npx prisma generate
 
 FROM node:20-slim AS production
 WORKDIR /app
