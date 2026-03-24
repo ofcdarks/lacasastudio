@@ -885,6 +885,7 @@ function TrendsTab({ toast, pg }) {
   const [modalImg, setModalImg] = useState(null);
   const [genImgLoading, setGenImgLoading] = useState({});
   const [autoNiche, setAutoNiche] = useState(null);
+  const [customTitle, setCustomTitle] = useState("");
   const BASE = "/api";
   const getToken = () => localStorage.getItem("lc_token");
 
@@ -915,86 +916,96 @@ function TrendsTab({ toast, pg }) {
     setSelected(video); setAnalyzing(true); setAnalysis(null);
     const combo = await getComboSettings();
     const isCombo = !!combo;
+    const thumbUrl = video.thumbnail || video.thumbnailDefault;
+    const videoTitle = customTitle.trim() || video.title;
 
     pg?.start(
       isCombo ? `Combo IA: Analisando thumbnail` : "Analisando thumbnail viral",
       isCombo
-        ? [`Modelo 1 (${combo.analysisModel.split("-").slice(0,2).join("-")}): Análise visual profunda`, `Modelo 2 (${combo.promptModel.split("-").slice(0,2).join("-")}): Gerando prompts ImageFX`, "Finalizando"]
-        : ["Decompondo layers frame-a-frame", "Extraindo DNA visual + composição", "Gerando prompts em inglês"]
+        ? [`Modelo 1: Análise visual da imagem`, `Modelo 2: Gerando prompts ImageFX`, "Finalizando"]
+        : ["Analisando imagem da thumbnail", "Decompondo layers + composição", "Gerando prompts em inglês"]
     );
 
     try {
       const nicheLabel = NICHES.find(n => n.id === niche)?.l || niche;
-      const formatLabel = video.format === "portrait" ? "9:16 portrait (Short)" : "16:9 landscape";
       const formatPrompt = video.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape";
 
-      const ANALYSIS_SYSTEM = `You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails. You understand that viral thumbnails are NOT photos — they are PHOTOSHOP COMPOSITES with multiple layers.
+      const ANALYSIS_SYSTEM = `You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails. You will receive the ACTUAL THUMBNAIL IMAGE to analyze.
 
-YOUR JOB: Decompose the thumbnail into its EXACT layers, then generate ImageFX prompts that REPLICATE THE SAME LAYER STRUCTURE with different subjects.
+YOUR JOB: Look at the image and decompose it into its EXACT composite layers, then generate ImageFX prompts that REPLICATE THE SAME LAYER STRUCTURE with different subjects.
 
-STEP 1 — IDENTIFY THUMBNAIL TYPE:
-- TYPE A (COMPOSITE/MONTAGE): Cutout person + overlaid elements + separate background. MOST viral thumbnails are this type.
-- TYPE B (SINGLE SCENE): One unified cinematic image without layer compositing.
+CRITICAL — IDENTIFY THE VISUAL TECHNIQUE:
+- SPLIT FACE: Face divided vertically showing two eras/characters merged (e.g. pharaoh + explorer)
+- BEFORE/AFTER: Left side vs right side comparison
+- IMPOSSIBLE SCALE: Person at impossible scale next to giant structure
+- CUTOUT COMPOSITE: Person cut out placed over separate background
+- SINGLE CINEMATIC: One unified photographic scene
+- DUALITY: Two contrasting elements merged
+- COLLAGE: Multiple scenes arranged in grid/overlay
 
-STEP 2 — FOR TYPE A (COMPOSITE), decompose EVERY LAYER:
-1. BACKGROUND LAYER: What image/gradient? Color temperature, blur level, atmosphere
-2. MAIN SUBJECT LAYER: Who/what is cut out? EXACT position (left/center/right, what % of frame). Expression if person. Scale relative to background (impossible scale = viral trick).
-3. SECONDARY ELEMENTS LAYER: What else is overlaid? (movie scenes, objects, logos, other smaller characters). EXACT position of each.
-4. EFFECTS LAYER: Glow, drop shadow, artificial rim light, color grading, vignette, particles, fog
-5. SPATIAL LAYOUT: How are elements distributed? (triangular, symmetrical, rule of thirds, Z-pattern, diagonal)
-6. PALETTE: Dominant hex colors. Contrast between warm/cold layers.
+FOR COMPOSITES, decompose EVERY LAYER you can SEE in the actual image:
+1. BACKGROUND LAYER: What you see behind everything. Gradients, landscapes, architecture
+2. MAIN SUBJECT: Who/what is the primary element. EXACT position, % of frame, expression
+3. SECONDARY ELEMENTS: Everything else overlaid. Position of each
+4. EFFECTS: Glow, rim light, particles, color grading, vignette, texture overlays
+5. SPATIAL LAYOUT: How elements are arranged. Scale relationships
+6. COLOR PALETTE: The exact dominant colors you see
 
-CRITICAL RULES FOR PROMPTS:
-- ALL PROMPTS MUST BE IN ENGLISH (ImageFX only works with English prompts)
-- REPLICATE the EXACT SAME LAYOUT/FORMULA but with DIFFERENT subjects and scenery
-- If original is "person cutout center + pyramids behind + movie scenes on sides" → your prompt must describe EXACTLY that structure: "person in heroic pose centered, large architectural element behind, two thematic scenes flanking left and right"
-- PRESERVE impossible scale, layer overlapping, compositing style
-- If original has person at 60% of frame with background at impossible scale → keep that ratio
-- MINIMUM 150 words per prompt — ultra specific
-- NEVER include text/letters in the image
-- SAFETY: No blood, weapons, violence, death, explosion. Use alternatives (energy wave, tension, paint, mark).`;
+ALL PROMPTS MUST BE IN ENGLISH. Minimum 150 words per prompt.
+SAFETY: No blood, weapons, violence. Use safe alternatives.`;
 
-      const ANALYSIS_USER = `REVERSE-ENGINEER this viral thumbnail and generate prompts that CLONE ITS FORMULA:
+      // Build multimodal message with the actual thumbnail image
+      const userContent = [
+        ...(thumbUrl ? [{ type: "image_url", image_url: { url: thumbUrl } }] : []),
+        { type: "text", text: `ANALYZE THIS EXACT THUMBNAIL IMAGE and reverse-engineer its visual formula.
 
-VIDEO: "${video.title}"
+VIDEO: "${videoTitle}"
 CHANNEL: "${video.channel}"
 VIEWS: ${(video.views/1000).toFixed(0)}K
 NICHE: ${nicheLabel}
-FORMAT: ${formatLabel}
+${customTitle.trim() ? `\nCUSTOM TITLE FOR NEW THUMBNAIL: "${customTitle.trim()}" — adapt the visual formula to match THIS title while keeping the same composite technique.` : ""}
 
-Decompose EVERY SINGLE LAYER: what is the background, what is cut out in front, what secondary elements are overlaid, what effects unify the composite, what is the exact spatial arrangement and scale relationship.
+LOOK AT THE IMAGE CAREFULLY. Describe what you ACTUALLY SEE:
+- Is this a split-face? A cutout composite? A single scene?
+- What are the exact layers from back to front?
+- What visual trick makes it scroll-stopping?
 
-Then generate prompts that use the EXACT SAME composite structure/layout/scale-tricks but with a COMPLETELY DIFFERENT subject while maintaining the same visual impact.
+Then generate prompts that use the EXACT SAME VISUAL TECHNIQUE but with a DIFFERENT subject.
+${customTitle.trim() ? `The new thumbnail should be for: "${customTitle.trim()}"` : ""}
 
 RESPOND ONLY with this JSON (no markdown, no backticks):
-{"thumbType":"COMPOSITE or SINGLE SCENE","formula":"EXACT formula description: how many layers, what each layer contains, positions, scale relationships. E.g.: 'Person cutout at 60% frame right side + ancient ruins at impossible scale behind left + fire particles overlay + sepia-gold color grade + heavy vignette'","whyItWorks":"Why this formula works: visual triggers, psychological tricks, contrast techniques. Minimum 3 sentences.","composition":"DETAILED DECOMPOSITION: foreground (what, % of frame, position), midground (what, % of frame), background (what). Focal point. Leading lines. Compositional rule. Depth of field simulation.","lightingAnalysis":"Exact lighting type, direction, color temperature, ratio, atmospheric effects, how it unifies the composite layers","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words for ImageFX. REPLICATE THE EXACT SAME COMPOSITE LAYOUT: same number of layers, same spatial arrangement, same scale relationships, same lighting direction. CHANGE the subject/characters/scenery but KEEP the formula identical. Include: exact position of each element (left/center/right, % of frame), size relationships, lighting (type + color temp + direction), color palette in hex, atmospheric effects, render style. ${formatPrompt}, photorealistic composite, no text, 8K resolution.","promptVariation":"ENGLISH PROMPT 150+ words. RADICAL VARIATION: same cinematographic technique but completely different visual genre. If original is ancient history, do sci-fi. If action, do noir. Keep the SAME IMPACT and SAME LAYOUT STRUCTURE but transform everything else. ${formatPrompt}, no text, 8K.","textSuggestion":"Where to position text overlay on this composition for maximum CTR (corner, center, size, text color vs background contrast)","ctrTips":["technical tip 1 based on this thumb decomposition","tip 2 about what the original does better than 90% of the niche","tip 3: how to SURPASS this original"]}`;
+{"thumbType":"exact technique name (SPLIT FACE / CUTOUT COMPOSITE / IMPOSSIBLE SCALE / SINGLE CINEMATIC / DUALITY / COLLAGE)","formula":"EXACT description of what you SEE: how many layers, what each contains, positions, the visual trick used. Be ultra specific to THIS image.","whyItWorks":"Why this specific technique works. 3+ sentences.","composition":"LAYER-BY-LAYER decomposition of what you see in the image: background (what, position), main subject (what, position, % of frame), secondary elements (what, where), effects (what)","lightingAnalysis":"The exact lighting you see in the image","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words for ImageFX. REPLICATE THE EXACT SAME TECHNIQUE you identified (if split-face, describe a split-face; if cutout composite, describe cutout composite). Same number of layers, same positions, same scale tricks. ${customTitle.trim() ? `Theme: ${customTitle.trim()}.` : "Change subjects but keep formula."} ${formatPrompt}, photorealistic composite, no text, 8K.","promptVariation":"ENGLISH PROMPT 150+ words. RADICAL VARIATION: same technique/layout but completely different genre/era. ${formatPrompt}, no text, 8K.","textSuggestion":"Where to place text overlay for max CTR","ctrTips":["tip 1 specific to this image","tip 2","tip 3"]}` }
+      ];
 
       let reply;
 
       if (isCombo) {
-        const PROMPT_SYSTEM = `You are an expert PROMPT ENGINEER for Google ImageFX / Imagen 3.5. You receive a detailed visual analysis of a thumbnail and transform it into PERFECT ImageFX prompts.
-RULES: ALL OUTPUT IN ENGLISH. Minimum 150 words per prompt. NEVER text/letters. Describe as COMPOSITE with layers if it's a montage. Include exact position, relative size, lighting, hex palette, atmosphere. SAFETY: no blood, weapons, violence.`;
-
-        const PROMPT_TEMPLATE = `Based on this DEEP VISUAL ANALYSIS by a specialist AI:
+        // For combo, we need to pass the image in the analysis step
+        // Build the analysis user prompt as multimodal
+        const analysisUserText = userContent.find(c => c.type === "text")?.text || "";
+        const PROMPT_SYSTEM = `You are an expert PROMPT ENGINEER for Google ImageFX / Imagen 3.5. You receive a detailed visual analysis of a thumbnail and transform it into PERFECT ImageFX prompts. ALL OUTPUT IN ENGLISH. Minimum 150 words per prompt. Describe composites as layered compositions. NEVER include text/letters.`;
+        const PROMPT_TEMPLATE = `Based on this DEEP VISUAL ANALYSIS:
 
 ---ANALYSIS---
 {analysis}
----END ANALYSIS---
+---END---
 
-NOW generate ImageFX prompts that REPLICATE THE EXACT SAME FORMULA/LAYOUT but with DIFFERENT subjects and SUPERIOR execution.
+Generate ImageFX prompts that REPLICATE THE EXACT SAME VISUAL TECHNIQUE (split-face, cutout composite, etc) with different subjects.
+${customTitle.trim() ? `The new thumbnail is for: "${customTitle.trim()}"` : ""}
 
-RESPOND ONLY with this JSON (no markdown, no backticks):
-{"thumbType":"COMPOSITE or SINGLE SCENE","formula":"exact formula","whyItWorks":"why it works","composition":"detailed decomposition","lightingAnalysis":"lighting details","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words, ${formatPrompt}, no text, 8K","promptVariation":"ENGLISH RADICAL VARIATION 150+ words, ${formatPrompt}, no text, 8K","textSuggestion":"text positioning advice","ctrTips":["tip1","tip2","tip3"]}`;
+JSON (no backticks):
+{"thumbType":"technique","formula":"formula","whyItWorks":"why","composition":"layers","lightingAnalysis":"lighting","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH 150+ words, ${formatPrompt}, no text, 8K","promptVariation":"ENGLISH 150+ words radical variation, ${formatPrompt}, no text, 8K","textSuggestion":"text position","ctrTips":["tip1","tip2","tip3"]}`;
 
         const result = await aiComboCall(
-          ANALYSIS_SYSTEM, ANALYSIS_USER, PROMPT_SYSTEM, PROMPT_TEMPLATE,
+          ANALYSIS_SYSTEM, analysisUserText, PROMPT_SYSTEM, PROMPT_TEMPLATE,
           combo, pg
         );
         reply = result.reply;
       } else {
+        // Single model — send multimodal message with image
         reply = await aiCall([
           { role: "system", content: ANALYSIS_SYSTEM },
-          { role: "user", content: ANALYSIS_USER }
+          { role: "user", content: userContent }
         ], pg);
       }
 
@@ -1104,6 +1115,26 @@ RESPOND ONLY with this JSON (no markdown, no backticks):
         {/* Analysis panel */}
         {selected && (
           <div>
+            {/* Custom title input for generating thumb for YOUR video */}
+            <div style={{ padding: "12px 16px", borderRadius: 12, background: `${C.orange}06`, border: `1px solid ${C.orange}20`, marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.orange, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                <span>🎯</span> Gerar para seu vídeo (opcional)
+              </div>
+              <input
+                value={customTitle} onChange={e => setCustomTitle(e.target.value)}
+                placeholder="Cole o título do SEU vídeo aqui — a IA adapta a fórmula visual"
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.04)", color: C.text, fontSize: 12, outline: "none" }}
+                onFocus={e => { e.target.style.borderColor = `${C.orange}60`; }}
+                onBlur={e => { e.target.style.borderColor = C.border; }}
+              />
+              {customTitle.trim() && (
+                <div style={{ marginTop: 6, fontSize: 10, color: C.green, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span>✓</span> Os prompts serão adaptados para: "{customTitle.trim()}"
+                  <button onClick={() => setCustomTitle("")} style={{ marginLeft: "auto", background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 10 }}>✕ Limpar</button>
+                </div>
+              )}
+            </div>
+
             <Sec title={`Analise: ${selected.title.slice(0,50)}...`} icon="🔍">
               {analyzing ? (
                 <div style={{ textAlign: "center", padding: 20, color: C.dim }}>Analisando...</div>
