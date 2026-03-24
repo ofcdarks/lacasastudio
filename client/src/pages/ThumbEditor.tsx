@@ -159,16 +159,147 @@ function CriadorNinja({ toast, pg }) {
   const generate = async () => {
     if (!title.trim()) { toast?.error("Digite o título"); return; }
     setLoading(true);
-    pg?.start("🎨 Gerando Prompt ThumbStudio", ["Analisando nicho e estilo", "Construindo visual", "Otimizando CTR"]);
+    pg?.start("🎨 Gerando Prompt Pro", ["Analisando nicho e referências", "Construindo composição visual", "Otimizando para CTR máximo"]);
     try {
-      const nicheL = NICHES.find(n => n.id === niche)?.l || niche;
-      const styleL = TITLE_STYLES.find(s => s.id === titleStyle)?.desc || "";
-      const fxList = effects.map(e => EFFECTS.find(x => x.id === e)?.l).join(", ");
-      const { reply } = await chatApi.send([{ role: "user", content: `Crie 3 prompts detalhados para thumbnail YouTube.
-Nicho: ${nicheL}. Título: "${title}". Estilo título: ${styleL}. Sub: ${subtitle||"nenhum"}.
-Personagem: ${charDesc||"nenhum"}${charImgs.length ? ` (${charImgs.length} imagem(ns) de referência enviada(s))` : ""}. Posição personagem: ${charPos}. Posição texto: ${textPos}. Enquadramento: ${charFrame}. Nº personagens: ${charCount}. Cor: ${mainColor}. Efeitos: ${fxList||"nenhum"}. Fundo: ${bgImg ? "imagem de fundo enviada pelo usuário" : bgDesc||"auto"}.
-RESPONDA JSON (sem backticks):
-{"promptImageFX":"prompt principal ImageFX 16:9 sem texto na imagem, ultra detalhado cinematográfico 8K","promptVariation2":"variação 2","promptVariation3":"variação 3 ousada","textOverlay":{"title":"${title}","titleStyle":"desc estilo","subtitle":"${subtitle}","badge":"sugestão badge","emoji":"1 emoji"},"tips":["3 dicas CTR"],"ctrEstimate":85}` }]);
+      const nicheObj = NICHES.find(n => n.id === niche) || NICHES[0];
+      const styleObj = TITLE_STYLES.find(s => s.id === titleStyle) || TITLE_STYLES[0];
+      const fxList = effects.map(e => EFFECTS.find(x => x.id === e)?.l).filter(Boolean);
+
+      // Niche visual DNA — tells the AI exactly what each niche LOOKS like
+      const NICHE_DNA = {
+        gaming: "cenário de jogo, luzes RGB neon, setup gamer, explosões, partículas digitais, HUD overlay sutil, cores vibrantes saturadas (azul elétrico, verde neon, roxo), iluminação dramática de monitor, atmosfera competitiva",
+        reviews: "produto em destaque com iluminação de estúdio, fundo limpo com gradiente suave, reflexo no chão, estrelas/rating visual, composição de unboxing premium, iluminação de 3 pontos",
+        podcast: "microfone profissional em primeiro plano, iluminação quente/âmbar, estúdio com painéis acústicos, atmosfera intimista, bokeh suave, tons quentes (marrom, dourado, vermelho escuro)",
+        musica: "ondas sonoras visuais, equalizer, luzes de palco/show, atmosfera de concert, smoke machine, iluminação colorida dinâmica, vibes de festival",
+        tutoriais: "tela de computador/código em segundo plano, setas e ícones didáticos, composição limpa e organizada, cores confiáveis (azul, verde), iluminação neutra profissional",
+        fitness: "academia/treino como fundo, suor e determinação, iluminação dura/contraste alto, músculos definidos, cores energéticas (laranja, vermelho, preto), piso de academia, kettlebells/halteres",
+        financas: "gráficos de ações subindo, notas de dinheiro, moedas douradas, fundo escuro sofisticado, tons de verde/dourado/preto, iluminação premium, estética Wall Street",
+        tecnologia: "circuitos, chips, telas holográficas, interface futurista, luzes azuis/ciano, reflexos metálicos, estética sci-fi, gadgets flutuantes",
+        motivacional: "nascer do sol épico, topo de montanha, paisagem grandiosa, raios de luz divinos, céu dramático, cores quentes intensas, sensação de conquista, golden hour",
+        comedia: "cores vibrantes e saturadas, expressões faciais exageradas, elementos cartoon, fundo caótico/divertido, efeitos de quadrinhos, iluminação flat alegre",
+        unboxing: "caixa sendo aberta com luz saindo de dentro, fundo escuro contrastante, produto brilhando, reflexos, embalagem premium, suspense visual",
+        slideshow: "moldura cinematográfica, fundo escuro com spotlight, foto em destaque, bordas estilizadas, vinheta, tons sépia/noir",
+        dark: "sombras profundas, silhueta, iluminação lateral dramática, fundo completamente escuro, olhos brilhando na escuridão, atmosfera psicológica perturbadora, tons frios (azul escuro, roxo escuro), fog",
+        noticias: "fundo vermelho urgente, breaking news visual, linhas de transmissão, texto bold, atmosfera de plantão jornalístico, composição de TV news, relógio/mapa mundi",
+        terror: "escuridão total, sombras distorcidas, olhos vermelhos brilhando, sangue/gore sutil, árvores mortas, nevoeiro denso, casa abandonada, tons dessaturados com vermelho pontual",
+        dramatico: "iluminação Rembrandt (luz lateral), expressão intensa, fundo escuro com bokeh, composição cinematográfica 2.39:1, contraste extremo chiaroscuro, sensação de tensão",
+        cinema: "aspect ratio cinematográfico, color grading estilo filme (teal and orange), lens flare anamórfico, DOF raso, composição regra dos terços, iluminação de set de filmagem, câmera RED/ARRI visual",
+        esportes: "estádio lotado, gramado verde, iluminação de arena, movimento congelado (splash, suor), cores do time, composição dinâmica com ângulo baixo, energia atlética",
+        geek: "estante de colecionáveis, quadrinhos, figuras de ação, logos de franquias, luzes de LED coloridas, setup nerd, pôsters no fundo, atmosfera de comic-con",
+        misterio: "lupa, pegadas, detetive silhueta, fundo nebuloso, cena do crime com fita amarela, tons de azul escuro/cinza, iluminação low-key, suspense visual",
+        educacao: "lousa/quadro branco, livros empilhados, sala de aula moderna, ícones didáticos, composição organizada e limpa, cores confiáveis e profissionais, iluminação neutra",
+        empreendedorismo: "arranha-céus, gráficos subindo, homem de terno confiante, laptop, escritório moderno, skyline urbana, tons de azul marinho/dourado, iluminação corporativa premium",
+        espiritualidade: "raios de luz celestiais, meditação, natureza serena, mandala, cores etéreas (branco, dourado, lilás), atmosfera transcendental, nuvens divinas, aura luminosa",
+        ia: "rede neural visual, cérebro digital, circuitos azuis brilhantes, interface holográfica, robô/android, código Matrix caindo, tons de azul/ciano/preto, partículas de dados flutuantes",
+        outro: "fundo gradiente cinza escuro, iluminação neutra profissional, composição centralizada, estilo versátil e adaptável",
+      };
+
+      // Title style rendering instructions
+      const STYLE_DNA = {
+        impacto: "Texto: letras ENORMES capitalizadas, fonte Impact espessa, sombra preta profunda projetada, stroke branco grosso ao redor, máximo contraste com fundo. Ocupa 40% da thumbnail.",
+        clean: "Texto: fonte Montserrat moderna sem serifa, peso bold, sombra sutil, sem stroke, alinhamento elegante, espaçamento generoso entre letras, tons brancos clean sobre fundo escuro.",
+        fire: "Texto: letras em chamas laranja-vermelho-amarelo, efeito de fogo real subindo das letras, gradiente quente, stroke escuro para legibilidade, centelhas ao redor.",
+        neon: "Texto: glow de neon ciano intenso, como letreiro de Las Vegas, reflexo no chão molhado, halo de luz ao redor de cada letra, fundo escuro obrigatório para brilhar.",
+        "neon-pink": "Texto: neon magenta/rosa vibrante brilhando, efeito de tubo de neon, reflexo rosa no ambiente, glow suave disperso, estilo cyberpunk noturno.",
+        hologram: "Texto: efeito holograma iridescente (muda de cor verde-azul-roxo), linhas de scan, transparência parcial, glitch sutil, estilo sci-fi futurista.",
+        elegant: "Texto: fonte serif clássica (Playfair/Georgia), cor dourada metalizada, sombra refinada discreta, pode ter ornamento sutil, estilo revista de luxo.",
+        chrome: "Texto: efeito cromado/metálico prateado com reflexo do ambiente, extrusão 3D, iluminação especular, aspecto industrial premium.",
+        royal: "Texto: serif ornamentado dourado sobre fundo escuro, com coroa ou ornamentos sutis, estilo brasão de família, premium e sofisticado, tom bege/champagne.",
+        glitch: "Texto: distorção digital RGB split (vermelho-verde-azul desalinhados), efeito de TV com defeito, ruído visual, deslocamento horizontal, fonte monospace.",
+        horror: "Texto: letras sangrenta escorrendo, fonte irregular assustadora, cor vermelho escuro/sangue, rachado/quebrado, atmosfera de filme de terror, dripping effect.",
+        grunge: "Texto: fonte manuscrita suja/rasgada, textura de papel amassado, manchas, imperfeições intencionais, visual punk/underground, tom amarelado/sujo.",
+        toxic: "Texto: verde radioativo neon brilhante (#39FF14), símbolos de perigo/biohazard ao redor, glow tóxico, fundo escuro, estilo Warning/Danger zone.",
+        retro: "Texto: estilo synthwave anos 80, gradiente rosa-roxo-azul, linhas de grid em perspectiva, sol neon no horizonte, chrome retro, fonte arredondada bold.",
+        brush: "Texto: como pintado com pincel largo, traços orgânicos visíveis, tinta escorrendo, textura de aquarela, artístico e humano, imperfeições bonitas.",
+        stencil: "Texto: fonte militar/tática, como estampado com stencil, textura de metal/caixote militar, tom verde army/oliva, marcas de desgaste.",
+        anime: "Texto: estilo manga/anime japonês, linhas de velocidade (speed lines) ao redor, onomatopeia visual, cores saturadas vibrantes, efeito de impacto.",
+        "3d-pop": "Texto: extrusão 3D colorida com sombra projetada, efeito pop art, cores contrastantes vibrantes, como se as letras saltassem da tela, perspectiva dinâmica.",
+      };
+
+      // Effects rendering
+      const FX_DNA = {
+        "feixe": "feixe de luz concentrado apontando para o personagem/texto, volumetric light rays",
+        "brilho": "partículas brilhantes de neon flutuando ao redor, glow difuso, sparkle",
+        "lens": "lens flare anamórfico azul/dourado cruzando a imagem diagonalmente",
+        "godrays": "raios de luz divinos descendo de cima (god rays), volumetric fog",
+        "spotlight": "holofote focado no personagem principal, resto em sombra",
+        "aura": "aura de energia luminosa envolvendo o personagem, como super-saiyan, power glow",
+        "fumaca": "fumaça cinematográfica densa, smoke machine, atmosfera misteriosa",
+        "bokeh": "círculos de bokeh no fundo desfocado, luzes circulares coloridas",
+        "rain": "gotas de chuva congeladas no ar, reflexos no chão molhado, atmosfera chuvosa",
+        "snow": "partículas de neve/cinzas flutuando suavemente, efeito delicado",
+        "fire-fx": "chamas reais nas bordas ou ao redor do personagem, fogo vivo",
+        "sparks": "faíscas elétricas voando, como soldagem ou raio, partículas brilhantes",
+        "glitch": "distorção digital glitch, aberração RGB, linhas de scan, pixel artifacts",
+        "chromatic": "aberração cromática forte (split RGB vermelho-ciano nos contornos)",
+        "shatter": "efeito de vidro/espelho se quebrando, fragmentos voando, rachadura central",
+        "motion": "motion blur direcional sugerindo velocidade, rastro de movimento",
+        "vignette": "vinheta escura forte nas bordas, foco central",
+        "grain": "grain de filme analógico, ruído sutil, textura cinematográfica vintage",
+        "duotone": "efeito duotone (apenas 2 cores dominantes), estilização cromática",
+        "halftone": "efeito de halftone/retícula de jornal, estilo pop art/comics, pontilhismo",
+        "neon-border": "borda neon brilhante ao redor da thumbnail ou do personagem",
+        "light-leak": "vazamento de luz quente (light leak) nas bordas, tom laranja/amarelo overexposure",
+      };
+
+      const nicheDNA = NICHE_DNA[niche] || NICHE_DNA.outro;
+      const styleDNA = STYLE_DNA[titleStyle] || STYLE_DNA.impacto;
+      const fxDNA = fxList.map(fx => {
+        const found = EFFECTS.find(e => e.l === fx);
+        return found ? (FX_DNA[found.id] || fx) : fx;
+      }).join(". ");
+
+      const { reply } = await chatApi.send([{ role: "system", content: `Você é o MAIOR ESPECIALISTA DO MUNDO em thumbnails virais para YouTube em 2026. Você treinou analisando +100.000 thumbnails dos canais com maior CTR do planeta (MrBeast, Mark Rober, Kurzgesagt, Felipe Neto, Primo Rico, Alanzoka).
+
+SEU CONHECIMENTO DE TENDÊNCIAS 2026 (DADOS REAIS):
+- NEO-MINIMALISMO domina: thumbnails com MUITO espaço negativo e 1 único ponto focal claro. Canais que mudaram para esse estilo viram CTR saltar de 2.8% para 7.2%.
+- TEXTO MÁXIMO 5 PALAVRAS. Mais que isso é ruído visual em mobile. 87% das top thumbs de 2025/2026 usam texto no CANTO SUPERIOR ESQUERDO (primeiro lugar que os olhos escaneiam no celular).
+- MOBILE-FIRST obrigatório: 70% do tráfego é mobile. O viewer decide em 0.5 SEGUNDO se clica. Design para "selo postal", não para "outdoor". 68% dos mobile viewers decidem em 1 segundo.
+- ROSTOS COM EMOÇÃO EXTREMA aumentam CTR em 20-30% (dados VidIQ 2025). Close-up shots com expressões exageradas (surpresa, choque, raiva, alegria extrema) AINDA funcionam em 2026.
+- CONTRASTE é REI: cores bold (amarelo, laranja, neon) sobre fundo escuro param o scroll. Paletas de alto contraste neon são tendência forte.
+- Evitar BOTTOM-RIGHT corner — o timestamp do YouTube cobre essa área. Nunca colocar elementos importantes ali.
+- Before/After e números grandes ("99% ERRAM ISSO") são gatilhos de curiosidade comprovados.
+- Color grading cinematográfico (teal & orange) continua premium. Mas neo-minimalismo com 1-2 cores é a nova onda.
+- A/B Testing é padrão: YouTube Test & Compare permite 3 variações. Sempre pensar em thumbnails que são testáveis.
+- MrBeast gasta $10.000 por thumbnail com testes extensivos — o nível de qualidade é esse.
+
+REGRAS DE OURO DO SEU TRABALHO:
+1. NUNCA gere texto/letras/palavras dentro da imagem. A thumbnail é SÓ background visual — texto será sobreposto depois.
+2. Cada prompt DEVE ter 80-120 palavras ultra-específicas: composição, iluminação (tipo exato: Rembrandt, rim light, butterfly, split), paleta de cores em hex, câmera (ângulo, lens, DOF), textura, atmosfera.
+3. RESPEITE o nicho — cada nicho tem DNA visual próprio que o viewer reconhece inconscientemente.
+4. COMPOSIÇÃO: deixe espaço clean onde o texto será sobreposto (baseado na posição informada). Use regra dos terços. Ponto focal único.
+5. EFEITOS devem estar INTEGRADOS na cena de forma orgânica, não como filtro jogado por cima.
+6. PENSE MOBILE: a imagem precisa ser impactante mesmo em 120x68 pixels (tamanho no feed mobile).
+7. Os prompts devem funcionar no Google ImageFX / Imagen 3.5 — seja técnico, visual e cinematográfico.
+8. Cada variação deve ser genuinamente DIFERENTE em composição e ângulo, não apenas troca de cor.` },
+      { role: "user", content: `BRIEFING DA THUMBNAIL:
+
+NICHO: ${nicheObj.l} (${nicheObj.i})
+REFERÊNCIA VISUAL DO NICHO: ${nicheDNA}
+
+TÍTULO QUE SERÁ SOBREPOSTO: "${title}"
+ESTILO DO TÍTULO: ${styleObj.l} — ${styleDNA}
+POSIÇÃO DO TEXTO: ${textPos} (deixe espaço limpo nessa área para o texto)
+${subtitle ? `SUBTÍTULO: "${subtitle}"` : ""}
+
+PERSONAGEM: ${charDesc || "sem personagem específico — use composição do nicho"}
+${charImgs.length ? `REFERÊNCIAS VISUAIS: ${charImgs.length} imagem(ns) enviada(s) do personagem` : ""}
+POSIÇÃO DO PERSONAGEM NA COMPOSIÇÃO: ${charPos}
+ENQUADRAMENTO: ${charFrame}
+NÚMERO DE PERSONAGENS: ${charCount}
+
+COR DOMINANTE: ${mainColor}
+${fxDNA ? `EFEITOS OBRIGATÓRIOS NA CENA: ${fxDNA}` : "SEM efeitos especiais — composição limpa"}
+
+FUNDO: ${bgImg ? "o usuário enviou uma imagem de fundo — descreva uma cena que complementaria esse fundo" : bgDesc || "escolha o fundo mais impactante para este nicho"}
+
+GERE 3 VARIAÇÕES:
+1. PRINCIPAL — a thumbnail mais provável de viralizar neste nicho, seguindo as referências visuais exatas
+2. ALTERNATIVA — mesmo conceito mas com ângulo/perspectiva/composição diferente
+3. OUSADA — conceito visual criativo e inesperado que quebra padrões do nicho
+
+RESPONDA APENAS este JSON (sem markdown, sem backticks):
+{"promptImageFX":"[prompt 1 - mínimo 80 palavras, ultra específico, SEM texto na imagem, 16:9 landscape, photoreal 8K]","promptVariation2":"[prompt 2 - mínimo 80 palavras]","promptVariation3":"[prompt 3 - mínimo 80 palavras, ousado]","textOverlay":{"title":"${title}","titleStyle":"${styleObj.l}: como posicionar o texto sobre esta imagem para máximo impacto","subtitle":"${subtitle || "sugestão de subtítulo"}","badge":"sugestão de badge contextual (ex: NOVO, TOP, VIRAL, GRÁTIS)","emoji":"1 emoji que representa o vídeo"},"tips":["dica 1 específica para ${nicheObj.l}","dica 2 sobre composição","dica 3 sobre cores/CTR"],"ctrEstimate":85}` }]);
       const parsed = JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
       setOutput(parsed); pg?.done();
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
@@ -370,9 +501,18 @@ function RemixAI({ toast, pg }) {
     setLoading(true);
     pg?.start("🔄 Engenharia Reversa", ["Analisando composição", "Extraindo estilo", "Gerando variações"]);
     try {
-      const { reply } = await chatApi.send([{ role: "user", content: `Analise uma thumbnail YouTube e faça engenharia reversa. Gere 3 prompts para recriar variações.
+      const { reply } = await chatApi.send([{ role: "system", content: "Você é o MAIOR ESPECIALISTA DO MUNDO em engenharia reversa de thumbnails virais (2026). Tendências atuais: neo-minimalismo (muito espaço negativo, 1 ponto focal), mobile-first (70% tráfego mobile, decisão em 0.5s), texto máx 5 palavras no canto superior esquerdo, rostos com emoção extrema (+30% CTR), alto contraste neon, evitar bottom-right (timestamp). Ao analisar, identifique: paleta hex exata, tipo de iluminação (Rembrandt/rim/butterfly/split), composição (regra dos terços/diagonal/central), DOF, estilo (neo-minimal/cinematográfico/flat/3D), mood psicológico. Prompts de recriação: 80-120 palavras, 16:9, photoreal, SEM texto na imagem, ultra técnico para Google ImageFX." },
+      { role: "user", content: `Faça ENGENHARIA REVERSA completa desta thumbnail de YouTube.
+
+Extraia: estilo visual (cinematográfico? flat? 3D? illustration?), paleta de cores EXATA em hex, composição e layout, estilo de iluminação (rembrandt? flat? rim light? neon?), mood/atmosfera, e qualquer efeito visual (bokeh, smoke, glitch, etc).
+
+Depois gere 3 PROMPTS para Google ImageFX/Imagen 3.5 que recriam variações:
+1. FIEL — mesmo estilo e composição, variação sutil
+2. REINTERPRETAÇÃO — mesmo conceito com ângulo/iluminação diferente  
+3. TRANSFORMAÇÃO — conceito completamente reimaginado mantendo o mood
+
 RESPONDA JSON (sem backticks):
-{"analysis":{"style":"estilo visual","colors":["#hex"],"composition":"composição","mood":"atmosfera"},"remixPrompts":[{"name":"Variação 1","prompt":"prompt detalhado ImageFX 16:9","changes":"mudança"},{"name":"Variação 2","prompt":"prompt variação","changes":"mudança"},{"name":"Variação 3","prompt":"prompt ousado","changes":"mudança"}],"improvements":["3 melhorias"]}` }]);
+{"analysis":{"style":"descrição detalhada do estilo visual","colors":["#hex1","#hex2","#hex3","#hex4","#hex5"],"composition":"como os elementos estão posicionados, regra dos terços, ponto focal","lighting":"tipo de iluminação específica","mood":"atmosfera psicológica"},"remixPrompts":[{"name":"Variação Fiel","prompt":"prompt ImageFX 80+ palavras, 16:9, photoreal, SEM texto, descrição completa de cena, iluminação, cores, câmera, atmosfera","changes":"o que muda"},{"name":"Reinterpretação","prompt":"prompt 80+ palavras com novo ângulo","changes":"mudanças"},{"name":"Transformação Criativa","prompt":"prompt 80+ palavras completamente reimaginado","changes":"mudanças"}],"improvements":["melhoria 1 específica e acionável","melhoria 2","melhoria 3"]}` }]);
       setOutput(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
       pg?.done();
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
@@ -451,10 +591,26 @@ function AnalisadorViral({ toast, pg }) {
     setLoading(true);
     pg?.start("🔍 Analisando Viralização", ["Avaliando thumbnails", "Analisando títulos", "Score viral"]);
     try {
-      const { reply } = await chatApi.send([{ role: "user", content: `Expert em viralização YouTube. Analise:
-T�tulos: ${titles.filter(Boolean).map(t => `"${t}"`).join(", ")}. Nicho: ${niche || "geral"}. ${thumbUrls.filter(Boolean).length} thumbnail(s).
+      const { reply } = await chatApi.send([{ role: "system", content: "Voce e o MAIOR ESPECIALISTA DO MUNDO em CTR e viralizacao no YouTube (2026). Dados que voce domina: MrBeast gasta $10.000/thumb com A/B testing extensivo. Top creators atingem 5-10% CTR, media e 3-4%. Thumbnails com emocao extrema +30% CTR (VidIQ 2025). Neo-minimalismo e tendencia 2026: espaco negativo, 1 ponto focal, max 5 palavras. 70% trafego e mobile, viewer decide em 0.5s. Texto deve estar no canto SUPERIOR ESQUERDO (87% dos top thumbnails). Bottom-right e zona morta (timestamp). Alto contraste neon e padrao 2026. Regra dos 12 caracteres: thumbs com menos de 12 chars performam MUITO melhor. Seja BRUTALMENTE HONESTO. Nota 90+ SO para thumbs que competem com top 0.1% do YouTube. Cada sugestao deve ser ESPECIFICA, ACIONAVEL e baseada em dados reais de 2026." },
+      { role: "user", content: `ANALISE DE VIRALIZACAO COMPLETA (padrao 2026):
+
+TITULOS PARA ANALISAR:
+${titles.filter(Boolean).map((t, i) => (i+1)+". "+t).join("\n")}
+
+NICHO: ${niche ? (NICHES.find(n => n.id === niche)?.l || niche) : "geral"}
+THUMBNAILS: ${thumbUrls.filter(Boolean).length} thumbnail(s) enviada(s)
+
+ANALISE CADA TITULO com base nos criterios 2026:
+- Tem max 12 caracteres visivel na thumb? (regra dos 12 chars)
+- Cria curiosity gap forte?
+- Funciona em mobile (0.5s de decisao)?
+- O titulo + thumb juntos contam uma historia?
+- Compete com MrBeast/top creators do nicho?
+
+A versao melhorada DEVE ser concretamente superior: mais curta, mais curiosa, mais emocional, max 5 palavras para thumb.
+
 JSON (sem backticks):
-{"overallScore":85,"titleAnalysis":[{"title":"título","score":80,"strengths":["fortes"],"weaknesses":["fracos"],"improvedVersion":"versão melhorada"}],"viralFactors":{"curiosityGap":85,"emotionalImpact":70,"clarity":90,"uniqueness":75,"clickability":80},"thumbnailTips":["3 dicas thumb"],"actionPlan":["3 ações"]}` }]);
+{"overallScore":72,"titleAnalysis":[{"title":"titulo","score":68,"strengths":["ponto forte real e especifico"],"weaknesses":["fraqueza real com dados de porque prejudica CTR"],"improvedVersion":"VERSAO MELHORADA - max 5 palavras, curiosity gap forte, emocional"}],"viralFactors":{"curiosityGap":70,"emotionalImpact":65,"clarity":85,"uniqueness":55,"clickability":68},"thumbnailTips":["dica visual 2026 especifica sobre composicao","dica sobre cores/contraste baseada em dados","dica mobile-first acionavel"],"competitorInsight":"como esta thumb se compara com top 10 do nicho em 2026","actionPlan":["acao #1 mais impactante com dados de porque funciona","acao #2","acao #3"]}` }]);
       setOutput(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
       pg?.done();
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
@@ -513,6 +669,14 @@ JSON (sem backticks):
           {ta.weaknesses?.map((w, j) => <span key={j} style={{ display: "inline-block", marginRight: 4, marginBottom: 4, padding: "3px 8px", borderRadius: 6, background: C.red+"10", fontSize: 11, color: C.red }}>✕ {w}</span>)}
           {ta.improvedVersion && <div style={{ padding: "8px 12px", borderRadius: 8, background: C.blue+"08", border: `1px solid ${C.blue}20`, fontSize: 12, marginTop: 6 }}><span style={{ color: C.blue, fontWeight: 600 }}>Sugestão:</span> {ta.improvedVersion}</div>}
         </div>)}
+        {output.thumbnailTips?.length > 0 && <div style={{ padding: 16, borderRadius: 12, background: C.purple+"06", border: `1px solid ${C.purple}20`, marginBottom: 4 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.purple, marginBottom: 10 }}>🖼️ Dicas da Thumbnail (2026)</div>
+          {output.thumbnailTips.map((t, i) => <div key={i} style={{ fontSize: 12, color: C.text, padding: "6px 0 6px 16px", borderLeft: `3px solid ${C.purple}`, marginBottom: 6, lineHeight: 1.5 }}>{t}</div>)}
+        </div>}
+        {output.competitorInsight && <div style={{ padding: 16, borderRadius: 12, background: C.blue+"06", border: `1px solid ${C.blue}20`, marginBottom: 4 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.blue, marginBottom: 8 }}>🏆 vs Concorrentes</div>
+          <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6 }}>{output.competitorInsight}</div>
+        </div>}
         {output.actionPlan?.length > 0 && <div style={{ padding: 16, borderRadius: 12, background: C.orange+"06", border: `1px solid ${C.orange}20` }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: C.orange, marginBottom: 10 }}>🎯 Plano de Ação</div>
           {output.actionPlan.map((a, i) => <div key={i} style={{ fontSize: 12, padding: "6px 0 6px 16px", borderLeft: `3px solid ${C.orange}`, marginBottom: 6 }}>{i+1}. {a}</div>)}
