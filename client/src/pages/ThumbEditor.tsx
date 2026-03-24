@@ -969,28 +969,44 @@ YOUR PROCESS (follow in order):
 2. MAP those elements to the visual technique provided
 3. GENERATE ImageFX prompts using ONLY those mapped elements
 
-IMAGEFX PROMPT FORMULA (researched from Google Imagen docs + top prompt engineers):
+IMAGEFX PROMPT FORMULA FOR YOUTUBE THUMBNAILS (researched + battle-tested):
 
-Every prompt MUST follow this exact structure:
-1. STYLE OPENER: "Immersive, hyperrealistic cinematic scene depicting..."
-2. SCENE DESCRIPTION: Exact subjects with positions (left/center/right, % of frame)
-3. COMPOSITION: "Layered composition. Shallow depth of field with [foreground subject] sharply focused, [background] softly out of focus."
-4. LIGHTING: Specific type — "dramatic side lighting from the right", "warm golden hour rim light", "chiaroscuro with deep shadows"
-5. COLOR: "Color palette dominated by [hex colors]. Meticulous color grading, cinematic LUT applied."
-6. QUALITY TAGS: "High-budget historical documentary quality, polished Hollywood look, medium focal length lens, 16:9 landscape, ultra-detailed 8K"
-7. EXCLUSIONS: "No text, no letters, no watermarks, no logos"
+CRITICAL THUMBNAIL RULES — what makes thumbnails SCROLL-STOPPING vs generic:
+1. EXTREME CLOSE-UP: Faces/subjects must fill 60-80% of the frame. YouTube thumbs are viewed at 120x68px on mobile — small details disappear. GO BIG.
+2. INTENSE COLORS: Highly saturated, vivid, bold. NOT muted, NOT washed out, NOT pastel. Use "vivid saturated colors, high dynamic range, bold color contrast."
+3. DRAMATIC CONTRAST: Deep blacks next to bright highlights. NOT flat lighting. Use "extreme contrast between light and shadow, chiaroscuro."
+4. PIERCING EYES: If there are faces, the eyes must be intense and looking at the viewer. Use "intense piercing gaze directly at camera, dramatic expression."
+5. RICH TEXTURES: Ornate gold details, intricate fabric patterns, weathered skin — details that pop. Use "ultra-detailed ornate decorations, intricate gold engravings, rich textile textures."
+6. TIGHT FRAMING: NO wasted space. Every pixel must have visual information. NO large empty skies or backgrounds.
 
-CRITICAL STYLE KEYWORDS that produce the best results in ImageFX/Imagen 3:
-- "Immersive, hyperrealistic cinematic scene" (NOT "digital art" or "illustration")
-- "high-budget film quality" / "stunning scene from a high-budget historical documentary"
-- "meticulous color grading" + "cinematic filters"
-- "volumetric god rays" + "atmospheric haze" + "dust particles in light"
-- "intricate engravings" + "ornate details" + "weathered stone texture"
-- "shallow depth of field" with specific focus description
-- "layered composition" (tells Imagen to create depth)
-- For people: "detailed facial features, intense gaze, realistic skin texture with subsurface scattering"
+Every prompt MUST follow this structure:
+1. OPENER: "Immersive, hyperrealistic cinematic close-up depicting..."
+2. SUBJECTS: Describe at EXTREME CLOSE range — "face fills 70% of the frame", "extreme close-up portrait"
+3. DETAILS: Ornate clothing, jewelry, headdresses described with "intricate, ornate, detailed engravings, gold filigree"
+4. LIGHTING: "Dramatic chiaroscuro lighting, strong rim light creating golden edge glow, deep shadows on opposite side"
+5. COLOR: "Vivid saturated color palette: [hex codes]. High dynamic range. Bold cinematic color grading with extreme contrast."
+6. QUALITY: "Stunning high-budget historical epic quality, sharp focus, crisp details, 16:9 landscape, ultra-detailed 8K"
+7. END: "No text, no letters, no watermarks"
 
-DO NOT USE: "trending on ArtStation", "oil painting", "matte painting", "digital art" — these make Imagen generate illustration style instead of cinematic realism.
+KEYWORDS THAT CREATE THUMBNAIL IMPACT:
+- "extreme close-up" / "tight framing" / "face fills the frame"
+- "vivid saturated colors" / "high dynamic range" / "bold contrast"  
+- "intense piercing gaze" / "dramatic expression" / "powerful presence"
+- "intricate ornate gold details" / "rich textures" / "elaborate headdress"
+- "dramatic chiaroscuro" / "strong rim light" / "golden edge glow"
+- "sharp focus" / "crisp details" / "ultra-detailed"
+- "scroll-stopping" / "eye-catching" / "visually striking"
+
+REALISM KEYWORDS (eliminate AI/plastic look):
+- For skin: "realistic skin texture with visible pores, subsurface scattering, natural skin imperfections, detailed skin fuzz"
+- For eyes: "remarkably detailed pupils with catchlight, realistic iris texture, lifelike eyes with moisture"
+- For materials: "realistic weathered textures, authentic patina on metal, real fabric weave visible, genuine material properties"
+- For overall: "photorealistic rendering, lifelike quality, analog film grain, RAW photo quality, color graded Portra 400 film look"
+- MUST include in EVERY prompt: "Photorealistic, hyperrealistic, hyperdetailed, realistic skin texture, visible pores, subsurface scattering"
+
+DO NOT USE: "atmospheric haze", "softly out of focus", "subtle", "gentle", "minimalist", "muted tones" — kill impact
+DO NOT USE: "trending on ArtStation", "oil painting", "matte painting", "digital art", "illustration" — kill realism
+DO NOT USE: "smooth skin", "flawless", "perfect skin" — these create plastic/fake look
 
 STRICT RULES:
 - ALL prompts in ENGLISH
@@ -1018,7 +1034,7 @@ If GRID COLLAGE → each grid cell shows a different aspect of the title's theme
 Format: ${formatPrompt}
 
 RESPOND ONLY with this JSON (no markdown, no backticks):
-{"thumbType":"technique name","formula":"How you mapped the title to the technique: LEFT represents X, RIGHT represents Y, CENTER represents Z","whyItWorks":"Why this works for '${titleTheme}'. 3 sentences.","composition":"LAYER-BY-LAYER for this specific title: background (what from the title, position), main subject (what from the title, position, % of frame), secondary (what, where)","lightingAnalysis":"Lighting style that fits the title mood","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words following this structure: 'Immersive, hyperrealistic cinematic scene depicting [your scene]. [FOREGROUND with exact position and % of frame]. [MIDGROUND elements]. [BACKGROUND with atmosphere]. Layered composition. Shallow depth of field with [foreground] sharply focused, [background] softly out of focus. [Specific lighting: direction, type, color temperature]. Color palette dominated by [hex colors]. Meticulous color grading with cinematic LUT. Volumetric god rays, atmospheric haze, dust particles catching light. Intricate texture details: weathered stone, ornate fabric, realistic skin with subsurface scattering. High-budget historical documentary quality, polished Hollywood look, medium focal length lens, ${formatPrompt}, ultra-detailed 8K. No text, no letters, no watermarks.' Fill this structure with ONLY elements from '${titleTheme}'.","promptVariation":"ENGLISH PROMPT 150+ words. Same structure as above but ALTERNATIVE perspective on '${titleTheme}'. 'Immersive, hyperrealistic cinematic scene depicting [different angle/aspect of the title story]. [Same technique but different viewpoint]. Layered composition. Dramatic chiaroscuro lighting. Cinematic color grading. High-budget documentary quality, ${formatPrompt}, 8K. No text.' Still 100% about '${titleTheme}'.","textSuggestion":"Where to place text overlay","ctrTips":["tip 1 for '${titleTheme}'","tip 2","tip 3"]}` }
+{"thumbType":"technique name","formula":"How you mapped the title to the technique: LEFT represents X, RIGHT represents Y, CENTER represents Z","whyItWorks":"Why this works for '${titleTheme}'. 3 sentences.","composition":"LAYER-BY-LAYER for this specific title: background (what from the title, position), main subject (what from the title, position, % of frame), secondary (what, where)","lightingAnalysis":"Lighting style that fits the title mood","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words. 'Photorealistic, hyperrealistic, hyperdetailed cinematic extreme close-up depicting [scene from title]. FOREGROUND: [main subject face/figure fills 70% of the frame, extreme close-up, intense piercing gaze directly at camera, dramatic expression, remarkably detailed pupils with catchlight]. Realistic skin texture with visible pores, subsurface scattering, natural skin imperfections, skin fuzz. Intricate ornate details: [gold filigree, elaborate headdress, engraved jewelry, rich textile patterns with visible fabric weave]. BACKGROUND: [contextual scene visible behind, recognizable]. Dramatic chiaroscuro lighting with strong warm rim light creating golden edge glow, deep shadows. Vivid saturated color palette: [hex codes]. High dynamic range, bold cinematic color grading with extreme contrast. RAW photo quality, analog film grain, color graded Portra 400 look. Sharp focus, crisp ultra-detailed textures. Tight framing, every pixel packed. Stunning high-budget historical epic quality, ${formatPrompt}, 8K. No text, no letters, no watermarks.' Fill ONLY with elements from '${titleTheme}'.","promptVariation":"ENGLISH PROMPT 150+ words. 'Photorealistic, hyperrealistic, hyperdetailed cinematic close-up depicting [alternative angle on title]. [Different perspective, face fills 60% of frame, intense expression, realistic skin with visible pores and subsurface scattering, lifelike eyes with catchlight]. Ornate intricate details, authentic weathered textures. Bold dramatic chiaroscuro, vivid saturated colors, high dynamic range. RAW photo quality, analog film grain. Tight scroll-stopping framing. ${formatPrompt}, 8K. No text.' ALTERNATIVE perspective on '${titleTheme}'.","textSuggestion":"Where to place text overlay","ctrTips":["tip 1 for '${titleTheme}'","tip 2","tip 3"]}` }
         ], pg);
 
         const parsed = JSON.parse(step2Reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
@@ -1049,22 +1065,23 @@ LOOK AT THE IMAGE CAREFULLY:
 Then generate prompts that use the EXACT SAME VISUAL TECHNIQUE with different subjects.
 
 RESPOND ONLY JSON (no backticks):
-{"thumbType":"technique name","formula":"EXACT description of layers and positions","whyItWorks":"Why it works. 3+ sentences.","composition":"LAYER-BY-LAYER: background, main subject (position, % of frame), secondary elements, effects","lightingAnalysis":"Lighting description","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words: 'Immersive, hyperrealistic cinematic scene depicting [scene]. [Foreground, position, % of frame]. [Midground]. [Background]. Layered composition. Shallow depth of field. [Lighting type and direction]. Color palette: [hex colors]. Meticulous color grading, cinematic LUT. Volumetric god rays, atmospheric haze. High-budget documentary quality, polished Hollywood look, medium focal length lens, ${formatPrompt}, ultra-detailed 8K. No text no letters no watermarks.' REPLICATE same technique/layout with different subjects.","promptVariation":"ENGLISH PROMPT 150+ words: 'Immersive, hyperrealistic cinematic scene depicting [radical variation]. Same technique, different genre. Layered composition. Dramatic lighting. Cinematic color grading. High-budget quality, ${formatPrompt}, 8K. No text.'","textSuggestion":"Text placement advice","ctrTips":["tip1","tip2","tip3"]}` }
+{"thumbType":"technique name","formula":"EXACT description of layers and positions","whyItWorks":"Why it works. 3+ sentences.","composition":"LAYER-BY-LAYER: background, main subject (position, % of frame), secondary elements, effects","lightingAnalysis":"Lighting description","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words: 'Photorealistic, hyperrealistic, hyperdetailed cinematic extreme close-up depicting [scene]. Subject fills 70% of frame, intense piercing gaze with remarkably detailed pupils and catchlight. Realistic skin texture with visible pores, subsurface scattering, natural imperfections. Intricate ornate details, authentic weathered textures. Dramatic chiaroscuro, strong rim light, golden edge glow. Vivid saturated colors: [hex]. High dynamic range, bold contrast. RAW photo quality, analog film grain. Sharp focus, crisp details, ${formatPrompt}, 8K. No text no letters.' REPLICATE same technique with different subjects.","promptVariation":"ENGLISH PROMPT 150+ words: 'Photorealistic, hyperrealistic, hyperdetailed cinematic close-up. [Radical variation, different genre]. Subject dominates frame. Realistic skin with visible pores, subsurface scattering. Bold dramatic lighting, vivid saturated colors, extreme contrast. RAW photo quality. ${formatPrompt}, 8K. No text.'","textSuggestion":"Text placement","ctrTips":["tip1","tip2","tip3"]}` }
         ];
 
         const reply = await aiCall([
-          { role: "system", content: `You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails. Identify the visual technique, decompose layers, and generate ENGLISH ImageFX prompts. ALL PROMPTS IN ENGLISH. Minimum 150 words per prompt. NEVER include text/letters in prompts.
+          { role: "system", content: `You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails. Generate ENGLISH ImageFX prompts that create SCROLL-STOPPING thumbnails.
 
-EVERY prompt must follow this structure:
-1. Open with "Immersive, hyperrealistic cinematic scene depicting..."
-2. Describe scene with exact positions (% of frame)
-3. "Layered composition. Shallow depth of field."
-4. Specific lighting description
-5. "Color palette: [hex]. Meticulous color grading, cinematic LUT."
-6. "Volumetric god rays, atmospheric haze. High-budget documentary quality, 8K."
-7. "No text, no letters, no watermarks."
+THUMBNAIL IMPACT RULES:
+- EXTREME CLOSE-UP: Subjects fill 60-80% of frame. Thumbnails are 120x68px on mobile — go BIG
+- VIVID COLORS: Highly saturated, bold, high dynamic range. NO muted/washed out
+- DRAMATIC CONTRAST: Deep blacks + bright highlights. Chiaroscuro lighting
+- INTENSE EXPRESSIONS: Piercing eyes looking at viewer, dramatic faces
+- RICH TEXTURES: Ornate gold, intricate engravings, detailed fabric
+- TIGHT FRAMING: No wasted space, every pixel packed with detail
 
-DO NOT USE: "oil painting", "digital art", "illustration", "matte painting", "ArtStation" — these produce cartoon/illustration results. USE: "hyperrealistic cinematic scene", "high-budget film quality", "polished Hollywood look".
+PROMPT STRUCTURE: "Photorealistic, hyperrealistic, hyperdetailed cinematic extreme close-up depicting... [subject fills 70% of frame]... realistic skin texture with visible pores, subsurface scattering... intricate ornate details... dramatic chiaroscuro with rim light... vivid saturated colors [hex]... RAW photo quality, analog film grain... sharp focus, 8K. No text."
+
+DO NOT USE: "atmospheric haze", "subtle", "gentle", "muted", "softly out of focus", "oil painting", "digital art", "ArtStation"
 SAFETY: no blood, weapons, violence.` },
           { role: "user", content: userContent }
         ], pg);
