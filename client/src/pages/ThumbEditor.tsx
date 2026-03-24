@@ -969,50 +969,50 @@ YOUR PROCESS (follow in order):
 2. MAP those elements to the visual technique provided
 3. GENERATE ImageFX prompts using ONLY those mapped elements
 
-IMAGEFX PROMPT FORMULA FOR YOUTUBE THUMBNAILS (researched + battle-tested):
+IMAGEFX PROMPT FORMULA (PROVEN — produces REAL photos, not digital art):
 
-CRITICAL THUMBNAIL RULES — what makes thumbnails SCROLL-STOPPING vs generic:
-1. EXTREME CLOSE-UP: Faces/subjects must fill 60-80% of the frame. YouTube thumbs are viewed at 120x68px on mobile — small details disappear. GO BIG.
-2. INTENSE COLORS: Highly saturated, vivid, bold. NOT muted, NOT washed out, NOT pastel. Use "vivid saturated colors, high dynamic range, bold color contrast."
-3. DRAMATIC CONTRAST: Deep blacks next to bright highlights. NOT flat lighting. Use "extreme contrast between light and shadow, chiaroscuro."
-4. PIERCING EYES: If there are faces, the eyes must be intense and looking at the viewer. Use "intense piercing gaze directly at camera, dramatic expression."
-5. RICH TEXTURES: Ornate gold details, intricate fabric patterns, weathered skin — details that pop. Use "ultra-detailed ornate decorations, intricate gold engravings, rich textile textures."
-6. TIGHT FRAMING: NO wasted space. Every pixel must have visual information. NO large empty skies or backgrounds.
+STRUCTURE: "RAW photo of [subject], [framing], shot with DSLR, [lens], [aperture], [light], [skin/texture], [focus], [background]. [Clothing/props details]. --no illustration, painting, CGI, 3D render, concept art"
 
-Every prompt MUST follow this structure:
-1. OPENER: "Immersive, hyperrealistic cinematic close-up depicting..."
-2. SUBJECTS: Describe at EXTREME CLOSE range — "face fills 70% of the frame", "extreme close-up portrait"
-3. DETAILS: Ornate clothing, jewelry, headdresses described with "intricate, ornate, detailed engravings, gold filigree"
-4. LIGHTING: "Dramatic chiaroscuro lighting, strong rim light creating golden edge glow, deep shadows on opposite side"
-5. COLOR: "Vivid saturated color palette: [hex codes]. High dynamic range. Bold cinematic color grading with extreme contrast."
-6. QUALITY: "Stunning high-budget historical epic quality, sharp focus, crisp details, 16:9 landscape, ultra-detailed 8K"
-7. END: "No text, no letters, no watermarks"
+MANDATORY BASE TAGS (every prompt):
+- "RAW photo" (forces photographic output)
+- "shot with DSLR" or "DSLR camera"
+- Lens: "50mm lens" or "85mm lens" (portraits) or "35mm lens" (wider)
+- Aperture: "f/1.8" or "f/2.8"
+- Light: "natural light" / "soft daylight" / "window light" / "overcast daylight" / "golden hour natural light"
+- "realistic skin tones" / "visible pores" / "natural skin imperfections"
+- "sharp focus" or "sharp focus on eyes"
+- "shallow depth of field"
+- END EVERY PROMPT WITH: "--no illustration, painting, CGI, 3D render, concept art"
 
-KEYWORDS THAT CREATE THUMBNAIL IMPACT:
-- "extreme close-up" / "tight framing" / "face fills the frame"
-- "vivid saturated colors" / "high dynamic range" / "bold contrast"  
-- "intense piercing gaze" / "dramatic expression" / "powerful presence"
-- "intricate ornate gold details" / "rich textures" / "elaborate headdress"
-- "dramatic chiaroscuro" / "strong rim light" / "golden edge glow"
-- "sharp focus" / "crisp details" / "ultra-detailed"
-- "scroll-stopping" / "eye-catching" / "visually striking"
+FOR PEOPLE (critical for realism):
+- "visible pores, natural skin imperfections, realistic skin texture"
+- "sharp focus on eyes, asymmetrical features"
+- "authentic weathered clothing, real fabric textures"
+- "natural expression" (NOT "dramatic expression" — pulls to art)
 
-REALISM KEYWORDS (eliminate AI/plastic look):
-- For skin: "realistic skin texture with visible pores, subsurface scattering, natural skin imperfections, detailed skin fuzz"
-- For eyes: "remarkably detailed pupils with catchlight, realistic iris texture, lifelike eyes with moisture"
-- For materials: "realistic weathered textures, authentic patina on metal, real fabric weave visible, genuine material properties"
-- For overall: "photorealistic rendering, lifelike quality, analog film grain, RAW photo quality, color graded Portra 400 film look"
-- MUST include in EVERY prompt: "Photorealistic, hyperrealistic, hyperdetailed, realistic skin texture, visible pores, subsurface scattering"
+THUMBNAIL IMPACT (without breaking realism):
+- Use "extreme close-up" / "tight close-up portrait" — fills frame
+- Use "intense eye contact" / "powerful gaze" (NOT "piercing" — too stylized)
+- Use strong NATURAL contrast: "strong directional sunlight with deep realistic shadows"  
+- Use "vivid natural colors" (NOT "saturated" or "vivid saturated" — pulls to art)
+- Rich details via REAL descriptions: "ornate gold jewelry with authentic patina", "intricate hand-woven textile", "weathered leather armor with real wear marks"
 
-DO NOT USE: "atmospheric haze", "softly out of focus", "subtle", "gentle", "minimalist", "muted tones" — kill impact
-DO NOT USE: "trending on ArtStation", "oil painting", "matte painting", "digital art", "illustration" — kill realism
-DO NOT USE: "smooth skin", "flawless", "perfect skin" — these create plastic/fake look
+🚫 BANNED WORDS (these DESTROY realism, pull to digital art):
+- cinematic, epic, dramatic lighting, hyperdetailed
+- unreal engine, octane render, subsurface scattering
+- color grading, cinematic LUT, color palette with hex codes (#FF0000)
+- vivid saturated, high dynamic range, bold contrast
+- trending on ArtStation, oil painting, matte painting, digital art, illustration
+- smooth skin, flawless, perfect skin
+- atmospheric haze, volumetric god rays, chiaroscuro
+- high-budget, Hollywood, museum-worthy
 
 STRICT RULES:
 - ALL prompts in ENGLISH
-- Minimum 150 words per prompt
-- ZERO generic elements — every single visual must directly represent the title
+- Minimum 120 words per prompt
+- ZERO generic elements — every visual must represent the title
 - NO text, letters, or words in the image
+- ALWAYS end with "--no illustration, painting, CGI, 3D render, concept art"
 - SAFETY: no blood, weapons, violence. Use safe alternatives.` },
           { role: "user", content: `═══ STEP A: INTERPRET THIS TITLE ═══
 Title: "${titleTheme}"
@@ -1034,7 +1034,7 @@ If GRID COLLAGE → each grid cell shows a different aspect of the title's theme
 Format: ${formatPrompt}
 
 RESPOND ONLY with this JSON (no markdown, no backticks):
-{"thumbType":"technique name","formula":"How you mapped the title to the technique: LEFT represents X, RIGHT represents Y, CENTER represents Z","whyItWorks":"Why this works for '${titleTheme}'. 3 sentences.","composition":"LAYER-BY-LAYER for this specific title: background (what from the title, position), main subject (what from the title, position, % of frame), secondary (what, where)","lightingAnalysis":"Lighting style that fits the title mood","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words. 'Photorealistic, hyperrealistic, hyperdetailed cinematic extreme close-up depicting [scene from title]. FOREGROUND: [main subject face/figure fills 70% of the frame, extreme close-up, intense piercing gaze directly at camera, dramatic expression, remarkably detailed pupils with catchlight]. Realistic skin texture with visible pores, subsurface scattering, natural skin imperfections, skin fuzz. Intricate ornate details: [gold filigree, elaborate headdress, engraved jewelry, rich textile patterns with visible fabric weave]. BACKGROUND: [contextual scene visible behind, recognizable]. Dramatic chiaroscuro lighting with strong warm rim light creating golden edge glow, deep shadows. Vivid saturated color palette: [hex codes]. High dynamic range, bold cinematic color grading with extreme contrast. RAW photo quality, analog film grain, color graded Portra 400 look. Sharp focus, crisp ultra-detailed textures. Tight framing, every pixel packed. Stunning high-budget historical epic quality, ${formatPrompt}, 8K. No text, no letters, no watermarks.' Fill ONLY with elements from '${titleTheme}'.","promptVariation":"ENGLISH PROMPT 150+ words. 'Photorealistic, hyperrealistic, hyperdetailed cinematic close-up depicting [alternative angle on title]. [Different perspective, face fills 60% of frame, intense expression, realistic skin with visible pores and subsurface scattering, lifelike eyes with catchlight]. Ornate intricate details, authentic weathered textures. Bold dramatic chiaroscuro, vivid saturated colors, high dynamic range. RAW photo quality, analog film grain. Tight scroll-stopping framing. ${formatPrompt}, 8K. No text.' ALTERNATIVE perspective on '${titleTheme}'.","textSuggestion":"Where to place text overlay","ctrTips":["tip 1 for '${titleTheme}'","tip 2","tip 3"]}` }
+{"thumbType":"technique name","formula":"How you mapped the title to the technique: LEFT represents X, RIGHT represents Y, CENTER represents Z","whyItWorks":"Why this works for '${titleTheme}'. 3 sentences.","composition":"LAYER-BY-LAYER for this specific title: background (what from the title, position), main subject (what from the title, position, % of frame), secondary (what, where)","lightingAnalysis":"Lighting style that fits the title mood","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"RAW photo of [scene from title], tight close-up portrait, shot with DSLR, 85mm lens, f/1.8, natural light with strong directional sunlight creating deep realistic shadows. [Main subject fills 70% of frame, intense eye contact, powerful gaze, natural expression]. Realistic skin tones, visible pores, natural skin imperfections, asymmetrical features. [Authentic period clothing with real fabric textures, hand-crafted jewelry with genuine patina, weathered materials with real wear marks]. Background: [contextual scene softly blurred but recognizable]. Sharp focus on eyes, shallow depth of field. Vivid natural colors, strong natural contrast. ${formatPrompt}, 8K resolution. No text, no letters, no watermarks. --no illustration, painting, CGI, 3D render, concept art. Fill ONLY with elements from '${titleTheme}'.","promptVariation":"RAW photo of [alternative angle on title], close-up portrait, shot with DSLR, 50mm lens, f/2.8, golden hour natural light. [Different perspective from title, subject fills 60% of frame, natural intense expression]. Realistic skin tones, visible pores, natural imperfections. Authentic period details, real textures. Sharp focus, shallow depth of field. ${formatPrompt}, 8K. No text. --no illustration, painting, CGI, 3D render, concept art. ALTERNATIVE perspective on '${titleTheme}'.","textSuggestion":"Where to place text overlay","ctrTips":["tip 1 for '${titleTheme}'","tip 2","tip 3"]}` }
         ], pg);
 
         const parsed = JSON.parse(step2Reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
@@ -1065,23 +1065,22 @@ LOOK AT THE IMAGE CAREFULLY:
 Then generate prompts that use the EXACT SAME VISUAL TECHNIQUE with different subjects.
 
 RESPOND ONLY JSON (no backticks):
-{"thumbType":"technique name","formula":"EXACT description of layers and positions","whyItWorks":"Why it works. 3+ sentences.","composition":"LAYER-BY-LAYER: background, main subject (position, % of frame), secondary elements, effects","lightingAnalysis":"Lighting description","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"ENGLISH PROMPT 150+ words: 'Photorealistic, hyperrealistic, hyperdetailed cinematic extreme close-up depicting [scene]. Subject fills 70% of frame, intense piercing gaze with remarkably detailed pupils and catchlight. Realistic skin texture with visible pores, subsurface scattering, natural imperfections. Intricate ornate details, authentic weathered textures. Dramatic chiaroscuro, strong rim light, golden edge glow. Vivid saturated colors: [hex]. High dynamic range, bold contrast. RAW photo quality, analog film grain. Sharp focus, crisp details, ${formatPrompt}, 8K. No text no letters.' REPLICATE same technique with different subjects.","promptVariation":"ENGLISH PROMPT 150+ words: 'Photorealistic, hyperrealistic, hyperdetailed cinematic close-up. [Radical variation, different genre]. Subject dominates frame. Realistic skin with visible pores, subsurface scattering. Bold dramatic lighting, vivid saturated colors, extreme contrast. RAW photo quality. ${formatPrompt}, 8K. No text.'","textSuggestion":"Text placement","ctrTips":["tip1","tip2","tip3"]}` }
+{"thumbType":"technique name","formula":"EXACT description of layers and positions","whyItWorks":"Why it works. 3+ sentences.","composition":"LAYER-BY-LAYER: background, main subject (position, % of frame), secondary elements, effects","lightingAnalysis":"Lighting description","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"RAW photo of [scene], tight close-up, shot with DSLR, 85mm lens, f/1.8, natural light with strong directional sunlight. Subject fills 70% of frame, intense eye contact, natural expression. Realistic skin tones, visible pores, natural imperfections. Authentic detailed clothing and materials with real textures. Sharp focus on eyes, shallow depth of field. ${formatPrompt}, 8K. No text. --no illustration, painting, CGI, 3D render, concept art. REPLICATE same technique with different subjects.","promptVariation":"RAW photo of [radical variation, different genre], close-up, DSLR, 50mm lens, f/2.8, soft daylight. Subject dominates frame. Realistic skin, visible pores, natural imperfections. Authentic textures. Sharp focus, shallow depth of field. ${formatPrompt}, 8K. No text. --no illustration, painting, CGI, 3D render, concept art.","textSuggestion":"Text placement","ctrTips":["tip1","tip2","tip3"]}` }
         ];
 
         const reply = await aiCall([
-          { role: "system", content: `You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails. Generate ENGLISH ImageFX prompts that create SCROLL-STOPPING thumbnails.
+          { role: "system", content: `You reverse-engineer viral YouTube thumbnails and generate ENGLISH ImageFX prompts that look like REAL PHOTOGRAPHS.
 
-THUMBNAIL IMPACT RULES:
-- EXTREME CLOSE-UP: Subjects fill 60-80% of frame. Thumbnails are 120x68px on mobile — go BIG
-- VIVID COLORS: Highly saturated, bold, high dynamic range. NO muted/washed out
-- DRAMATIC CONTRAST: Deep blacks + bright highlights. Chiaroscuro lighting
-- INTENSE EXPRESSIONS: Piercing eyes looking at viewer, dramatic faces
-- RICH TEXTURES: Ornate gold, intricate engravings, detailed fabric
-- TIGHT FRAMING: No wasted space, every pixel packed with detail
+PROMPT FORMULA: "RAW photo of [subject], [framing], shot with DSLR, 85mm lens, f/1.8, [natural light type], realistic skin tones, visible pores, natural skin imperfections, sharp focus on eyes, shallow depth of field. [Clothing/props]. [Background]. --no illustration, painting, CGI, 3D render, concept art"
 
-PROMPT STRUCTURE: "Photorealistic, hyperrealistic, hyperdetailed cinematic extreme close-up depicting... [subject fills 70% of frame]... realistic skin texture with visible pores, subsurface scattering... intricate ornate details... dramatic chiaroscuro with rim light... vivid saturated colors [hex]... RAW photo quality, analog film grain... sharp focus, 8K. No text."
+THUMBNAIL IMPACT (without breaking realism):
+- Tight close-up: subject fills 60-80% of frame
+- Intense eye contact, powerful natural gaze
+- Strong directional natural sunlight with deep real shadows
+- Authentic detailed textures: real fabric, genuine patina, weathered materials
+- Vivid natural colors (NOT "saturated" or hex codes)
 
-DO NOT USE: "atmospheric haze", "subtle", "gentle", "muted", "softly out of focus", "oil painting", "digital art", "ArtStation"
+🚫 BANNED (pulls to digital art): cinematic, epic, dramatic lighting, hyperdetailed, chiaroscuro, subsurface scattering, color grading, hex codes, rim light, volumetric, ArtStation, oil painting, digital art, illustration, bold contrast, high dynamic range
 SAFETY: no blood, weapons, violence.` },
           { role: "user", content: userContent }
         ], pg);
