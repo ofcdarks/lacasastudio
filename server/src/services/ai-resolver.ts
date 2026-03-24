@@ -15,7 +15,7 @@ const PROVIDERS: Record<string, { url: string; name: string }> = {
 
 // Default models per provider
 const DEFAULT_MODELS: Record<string, string> = {
-  openai: "gpt-4o-mini",
+  openai: "gpt-4o",
   google: "gemini-2.5-flash",
   anthropic: "claude-sonnet-4-6",
   laozhang: "claude-sonnet-4-6",
@@ -49,7 +49,7 @@ export async function resolveAIConfig(userId: number): Promise<AIConfig> {
       const provider = uMap.user_api_provider || "openai";
       const providerInfo = PROVIDERS[provider] || PROVIDERS.openai;
       const apiUrl = provider === "custom" ? (uMap.user_api_url || "") : providerInfo.url;
-      const model = uMap.user_api_model || DEFAULT_MODELS[provider] || "gpt-4o-mini";
+      const model = uMap.user_api_model || DEFAULT_MODELS[provider] || "gpt-4o";
 
       logger.debug("Using user API key", { userId, provider });
       return { apiKey: uMap.user_api_key, apiUrl, model, provider, isUserKey: true };
@@ -84,6 +84,42 @@ export async function resolveAIConfig(userId: number): Promise<AIConfig> {
 }
 
 /**
+ * Resolve a SPECIFIC model override (for combo mode).
+ * Uses admin LaoZhang key but with a different model.
+ */
+export async function resolveModelOverride(userId: number, model: string): Promise<AIConfig> {
+  const baseConfig = await resolveAIConfig(userId);
+  if (!baseConfig.apiKey) return baseConfig;
+
+  // Determine provider from model name
+  let provider = baseConfig.provider;
+  let apiUrl = baseConfig.apiUrl;
+
+  if (model.startsWith("claude-") || model.startsWith("claude3")) {
+    // If using LaoZhang (OpenAI-compatible proxy), keep it — it supports Claude models
+    // If user has their own Anthropic key, switch to Anthropic
+    if (baseConfig.provider === "anthropic") {
+      provider = "anthropic";
+      apiUrl = PROVIDERS.anthropic.url;
+    }
+    // LaoZhang supports Claude models via OpenAI format — keep as-is
+  } else if (model.startsWith("gpt-") || model.startsWith("o1") || model.startsWith("o3") || model.startsWith("o4")) {
+    if (baseConfig.provider === "openai") {
+      provider = "openai";
+      apiUrl = PROVIDERS.openai.url;
+    }
+    // LaoZhang supports GPT models too
+  } else if (model.startsWith("gemini-")) {
+    if (baseConfig.provider === "google") {
+      provider = "google";
+      apiUrl = PROVIDERS.google.url;
+    }
+  }
+
+  return { ...baseConfig, model, provider, apiUrl };
+}
+
+/**
  * Call AI API with the resolved config
  * Handles both OpenAI-compatible and Anthropic formats
  */
@@ -91,62 +127,78 @@ export async function callAIWithConfig(
   config: AIConfig,
   systemPrompt: string,
   userPrompt: string,
-  maxTokens = 4000
+  maxTokens = 4000,
+  timeoutMs = 180000
 ): Promise<string> {
   if (!config.apiKey) throw new Error("Configure sua API Key nas Configurações");
 
-  // Anthropic uses a different format
-  if (config.provider === "anthropic") {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    // Anthropic uses a different format
+    if (config.provider === "anthropic") {
+      const res = await fetch(config.apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": config.apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: config.model,
+          max_tokens: maxTokens,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userPrompt }],
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (!res.ok) {
+        const err = await res.text();
+        if (res.status === 401) throw new Error("API Key Anthropic inválida. Verifique nas Configurações.");
+        if (res.status === 429) throw new Error("Limite de requisições Anthropic atingido. Aguarde 1 min.");
+        if (res.status === 402) throw new Error("Créditos Anthropic esgotados.");
+        throw new Error(`Erro Anthropic (${res.status}). Tente novamente.`);
+      }
+      const data = await res.json() as any;
+      return data.content?.[0]?.text || "";
+    }
+
+    // OpenAI-compatible format (OpenAI, Google, LaoZhang, Groq, DeepSeek)
     const res = await fetch(config.apiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": config.apiKey,
-        "anthropic-version": "2023-06-01",
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.apiKey}` },
       body: JSON.stringify({
         model: config.model,
+        temperature: 0.7,
         max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
+
     if (!res.ok) {
       const err = await res.text();
-      if (res.status === 401) throw new Error("API Key Anthropic inválida. Verifique nas Configurações.");
-      if (res.status === 429) throw new Error("Limite de requisições Anthropic atingido. Aguarde 1 min.");
-      if (res.status === 402) throw new Error("Créditos Anthropic esgotados.");
-      throw new Error(`Erro Anthropic (${res.status}). Tente novamente.`);
+      if (res.status === 401) throw new Error("API Key inválida. Verifique nas Configurações.");
+      if (res.status === 429) throw new Error("Limite de requisições atingido. Aguarde 1 min.");
+      if (res.status === 402 || err.includes("insufficient")) throw new Error("Créditos da API esgotados.");
+      throw new Error(`Erro IA (${res.status}). Tente novamente.`);
     }
+
     const data = await res.json() as any;
-    return data.content?.[0]?.text || "";
+    return data.choices?.[0]?.message?.content || "";
+  } catch (err: any) {
+    clearTimeout(timeout);
+    if (err.name === "AbortError") {
+      throw new Error("IA demorou demais. Tente novamente.");
+    }
+    throw err;
   }
-
-  // OpenAI-compatible format (OpenAI, Google, LaoZhang, Groq, DeepSeek)
-  const res = await fetch(config.apiUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.apiKey}` },
-    body: JSON.stringify({
-      model: config.model,
-      temperature: 0.7,
-      max_tokens: maxTokens,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    if (res.status === 401) throw new Error("API Key inválida. Verifique nas Configurações.");
-    if (res.status === 429) throw new Error("Limite de requisições atingido. Aguarde 1 min.");
-    if (res.status === 402 || err.includes("insufficient")) throw new Error("Créditos da API esgotados.");
-    throw new Error(`Erro IA (${res.status}). Tente novamente.`);
-  }
-
-  const data = await res.json() as any;
-  return data.choices?.[0]?.message?.content || "";
 }
 
 export { PROVIDERS, DEFAULT_MODELS };
