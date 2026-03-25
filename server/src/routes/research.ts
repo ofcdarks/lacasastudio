@@ -122,7 +122,7 @@ router.post("/search", async (req: any, res: Response, next: NextFunction) => {
       return {
         ytChannelId: ch.id, name: ch.snippet?.title || "", handle: ch.snippet?.customUrl || "",
         thumbnail: ch.snippet?.thumbnails?.medium?.url || "",
-        subscribers: subs, totalViews: views, videoCount: vids, country: ch.snippet?.country || "N/A",
+        subscribers: Math.min(subs, 2147483647), totalViews: Math.min(views, 2147483647), videoCount: Math.min(vids, 2147483647), country: ch.snippet?.country || "N/A",
         score, tier: getTier(score),
         description: ch.snippet?.description?.slice(0, 200) || "",
         channelAge: ch.snippet?.publishedAt ? Math.floor((Date.now() - new Date(ch.snippet.publishedAt).getTime()) / (86400000 * 30)) : 0,
@@ -212,7 +212,7 @@ router.post("/analyze", async (req: any, res: Response, next: NextFunction) => {
     const result: any = {
       ytChannelId: ch.id, name: ch.snippet?.title, handle: ch.snippet?.customUrl || "",
       thumbnail: ch.snippet?.thumbnails?.medium?.url || "", description: ch.snippet?.description || "",
-      subscribers: subs, totalViews: views, videoCount: vids, country, language: lang,
+      subscribers: Math.min(subs, 2147483647), totalViews: Math.min(views, 2147483647), videoCount: Math.min(vids, 2147483647), country, language: lang,
       publishedAt: ch.snippet?.publishedAt, channelAge, score, tier: getTier(score), topics,
       uploadsPerWeek, bestDay, bestHour, avgDuration, avgViews, avgLikes, engRate,
       topVideos, recentVideos: recentVideos.slice(0, 10),
@@ -279,10 +279,13 @@ router.post("/save", async (req: any, res: Response, next: NextFunction) => {
     const data = req.body as any;
     const existing = await prisma.savedChannel.findFirst({ where: { userId: req.userId, ytChannelId: data.ytChannelId } });
     if (existing) { res.status(400).json({ error: "Canal já salvo" }); return; }
+    const MAX_INT = 2147483647;
+    const safeInt = (v: any) => { const n = Number(v) || 0; return n > MAX_INT ? MAX_INT : n < -MAX_INT ? -MAX_INT : Math.round(n); };
+    if (!data.ytChannelId) { res.status(400).json({ error: "ID do canal não encontrado. Tente analisar o canal primeiro." }); return; }
     const saved = await prisma.savedChannel.create({ data: {
-      userId: req.userId, ytChannelId: data.ytChannelId, name: data.name || "", handle: data.handle || "",
-      thumbnail: data.thumbnail || "", subscribers: data.subscribers || 0, totalViews: data.totalViews || 0,
-      videoCount: data.videoCount || 0, country: data.country || "", score: data.score || 0,
+      userId: req.userId, ytChannelId: data.ytChannelId || "", name: data.name || "", handle: data.handle || "",
+      thumbnail: data.thumbnail || "", subscribers: safeInt(data.subscribers), totalViews: safeInt(data.totalViews),
+      videoCount: safeInt(data.videoCount), country: data.country || "", score: safeInt(data.score),
       tier: data.tier || "", niche: data.niche || "", subNiche: data.subNiche || "",
       microNiche: data.microNiche || "", avgDuration: data.avgDuration || "",
       uploadsPerWeek: data.uploadsPerWeek || 0, bestUploadDay: data.bestDay || "",
@@ -643,8 +646,8 @@ router.post("/spy", async (req: any, res: Response, next: NextFunction) => {
         }
         results.push({
           ytChannelId: chId, name: ch.snippet?.title, thumbnail: ch.snippet?.thumbnails?.default?.url,
-          subscribers: Number(ch.statistics?.subscriberCount || 0),
-          totalViews: Number(ch.statistics?.viewCount || 0),
+          subscribers: Math.min(Number(ch.statistics?.subscriberCount || 0), 2147483647),
+          totalViews: Math.min(Number(ch.statistics?.viewCount || 0), 2147483647),
           videoCount: Number(ch.statistics?.videoCount || 0),
           recentVideos: recentVids,
         });
@@ -1385,7 +1388,7 @@ router.post("/engagement-gen", async (req: any, res: Response, next: NextFunctio
       "Expert em engajamento YouTube e psicologia de audiência. " + LANG_RULE,
       `RESPONDA EM PORTUGUÊS BR. Gere conteúdo de ENGAJAMENTO pra este vídeo:
 Título: "${title}", Nicho: ${niche || "geral"}, Descrição: ${description || ""}
-A�ão alvo: ${targetAction || "comentários e likes"}
+A�ão alvo: ${targetAction || "comentários e likes"}
 
 JSON: {"pinnedComment":"Comentário fixado que gera discussão (pergunta provocativa)","firstComment":"Primeiro comentário do canal pra iniciar conversa","replyTemplates":["Resposta 1 pra comentário positivo","Resposta 2 pra dúvida","Resposta 3 pra crítica construtiva","Resposta 4 pra comentário engraçado"],"ctaInVideo":["CTA verbal 1 pro meio do vídeo (não pedir like/sub genérico)","CTA 2 pro final","CTA 3 pra cards/end screen"],"questions":["Pergunta 1 pra colocar na descrição que gera comentários","Pergunta 2","Pergunta 3"],"communityPost":"Post pra aba Comunidade pra promover o vídeo","hashtagStrategy":["#hash1","#hash2","#hash3","#hash4","#hash5"],"endScreenScript":"Texto exato pra falar no end screen que faz clicar no próximo vídeo","polemic":"Opinião levemente polêmica (segura) que gera debate nos comentários","callbackHook":"Frase pra usar em TODOS os vídeos que cria identidade (catchphrase)"}`, 1500);
     res.json(parsed);

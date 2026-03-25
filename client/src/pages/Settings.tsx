@@ -7,7 +7,7 @@ import { useToast } from "../components/shared/Toast";
 import { Card, Btn, Hdr, Label, Input, Select, SecTitle, C } from "../components/shared/UI";
 
 const MODELS = [
-  { v: "claude-sonnet-4-6", l: "Claude Sonnet 4.6", d: "Melhor custo-benefício para conteúdo" },
+  { v: "claude-sonnet-4-6", l: "Claude Sonnet 4.6", d: "Melhor custo-benefício (LaoZhang)" },
   { v: "deepseek-v3", l: "DeepSeek V3", d: "Muito barato, boa qualidade" },
   { v: "gemini-2.5-flash", l: "Gemini 2.5 Flash", d: "Ultra rápido e econômico" },
   { v: "gpt-4o-mini", l: "GPT-4o Mini", d: "Rápido, bom para SEO" },
@@ -126,7 +126,7 @@ export default function Settings() {
   const USER_PROVIDERS = [
     { v: "openai", l: "OpenAI", d: "GPT-4o, GPT-4o-mini", placeholder: "sk-...", models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"] },
     { v: "google", l: "Google Gemini", d: "Gemini 2.5 Flash/Pro", placeholder: "AIza...", models: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"] },
-    { v: "anthropic", l: "Anthropic", d: "Claude Sonnet, Haiku", placeholder: "sk-ant-...", models: ["claude-sonnet-4-6", "claude-haiku-4-5-20251001"] },
+    { v: "anthropic", l: "Anthropic", d: "Claude Sonnet, Haiku", placeholder: "sk-ant-...", models: ["claude-sonnet-4-20250514", "claude-opus-4-20250514", "claude-haiku-4-5-20251001"] },
     { v: "groq", l: "Groq", d: "Llama, Mixtral (grátis)", placeholder: "gsk_...", models: ["llama-3.3-70b-versatile", "mixtral-8x7b-32768"] },
     { v: "deepseek", l: "DeepSeek", d: "DeepSeek V3 (barato)", placeholder: "sk-...", models: ["deepseek-chat", "deepseek-reasoner"] },
   ];

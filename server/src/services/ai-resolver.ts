@@ -17,10 +17,19 @@ const PROVIDERS: Record<string, { url: string; name: string }> = {
 const DEFAULT_MODELS: Record<string, string> = {
   openai: "gpt-4o-mini",
   google: "gemini-2.5-flash",
-  anthropic: "claude-sonnet-4-6",
+  anthropic: "claude-sonnet-4-20250514",
   laozhang: "claude-sonnet-4-6",
   groq: "llama-3.3-70b-versatile",
   deepseek: "deepseek-chat",
+};
+
+// Map short model names to API-compatible names
+const MODEL_ALIASES: Record<string, string> = {
+  "claude-sonnet-4-6": "claude-sonnet-4-20250514",
+  "claude-opus-4-6": "claude-opus-4-20250514",
+  "claude-haiku-4-5": "claude-haiku-4-5-20251001",
+  "gpt-4o": "gpt-4o",
+  "gpt-4o-mini": "gpt-4o-mini",
 };
 
 export interface AIConfig {
@@ -50,9 +59,11 @@ export async function resolveAIConfig(userId: number): Promise<AIConfig> {
       const providerInfo = PROVIDERS[provider] || PROVIDERS.openai;
       const apiUrl = provider === "custom" ? (uMap.user_api_url || "") : providerInfo.url;
       const model = uMap.user_api_model || DEFAULT_MODELS[provider] || "gpt-4o-mini";
+      // Only resolve aliases for direct Anthropic API (requires full model name)
+      const resolvedModel = provider === "anthropic" ? (MODEL_ALIASES[model] || model) : model;
 
-      logger.debug("Using user API key", { userId, provider });
-      return { apiKey: uMap.user_api_key, apiUrl, model, provider, isUserKey: true };
+      logger.debug("Using user API key", { userId, provider, model: resolvedModel });
+      return { apiKey: uMap.user_api_key, apiUrl, model: resolvedModel, provider, isUserKey: true };
     }
   } catch (err: any) {
     // UserSetting table might not exist yet - that's ok
