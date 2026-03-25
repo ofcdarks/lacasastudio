@@ -2,15 +2,12 @@
 import { Router, Response, NextFunction } from "express";
 import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
-import { resolveAIConfig, callAIWithConfig, resolveModelOverride } from "../services/ai-resolver";
+import { resolveAIConfig, callAIWithConfig } from "../services/ai-resolver";
 const router = Router();
 router.use(authenticate);
 
 const DEFAULT_SYSTEM = `Você é o assistente IA do LaCasaStudio — expert em YouTube, produção de vídeos, SEO, nichos virais, modelagem de canais, thumbnails e estratégia de conteúdo.
 Seja direto, prático e acionável. Use dados quando possível. Responda em português brasileiro.`;
-
-const MAX_TIMEOUT_MS = 300000; // 5 min absolute max
-const DEFAULT_TIMEOUT_MS = 180000; // 3 min default (was 60s)
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
   try {
@@ -19,12 +16,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
       res.status(400).json({ error: "API Key não configurada. Vá em Configurações e configure sua chave de IA." });
       return;
     }
-    const { messages, context, maxTokens, timeout: clientTimeout } = req.body as {
-      messages: any[];
-      context?: string;
-      maxTokens?: number;
-      timeout?: number;
-    };
+    const { messages, context, maxTokens } = req.body as { messages: any[]; context?: string; maxTokens?: number };
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       res.status(400).json({ error: "Mensagem vazia." });
@@ -42,14 +34,9 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
       systemPrompt += "\nContexto: " + context;
     }
 
-    // Dynamic timeout: client can request more time (capped at MAX)
-    const timeoutMs = Math.min(
-      clientTimeout && clientTimeout > 0 ? clientTimeout : DEFAULT_TIMEOUT_MS,
-      MAX_TIMEOUT_MS
-    );
-
+    // Timeout 60s
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const timeout = setTimeout(() => controller.abort(), 60000);
 
     try {
       if (config.provider === "anthropic") {
@@ -67,10 +54,9 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
         if (!r.ok) {
           const errText = await r.text().catch(() => "");
           if (r.status === 401) { res.status(401).json({ error: "API Key inválida. Verifique sua chave nas Configurações." }); return; }
-          if (r.status === 429) { res.status(429).json({ error: "Limite de requisições atingido. Aguarde 1 minuto e tente novamente.", retryable: true }); return; }
+          if (r.status === 429) { res.status(429).json({ error: "Limite de requisições atingido. Aguarde 1 minuto e tente novamente." }); return; }
           if (r.status === 402) { res.status(402).json({ error: "Créditos da API esgotados. Recarregue sua conta no provedor." }); return; }
-          if (r.status === 529) { res.status(529).json({ error: "Provedor sobrecarregado. Aguarde alguns segundos e tente novamente.", retryable: true }); return; }
-          res.status(500).json({ error: `Erro da IA (${config.provider}): ${r.status}. Tente novamente.`, retryable: true });
+          res.status(500).json({ error: `Erro da IA (${config.provider}): ${r.status}. Tente novamente.` });
           return;
         }
         const data = await r.json() as any;
@@ -89,38 +75,32 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
         if (!r.ok) {
           const errText = await r.text().catch(() => "");
           if (r.status === 401) { res.status(401).json({ error: "API Key inválida. Verifique sua chave nas Configurações." }); return; }
-          if (r.status === 429) { res.status(429).json({ error: "Limite de requisições atingido. Aguarde 1 minuto.", retryable: true }); return; }
+          if (r.status === 429) { res.status(429).json({ error: "Limite de requisições atingido. Aguarde 1 minuto." }); return; }
           if (r.status === 402 || errText.includes("insufficient")) { res.status(402).json({ error: "Créditos da API esgotados." }); return; }
           if (r.status === 400 && errText.includes("model")) { res.status(400).json({ error: `Modelo ${config.model} não disponível no seu plano.` }); return; }
-          if (r.status === 529 || r.status === 503) { res.status(r.status).json({ error: "Provedor temporariamente indisponível. Tente novamente.", retryable: true }); return; }
-          res.status(500).json({ error: `Erro da IA (${r.status}). Tente novamente em alguns segundos.`, retryable: true });
+          res.status(500).json({ error: `Erro da IA (${r.status}). Tente novamente em alguns segundos.` });
           return;
         }
         const data = await r.json() as any;
         const reply = data.choices?.[0]?.message?.content || "";
-        if (!reply) { res.status(500).json({ error: "IA retornou resposta vazia. Tente novamente.", retryable: true }); return; }
+        if (!reply) { res.status(500).json({ error: "IA retornou resposta vazia. Tente novamente." }); return; }
         res.json({ reply });
       }
     } catch (fetchErr: any) {
       clearTimeout(timeout);
       if (fetchErr.name === "AbortError") {
-        const secs = Math.round(timeoutMs / 1000);
-        res.status(504).json({
-          error: `IA demorou mais de ${secs}s. Tentando novamente automaticamente...`,
-          retryable: true,
-          timeoutMs,
-        });
+        res.status(504).json({ error: "IA demorou mais de 60s para responder. Tente com um prompt menor." });
         return;
       }
       if (fetchErr.message?.includes("ECONNREFUSED") || fetchErr.message?.includes("ENOTFOUND")) {
-        res.status(503).json({ error: `Não foi possível conectar ao provedor ${config.provider}. Verifique sua conexão.`, retryable: true });
+        res.status(503).json({ error: `Não foi possível conectar ao provedor ${config.provider}. Verifique sua conexão.` });
         return;
       }
       throw fetchErr;
     }
   } catch (err: any) {
     console.error("Chat error:", err.message);
-    res.status(500).json({ error: err.message || "Erro interno. Tente novamente.", retryable: true });
+    res.status(500).json({ error: err.message || "Erro interno. Tente novamente." });
   }
 });
 
@@ -146,74 +126,6 @@ Retorne JSON array:
     catch { res.json({ shorts: [] }); }
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Erro ao gerar shorts." });
-  }
-});
-
-/**
- * COMBO IA — Two-model pipeline for superior analysis
- * Step 1: analysisModel (e.g. Claude 3.7 Sonnet thinking) → deep analysis
- * Step 2: promptModel (e.g. GPT-4o) → generate final structured output from analysis
- */
-router.post("/combo", async (req: any, res: Response, next: NextFunction) => {
-  try {
-    const config = await resolveAIConfig(req.userId);
-    if (!config.apiKey) {
-      res.status(400).json({ error: "API Key não configurada." });
-      return;
-    }
-
-    const {
-      analysisModel,   // e.g. "claude-3-7-sonnet-latest"
-      promptModel,     // e.g. "gpt-4o"
-      analysisSystem,  // system prompt for step 1 (analysis)
-      analysisUser,    // user prompt for step 1
-      promptSystem,    // system prompt for step 2 (generation)
-      promptTemplate,  // template with {analysis} placeholder for step 2
-      maxTokens,
-    } = req.body;
-
-    if (!analysisSystem || !analysisUser || !promptSystem || !promptTemplate) {
-      res.status(400).json({ error: "Campos obrigatórios: analysisSystem, analysisUser, promptSystem, promptTemplate" });
-      return;
-    }
-
-    const model1 = analysisModel || config.model;
-    const model2 = promptModel || config.model;
-
-    // Step 1: Deep analysis
-    const config1 = model1 !== config.model
-      ? await resolveModelOverride(req.userId, model1)
-      : config;
-
-    const analysisResult = await callAIWithConfig(
-      config1, analysisSystem, analysisUser, maxTokens || 4000, 180000
-    );
-
-    if (!analysisResult) {
-      res.status(500).json({ error: "Modelo de análise retornou resposta vazia.", retryable: true });
-      return;
-    }
-
-    // Step 2: Generate final structured output using the analysis
-    const config2 = model2 !== config.model
-      ? await resolveModelOverride(req.userId, model2)
-      : config;
-
-    const finalPrompt = promptTemplate.replace(/\{analysis\}/g, analysisResult);
-
-    const finalResult = await callAIWithConfig(
-      config2, promptSystem, finalPrompt, maxTokens || 4000, 180000
-    );
-
-    res.json({
-      reply: finalResult,
-      analysis: analysisResult,
-      models: { analysis: model1, prompt: model2 },
-    });
-  } catch (err: any) {
-    console.error("Combo error:", err.message);
-    const retryable = err.message?.includes("demorou") || err.message?.includes("429") || err.message?.includes("503");
-    res.status(500).json({ error: err.message || "Erro no combo IA.", retryable });
   }
 });
 

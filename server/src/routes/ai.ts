@@ -225,16 +225,29 @@ Retorne JSON: {"title":"título principal","points":["ponto 1","ponto 2","ponto 
 
 
 
-// Generate image — ImageFX (Imagen 3.5) is the DEFAULT and ONLY method
+// Generate image — ImageFX (Imagen 3.5) — checks user cookie first, then admin
 router.post("/generate-asset", async (req: any, res: Response, next: NextFunction) => {
   try {
     const { prompt, sceneId } = req.body as { prompt: string; sceneId?: number };
     if (!prompt?.trim()) { res.status(400).json({ error: "Prompt obrigatório" }); return; }
 
-    const cookieSetting = await prisma.setting.findUnique({ where: { key: "imagefx_cookie" } });
-    const cookie = cookieSetting?.value || "";
+    // 1. Try user's own cookie first
+    let cookie = "";
+    try {
+      const userCookie = await prisma.userSetting.findUnique({
+        where: { userId_key: { userId: req.userId, key: "user_imagefx_cookie" } },
+      });
+      if (userCookie?.value) cookie = userCookie.value;
+    } catch {}
+
+    // 2. Fallback to admin cookie
     if (!cookie) {
-      res.status(400).json({ error: "Configure o Cookie do ImageFX em Configurações para gerar imagens." });
+      const cookieSetting = await prisma.setting.findUnique({ where: { key: "imagefx_cookie" } });
+      cookie = cookieSetting?.value || "";
+    }
+
+    if (!cookie) {
+      res.status(400).json({ error: "Configure seu Cookie do ImageFX em Configurações para gerar imagens." });
       return;
     }
 

@@ -17,7 +17,7 @@ const PUBLIC_KEYS = new Set(["ai_model"]);
 router.get("/", async (req: any, res: Response, next: NextFunction) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
-    const isAdmin = user?.isAdmin === true && user?.email === "rudysilvaads@gmail.com";
+    const isAdmin = user?.email === "rudysilvaads@gmail.com" || user?.isAdmin === true;
     const settings = await prisma.setting.findMany();
     const obj: any = {};
     settings.forEach((s: any) => {
@@ -32,7 +32,7 @@ router.get("/raw/:key", async (req: any, res: Response, next: NextFunction) => {
   try {
     if (ADMIN_KEYS.has(req.params.key)) {
       const user = await prisma.user.findUnique({ where: { id: req.userId } });
-      if (!user?.isAdmin) { res.status(403).json({ error: "Apenas admin" }); return; }
+      if (!user?.isAdmin && user?.email !== "rudysilvaads@gmail.com") { res.status(403).json({ error: "Apenas admin" }); return; }
     }
     const s = await prisma.setting.findUnique({ where: { key: req.params.key } });
     res.json(s || { key: req.params.key, value: "" });
@@ -43,7 +43,7 @@ router.put("/", async (req: any, res: Response, next: NextFunction) => {
   try {
     const entries = Object.entries(req.body as Record<string, string>);
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
-    const isAdmin = user?.isAdmin === true && user?.email === "rudysilvaads@gmail.com";
+    const isAdmin = user?.email === "rudysilvaads@gmail.com" || user?.isAdmin === true;
     for (const [key, value] of entries) {
       if (typeof key !== "string" || typeof value !== "string") { res.status(400).json({ error: "Dados inválidos" }); return; }
       if (ADMIN_KEYS.has(key) && !isAdmin) { res.status(403).json({ error: `Apenas admin pode alterar "${key}"` }); return; }

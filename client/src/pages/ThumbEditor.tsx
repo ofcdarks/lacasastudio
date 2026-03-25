@@ -5,55 +5,6 @@ import { aiApi, chatApi } from "../lib/api";
 import { C, Btn, Hdr, Label, Input, Select } from "../components/shared/UI";
 import { useToast } from "../components/shared/Toast";
 
-// AI call with auto-retry — wraps chatApi.sendWithRetry with progress integration
-// Supports combo mode: Step 1 (analysis model) → Step 2 (prompt model)
-async function aiCall(messages, pg, opts = {}) {
-  const { reply } = await chatApi.sendWithRetry(messages, undefined, {
-    timeout: opts.timeout || 180000,
-    maxRetries: opts.maxRetries || 3,
-    maxTokens: opts.maxTokens || 4000,
-    onRetry: (attempt, max) => {
-      if (pg?.retry) pg.retry(attempt, max);
-    },
-  });
-  return reply;
-}
-
-// Combo AI call — uses 2 models in sequence for superior analysis
-async function aiComboCall(
-  analysisSystem, analysisUser, promptSystem, promptTemplate,
-  comboSettings, pg, opts = {}
-) {
-  if (pg?.update) pg.update(0, "Modelo 1: Análise profunda...");
-  const result = await chatApi.combo({
-    analysisModel: comboSettings.analysisModel,
-    promptModel: comboSettings.promptModel,
-    analysisSystem,
-    analysisUser,
-    promptSystem,
-    promptTemplate,
-    maxTokens: opts.maxTokens || 4000,
-  }, {
-    maxRetries: 2,
-    onRetry: (attempt, max) => { if (pg?.retry) pg.retry(attempt, max); },
-  });
-  return result;
-}
-
-// Check if combo is enabled via settings
-async function getComboSettings() {
-  try {
-    const token = localStorage.getItem("lc_token");
-    const res = await fetch("/api/settings", { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return null;
-    const s = await res.json();
-    if (s.combo_enabled === "true" && s.combo_analysis_model && s.combo_prompt_model) {
-      return { analysisModel: s.combo_analysis_model, promptModel: s.combo_prompt_model };
-    }
-  } catch {}
-  return null;
-}
-
 // Sanitize prompt for ImageFX safety filters
 function sanitizePrompt(prompt: string): string {
   const replacements: [RegExp, string][] = [
@@ -425,7 +376,7 @@ function CriadorNinja({ toast, pg }) {
         return found ? (FX_DNA[found.id] || fx) : fx;
       }).join(". ");
 
-      const reply = await aiCall([{ role: "system", content: `Você é o MAIOR ESPECIALISTA DO MUNDO em thumbnails virais para YouTube em 2026. Você treinou analisando +100.000 thumbnails dos canais com maior CTR do planeta (MrBeast, Mark Rober, Kurzgesagt, Felipe Neto, Primo Rico, Alanzoka).
+      const { reply } = await chatApi.send([{ role: "system", content: `Você é o MAIOR ESPECIALISTA DO MUNDO em thumbnails virais para YouTube em 2026. Você treinou analisando +100.000 thumbnails dos canais com maior CTR do planeta (MrBeast, Mark Rober, Kurzgesagt, Felipe Neto, Primo Rico, Alanzoka).
 
 SEU CONHECIMENTO DE TENDÊNCIAS 2026 (DADOS REAIS):
 - NEO-MINIMALISMO domina: thumbnails com MUITO espaço negativo e 1 único ponto focal claro. Canais que mudaram para esse estilo viram CTR saltar de 2.8% para 7.2%.
@@ -441,15 +392,14 @@ SEU CONHECIMENTO DE TENDÊNCIAS 2026 (DADOS REAIS):
 
 REGRAS DE OURO DO SEU TRABALHO:
 1. NUNCA gere texto/letras/palavras dentro da imagem. A thumbnail é SÓ background visual — texto será sobreposto depois.
-2. TODOS OS PROMPTS ImageFX DEVEM SER EM INGLÊS — o Google ImageFX só funciona com prompts em inglês. Escreva cada prompt inteiro em inglês técnico.
-3. Cada prompt DEVE ter 120-150 palavras ultra-específicas em INGLÊS: composição, iluminação (tipo exato: Rembrandt, rim light, butterfly, split), paleta de cores em hex, câmera (ângulo, lens, DOF), textura, atmosfera.
-4. RESPEITE o nicho — cada nicho tem DNA visual próprio que o viewer reconhece inconscientemente.
-5. COMPOSIÇÃO: deixe espaço clean onde o texto será sobreposto (baseado na posição informada). Use regra dos terços. Ponto focal único.
-6. EFEITOS devem estar INTEGRADOS na cena de forma orgânica, não como filtro jogado por cima.
-7. PENSE MOBILE: a imagem precisa ser impactante mesmo em 120x68 pixels (tamanho no feed mobile).
-8. Os prompts devem funcionar no Google ImageFX / Imagen 3.5 — seja técnico, visual e cinematográfico. SEMPRE EM INGLÊS.
-9. Cada variação deve ser genuinamente DIFERENTE em composição e ângulo, não apenas troca de cor.
-10. SEGURANÇA ImageFX: NUNCA use palavras como blood, weapon, violence, death, explosion, combat, knife, sword, gun, bomb. Use safe alternatives (energy wave, tension, red paint, dramatic marks).` },
+2. Cada prompt DEVE ter 80-120 palavras ultra-específicas: composição, iluminação (tipo exato: Rembrandt, rim light, butterfly, split), paleta de cores em hex, câmera (ângulo, lens, DOF), textura, atmosfera.
+3. RESPEITE o nicho — cada nicho tem DNA visual próprio que o viewer reconhece inconscientemente.
+4. COMPOSIÇÃO: deixe espaço clean onde o texto será sobreposto (baseado na posição informada). Use regra dos terços. Ponto focal único.
+5. EFEITOS devem estar INTEGRADOS na cena de forma orgânica, não como filtro jogado por cima.
+6. PENSE MOBILE: a imagem precisa ser impactante mesmo em 120x68 pixels (tamanho no feed mobile).
+7. Os prompts devem funcionar no Google ImageFX / Imagen 3.5 — seja técnico, visual e cinematográfico.
+8. Cada variação deve ser genuinamente DIFERENTE em composição e ângulo, não apenas troca de cor.
+9. SEGURANÇA ImageFX: NUNCA use palavras como sangue, arma, violência, morte, explosão, combate, faca, espada, tiro, bomba. Substitua por alternativas visuais seguras (ex: "onda de energia" em vez de "explosão", "tensão dramática" em vez de "violência", "tinta vermelha" em vez de "sangue"). O ImageFX BLOQUEIA prompts com conteúdo violento.` },
       { role: "user", content: `BRIEFING DA THUMBNAIL:
 
 NICHO: ${nicheObj.l} (${nicheObj.i})
@@ -477,10 +427,10 @@ GERE 3 VARIAÇÕES:
 3. OUSADA — conceito visual criativo e inesperado que quebra padrões do nicho
 
 RESPONDA APENAS este JSON (sem markdown, sem backticks):
-{"promptImageFX":"[ENGLISH prompt 1 - minimum 120 words, ultra specific, NO text in image, 16:9 landscape, photorealistic 8K, include exact lighting, hex palette, composition]","promptVariation2":"[ENGLISH prompt 2 - minimum 120 words, different angle]","promptVariation3":"[ENGLISH prompt 3 - minimum 120 words, bold creative]","textOverlay":{"title":"${title}","titleStyle":"${styleObj.l}: como posicionar o texto sobre esta imagem para máximo impacto","subtitle":"${subtitle || "sugestão de subtítulo"}","badge":"sugestão de badge contextual (ex: NOVO, TOP, VIRAL, GRÁTIS)","emoji":"1 emoji que representa o vídeo"},"tips":["dica 1 específica para ${nicheObj.l}","dica 2 sobre composição","dica 3 sobre cores/CTR"],"ctrEstimate":85}` }], pg);
+{"promptImageFX":"[prompt 1 - mínimo 80 palavras, ultra específico, SEM texto na imagem, 16:9 landscape, photoreal 8K]","promptVariation2":"[prompt 2 - mínimo 80 palavras]","promptVariation3":"[prompt 3 - mínimo 80 palavras, ousado]","textOverlay":{"title":"${title}","titleStyle":"${styleObj.l}: como posicionar o texto sobre esta imagem para máximo impacto","subtitle":"${subtitle || "sugestão de subtítulo"}","badge":"sugestão de badge contextual (ex: NOVO, TOP, VIRAL, GRÁTIS)","emoji":"1 emoji que representa o vídeo"},"tips":["dica 1 específica para ${nicheObj.l}","dica 2 sobre composição","dica 3 sobre cores/CTR"],"ctrEstimate":85}` }]);
       const parsed = JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
       setOutput(parsed); pg?.done();
-    } catch (e) { pg?.fail(e.message, () => generate()); toast?.error(e.message); }
+    } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setLoading(false);
   };
 
@@ -681,21 +631,21 @@ function RemixAI({ toast, pg }) {
     setLoading(true);
     pg?.start("🔄 Engenharia Reversa", ["Analisando composição", "Extraindo estilo", "Gerando variações"]);
     try {
-      const reply = await aiCall([{ role: "system", content: "You are the WORLD'S #1 EXPERT in reverse-engineering viral YouTube thumbnails (2026). You decompose thumbnails into their EXACT composite layers. ALL PROMPTS MUST BE IN ENGLISH for Google ImageFX. Identify: exact hex palette, lighting type (Rembrandt/rim/butterfly/split), composition (rule of thirds/diagonal/central), DOF, style (neo-minimal/cinematic/flat/3D), psychological mood. Prompts: 120+ words, 16:9, photorealistic composite, NO text in image, ultra technical for ImageFX. REPLICATE the exact same layer structure — same number of layers, same spatial arrangement, same scale tricks." },
-      { role: "user", content: `Do a COMPLETE REVERSE ENGINEERING of this YouTube thumbnail.
+      const { reply } = await chatApi.send([{ role: "system", content: "Você é o MAIOR ESPECIALISTA DO MUNDO em engenharia reversa de thumbnails virais (2026). Tendências atuais: neo-minimalismo (muito espaço negativo, 1 ponto focal), mobile-first (70% tráfego mobile, decisão em 0.5s), texto máx 5 palavras no canto superior esquerdo, rostos com emoção extrema (+30% CTR), alto contraste neon, evitar bottom-right (timestamp). Ao analisar, identifique: paleta hex exata, tipo de iluminação (Rembrandt/rim/butterfly/split), composição (regra dos terços/diagonal/central), DOF, estilo (neo-minimal/cinematográfico/flat/3D), mood psicológico. Prompts de recriação: 80-120 palavras, 16:9, photoreal, SEM texto na imagem, ultra técnico para Google ImageFX." },
+      { role: "user", content: `Faça ENGENHARIA REVERSA completa desta thumbnail de YouTube.
 
-Extract: visual style (cinematic? flat? 3D? illustration?), EXACT hex color palette, composition and layout with all LAYERS identified (background layer, main subject cutout, secondary overlaid elements, effects layer), lighting style, mood/atmosphere, and any visual effects (bokeh, smoke, glitch, etc).
+Extraia: estilo visual (cinematográfico? flat? 3D? illustration?), paleta de cores EXATA em hex, composição e layout, estilo de iluminação (rembrandt? flat? rim light? neon?), mood/atmosfera, e qualquer efeito visual (bokeh, smoke, glitch, etc).
 
-Then generate 3 ENGLISH PROMPTS for Google ImageFX/Imagen 3.5 that recreate variations KEEPING THE EXACT SAME COMPOSITE STRUCTURE:
-1. FAITHFUL — same style, composition, and layer arrangement, subtle subject variation
-2. REINTERPRETATION — same concept and layout with different angle/lighting
-3. TRANSFORMATION — completely reimagined while keeping the same mood and composite formula
+Depois gere 3 PROMPTS para Google ImageFX/Imagen 3.5 que recriam variações:
+1. FIEL — mesmo estilo e composição, variação sutil
+2. REINTERPRETAÇÃO — mesmo conceito com ângulo/iluminação diferente  
+3. TRANSFORMAÇÃO — conceito completamente reimaginado mantendo o mood
 
-RESPOND JSON (no backticks):
-{"analysis":{"style":"detailed visual style description","colors":["#hex1","#hex2","#hex3","#hex4","#hex5"],"composition":"how elements are layered and positioned, rule of thirds, focal point, scale relationships","lighting":"specific lighting type and direction","mood":"psychological atmosphere"},"remixPrompts":[{"name":"Faithful Variation","prompt":"ENGLISH ImageFX prompt 120+ words, 16:9 landscape, photorealistic composite, NO text, complete scene description with exact layer positions, lighting, colors, camera, atmosphere","changes":"what changes from original"},{"name":"Reinterpretation","prompt":"ENGLISH 120+ words with new angle but same layout","changes":"changes"},{"name":"Creative Transformation","prompt":"ENGLISH 120+ words completely reimagined but same composite formula","changes":"changes"}],"improvements":["specific actionable improvement 1","improvement 2","improvement 3"]}` }], pg);
+RESPONDA JSON (sem backticks):
+{"analysis":{"style":"descrição detalhada do estilo visual","colors":["#hex1","#hex2","#hex3","#hex4","#hex5"],"composition":"como os elementos estão posicionados, regra dos terços, ponto focal","lighting":"tipo de iluminação específica","mood":"atmosfera psicológica"},"remixPrompts":[{"name":"Variação Fiel","prompt":"prompt ImageFX 80+ palavras, 16:9, photoreal, SEM texto, descrição completa de cena, iluminação, cores, câmera, atmosfera","changes":"o que muda"},{"name":"Reinterpretação","prompt":"prompt 80+ palavras com novo ângulo","changes":"mudanças"},{"name":"Transformação Criativa","prompt":"prompt 80+ palavras completamente reimaginado","changes":"mudanças"}],"improvements":["melhoria 1 específica e acionável","melhoria 2","melhoria 3"]}` }]);
       setOutput(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
       pg?.done();
-    } catch (e) { pg?.fail(e.message, () => analyze()); toast?.error(e.message); }
+    } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setLoading(false);
   };
 
@@ -772,7 +722,7 @@ function AnalisadorViral({ toast, pg }) {
     setLoading(true);
     pg?.start("🔍 Analisando Viralização", ["Avaliando thumbnails", "Analisando títulos", "Score viral"]);
     try {
-      const reply = await aiCall([{ role: "system", content: "Voce e o MAIOR ESPECIALISTA DO MUNDO em CTR e viralizacao no YouTube (2026). Dados que voce domina: MrBeast gasta $10.000/thumb com A/B testing extensivo. Top creators atingem 5-10% CTR, media e 3-4%. Thumbnails com emocao extrema +30% CTR (VidIQ 2025). Neo-minimalismo e tendencia 2026: espaco negativo, 1 ponto focal, max 5 palavras. 70% trafego e mobile, viewer decide em 0.5s. Texto deve estar no canto SUPERIOR ESQUERDO (87% dos top thumbnails). Bottom-right e zona morta (timestamp). Alto contraste neon e padrao 2026. Regra dos 12 caracteres: thumbs com menos de 12 chars performam MUITO melhor. Seja BRUTALMENTE HONESTO. Nota 90+ SO para thumbs que competem com top 0.1% do YouTube. Cada sugestao deve ser ESPECIFICA, ACIONAVEL e baseada em dados reais de 2026." },
+      const { reply } = await chatApi.send([{ role: "system", content: "Voce e o MAIOR ESPECIALISTA DO MUNDO em CTR e viralizacao no YouTube (2026). Dados que voce domina: MrBeast gasta $10.000/thumb com A/B testing extensivo. Top creators atingem 5-10% CTR, media e 3-4%. Thumbnails com emocao extrema +30% CTR (VidIQ 2025). Neo-minimalismo e tendencia 2026: espaco negativo, 1 ponto focal, max 5 palavras. 70% trafego e mobile, viewer decide em 0.5s. Texto deve estar no canto SUPERIOR ESQUERDO (87% dos top thumbnails). Bottom-right e zona morta (timestamp). Alto contraste neon e padrao 2026. Regra dos 12 caracteres: thumbs com menos de 12 chars performam MUITO melhor. Seja BRUTALMENTE HONESTO. Nota 90+ SO para thumbs que competem com top 0.1% do YouTube. Cada sugestao deve ser ESPECIFICA, ACIONAVEL e baseada em dados reais de 2026." },
       { role: "user", content: `ANALISE DE VIRALIZACAO COMPLETA (padrao 2026):
 
 TITULOS PARA ANALISAR:
@@ -791,10 +741,10 @@ ANALISE CADA TITULO com base nos criterios 2026:
 A versao melhorada DEVE ser concretamente superior: mais curta, mais curiosa, mais emocional, max 5 palavras para thumb.
 
 JSON (sem backticks):
-{"overallScore":72,"titleAnalysis":[{"title":"titulo","score":68,"strengths":["ponto forte real e especifico"],"weaknesses":["fraqueza real com dados de porque prejudica CTR"],"improvedVersion":"VERSAO MELHORADA - max 5 palavras, curiosity gap forte, emocional"}],"viralFactors":{"curiosityGap":70,"emotionalImpact":65,"clarity":85,"uniqueness":55,"clickability":68},"thumbnailTips":["dica visual 2026 especifica sobre composicao","dica sobre cores/contraste baseada em dados","dica mobile-first acionavel"],"competitorInsight":"como esta thumb se compara com top 10 do nicho em 2026","actionPlan":["acao #1 mais impactante com dados de porque funciona","acao #2","acao #3"]}` }], pg);
+{"overallScore":72,"titleAnalysis":[{"title":"titulo","score":68,"strengths":["ponto forte real e especifico"],"weaknesses":["fraqueza real com dados de porque prejudica CTR"],"improvedVersion":"VERSAO MELHORADA - max 5 palavras, curiosity gap forte, emocional"}],"viralFactors":{"curiosityGap":70,"emotionalImpact":65,"clarity":85,"uniqueness":55,"clickability":68},"thumbnailTips":["dica visual 2026 especifica sobre composicao","dica sobre cores/contraste baseada em dados","dica mobile-first acionavel"],"competitorInsight":"como esta thumb se compara com top 10 do nicho em 2026","actionPlan":["acao #1 mais impactante com dados de porque funciona","acao #2","acao #3"]}` }]);
       setOutput(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
       pg?.done();
-    } catch (e) { pg?.fail(e.message, () => analyze()); toast?.error(e.message); }
+    } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setLoading(false);
   };
 
@@ -885,7 +835,6 @@ function TrendsTab({ toast, pg }) {
   const [modalImg, setModalImg] = useState(null);
   const [genImgLoading, setGenImgLoading] = useState({});
   const [autoNiche, setAutoNiche] = useState(null);
-  const [customTitle, setCustomTitle] = useState("");
   const BASE = "/api";
   const getToken = () => localStorage.getItem("lc_token");
 
@@ -914,181 +863,52 @@ function TrendsTab({ toast, pg }) {
 
   const analyzeThumb = async (video) => {
     setSelected(video); setAnalyzing(true); setAnalysis(null);
-    const thumbUrl = video.thumbnail || video.thumbnailDefault;
-    const hasCustomTitle = !!customTitle.trim();
-    const titleTheme = customTitle.trim();
-    const nicheLabel = NICHES.find(n => n.id === niche)?.l || niche;
-    const formatPrompt = video.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape";
-
-    pg?.start(
-      hasCustomTitle ? `Gerando thumb para: ${titleTheme.slice(0,40)}...` : "Analisando thumbnail viral",
-      hasCustomTitle
-        ? ["Etapa 1: Identificando técnica visual", "Etapa 2: Gerando prompts para seu título", "Finalizando"]
-        : ["Analisando composição da thumbnail", "Extraindo técnica visual", "Gerando prompts em inglês"]
-    );
-
+    pg?.start("Analisando thumbnail viral", ["Decompondo composicao frame-a-frame", "Extraindo DNA visual", "Gerando prompts superiores"]);
     try {
-      if (hasCustomTitle) {
-        // ═══════════════════════════════════════════
-        // 2-STEP MODE: Custom title provided
-        // Step 1: Extract ABSTRACT technique only (no content details)
-        // Step 2: Interpret title → visual concepts → apply technique → prompt
-        // ═══════════════════════════════════════════
+      const { reply } = await chatApi.send([{ role: "system", content: `Voce e o MAIOR ESPECIALISTA DO MUNDO em thumbnails virais do YouTube. Voce entende que thumbnails NÃO sao fotos — sao MONTAGENS (composites Photoshop). Voce identifica a FORMULA de cada thumbnail.
 
-        // STEP 1: Extract ONLY the abstract visual technique (no specific content)
-        pg?.update(0, "Extraindo técnica visual...");
-        const step1Messages = [
-          { role: "system", content: "You extract the ABSTRACT visual technique from YouTube thumbnails. Describe ONLY the structural technique, NOT the specific content/subjects. Output max 60 words." },
-          { role: "user", content: [
-            ...(thumbUrl ? [{ type: "image_url", image_url: { url: thumbUrl } }] : []),
-            { type: "text", text: `Describe ONLY the abstract visual STRUCTURE of this thumbnail. Do NOT mention specific subjects (no pharaohs, soldiers, etc).
+PRIMEIRO: Identifique o TIPO da thumbnail:
+- TIPO A (MONTAGEM/COMPOSITE): Pessoa recortada + elementos sobrepostos + logo/texto + fundo separado. Ex: YouTuber no centro + cenas de filme atras + logo Netflix + badge colorido. MAIORIA das thumbnails virais sao deste tipo.
+- TIPO B (CENA UNICA): Uma unica imagem cinematografica sem composicao de layers. Ex: close-up de olho, paisagem epica, macro de objeto.
 
-Choose technique: SPLIT FACE / SYMMETRICAL DUALITY / GRID COLLAGE / CUTOUT COMPOSITE / IMPOSSIBLE SCALE / SINGLE CINEMATIC / TRIPTYCH
+PARA TIPO A (MONTAGEM) — decomponha as LAYERS:
+1. LAYER FUNDO: qual a imagem/gradiente de fundo? Cor, atmosfera, blur level
+2. LAYER PERSONAGEM/PRINCIPAL: quem/o que esta recortado? Posicao (centro, esquerda, direita). Tamanho (% do frame). Expressao facial se pessoa.
+3. LAYER ELEMENTOS SECUNDARIOS: o que mais esta sobreposto? (cenas de filme, objetos, outros personagens menores). Onde posicionados?
+4. LAYER EFEITOS: glow, sombra, rim light artificial, color grading, vinheta, particulas
+5. LAYOUT ESPACIAL: como os elementos estao distribuidos? (triangular, simetrico, regra dos tercos, Z-pattern)
+6. PALETA: cores hex dominantes. Contraste entre layers.
 
-Then describe ONLY the abstract layout:
-- "TECHNIQUE: SPLIT FACE. A face split vertically down the center, left half shows one era, right half shows another. Background split matches: left warm tones, right cool tones. Central figure occupies 50% of frame."
+PARA TIPO B (CENA UNICA) — decomponha a FOTOGRAFIA:
+1. Camera angle, lente mm, DOF
+2. Iluminacao (tipo, direcao, ratio, cor)
+3. Composicao (ponto focal, regra, % do frame)
+4. Atmosfera e texturas
 
-Do NOT describe what the subjects ARE — only their positions and the structural technique.` }
-          ]}
-        ];
-
-        let techniqueDesc;
-        try {
-          techniqueDesc = await aiCall(step1Messages, null);
-        } catch {
-          techniqueDesc = `TECHNIQUE: SPLIT FACE. Central figure split vertically, left half and right half showing contrasting eras/themes. Backgrounds match each side. Warm-to-cool color transition. Figure occupies 40-50% of frame center.`;
-        }
-
-        // STEP 2: Three-part prompt — interpret title → map to technique → generate
-        pg?.update(1, `Interpretando título + gerando prompts...`);
-        const step2Reply = await aiCall([
-          { role: "system", content: `You are an expert ImageFX prompt engineer specializing in YouTube thumbnails for history/civilization channels.
-
-YOUR PROCESS (follow in order):
-1. INTERPRET the video title into concrete visual elements
-2. MAP those elements to the visual technique provided
-3. GENERATE ImageFX prompts using ONLY those mapped elements
-
-IMAGEFX PROMPT FORMULA (PROVEN — produces REAL photos, not digital art):
-
-STRUCTURE: "RAW photo of [subject], [framing], shot with DSLR, [lens], [aperture], [light], [skin/texture], [focus], [background]. [Clothing/props details]. --no illustration, painting, CGI, 3D render, concept art"
-
-MANDATORY BASE TAGS (every prompt):
-- "RAW photo" (forces photographic output)
-- "shot with DSLR" or "DSLR camera"
-- Lens: "50mm lens" or "85mm lens" (portraits) or "35mm lens" (wider)
-- Aperture: "f/1.8" or "f/2.8"
-- Light: "natural light" / "soft daylight" / "window light" / "overcast daylight" / "golden hour natural light"
-- "realistic skin tones" / "visible pores" / "natural skin imperfections"
-- "sharp focus" or "sharp focus on eyes"
-- "shallow depth of field"
-- END EVERY PROMPT WITH: "--no illustration, painting, CGI, 3D render, concept art"
-
-FOR PEOPLE (critical for realism):
-- "visible pores, natural skin imperfections, realistic skin texture"
-- "sharp focus on eyes, asymmetrical features"
-- "authentic weathered clothing, real fabric textures"
-- "natural expression" (NOT "dramatic expression" — pulls to art)
-
-THUMBNAIL IMPACT (without breaking realism):
-- Use "extreme close-up" / "tight close-up portrait" — fills frame
-- Use "intense eye contact" / "powerful gaze" (NOT "piercing" — too stylized)
-- Use strong NATURAL contrast: "strong directional sunlight with deep realistic shadows"  
-- Use "vivid natural colors" (NOT "saturated" or "vivid saturated" — pulls to art)
-- Rich details via REAL descriptions: "ornate gold jewelry with authentic patina", "intricate hand-woven textile", "weathered leather armor with real wear marks"
-
-🚫 BANNED WORDS (these DESTROY realism, pull to digital art):
-- cinematic, epic, dramatic lighting, hyperdetailed
-- unreal engine, octane render, subsurface scattering
-- color grading, cinematic LUT, color palette with hex codes (#FF0000)
-- vivid saturated, high dynamic range, bold contrast
-- trending on ArtStation, oil painting, matte painting, digital art, illustration
-- smooth skin, flawless, perfect skin
-- atmospheric haze, volumetric god rays, chiaroscuro
-- high-budget, Hollywood, museum-worthy
-
-STRICT RULES:
-- ALL prompts in ENGLISH
-- Minimum 120 words per prompt
-- ZERO generic elements — every visual must represent the title
-- NO text, letters, or words in the image
-- ALWAYS end with "--no illustration, painting, CGI, 3D render, concept art"
-- SAFETY: no blood, weapons, violence. Use safe alternatives.` },
-          { role: "user", content: `═══ STEP A: INTERPRET THIS TITLE ═══
-Title: "${titleTheme}"
-
-First, think about what this title means visually:
-- What are the KEY VISUAL CONCEPTS? (e.g., for "Tenochtitlán had technology Europe couldn't surpass": Aztec aqueducts, chinampas/floating gardens, the great causeways of Tenochtitlán, Templo Mayor, vs medieval European mud streets, wooden hovels)
-- What is the CORE CONTRAST/STORY? (advanced Aztec engineering vs primitive European cities of the same era)
-- What CHARACTERS would represent this? (Aztec engineer/ruler vs European medieval figure)
-
-═══ STEP B: APPLY THIS TECHNIQUE ═══
-${techniqueDesc}
-
-Take the abstract technique above and fill it with the visual elements from Step A.
-If the technique is SPLIT FACE → the left face = one side of the title's story, right face = the other side
-If SYMMETRICAL DUALITY → left elements and right elements each represent one side of the story
-If GRID COLLAGE → each grid cell shows a different aspect of the title's theme
-
-═══ STEP C: GENERATE PROMPTS ═══
-Format: ${formatPrompt}
-
-RESPOND ONLY with this JSON (no markdown, no backticks):
-{"thumbType":"technique name","formula":"How you mapped the title to the technique: LEFT represents X, RIGHT represents Y, CENTER represents Z","whyItWorks":"Why this works for '${titleTheme}'. 3 sentences.","composition":"LAYER-BY-LAYER for this specific title: background (what from the title, position), main subject (what from the title, position, % of frame), secondary (what, where)","lightingAnalysis":"Lighting style that fits the title mood","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"RAW photo of [scene from title], tight close-up portrait, shot with DSLR, 85mm lens, f/1.8, natural light with strong directional sunlight creating deep realistic shadows. [Main subject fills 70% of frame, intense eye contact, powerful gaze, natural expression]. Realistic skin tones, visible pores, natural skin imperfections, asymmetrical features. [Authentic period clothing with real fabric textures, hand-crafted jewelry with genuine patina, weathered materials with real wear marks]. Background: [contextual scene softly blurred but recognizable]. Sharp focus on eyes, shallow depth of field. Vivid natural colors, strong natural contrast. ${formatPrompt}, 8K resolution. No text, no letters, no watermarks. --no illustration, painting, CGI, 3D render, concept art. Fill ONLY with elements from '${titleTheme}'.","promptVariation":"RAW photo of [alternative angle on title], close-up portrait, shot with DSLR, 50mm lens, f/2.8, golden hour natural light. [Different perspective from title, subject fills 60% of frame, natural intense expression]. Realistic skin tones, visible pores, natural imperfections. Authentic period details, real textures. Sharp focus, shallow depth of field. ${formatPrompt}, 8K. No text. --no illustration, painting, CGI, 3D render, concept art. ALTERNATIVE perspective on '${titleTheme}'.","textSuggestion":"Where to place text overlay","ctrTips":["tip 1 for '${titleTheme}'","tip 2","tip 3"]}` }
-        ], pg);
-
-        const parsed = JSON.parse(step2Reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
-        parsed._techniqueRef = techniqueDesc;
-        setAnalysis(parsed);
-        pg?.done();
-
-      } else {
-        // ═══════════════════════════════════════════
-        // STANDARD MODE: No custom title — analyze + generate in one call
-        // ═══════════════════════════════════════════
-
-        const userContent = [
-          ...(thumbUrl ? [{ type: "image_url", image_url: { url: thumbUrl } }] : []),
-          { type: "text", text: `ANALYZE THIS EXACT THUMBNAIL IMAGE and reverse-engineer its visual formula.
+REGRA CRITICA DOS PROMPTS:
+- REPRODUZA A MESMA FORMULA/LAYOUT mas com personagens e cenario DIFERENTES.
+- Se o original e "pessoa recortada no centro + logo atras + 2 cenas de filme nas laterais", seu prompt deve descrever EXATAMENTE esse layout: "pessoa em pose heroica centralizada, elemento grafico grande atras, duas cenas tematicas nas laterais esquerda e direita, iluminacao dramatica unificando tudo".
+- NAO descreva como foto unica se e montagem. Descreva como COMPOSITE com layers.
+- MINIMO 120 palavras por prompt.
+- NUNCA texto/letras na imagem.
+- SEGURANCA: Evite sangue, armas, violencia, morte, explosao. Use alternativas (onda de energia, tensao, tinta, marca). ImageFX bloqueia conteudo violento.` },
+        { role: "user", content: `IDENTIFIQUE A FORMULA desta thumbnail viral e gere prompts que REPLICAM a mesma formula:
 
 VIDEO: "${video.title}"
-CHANNEL: "${video.channel}"
+CANAL: "${video.channel}" 
 VIEWS: ${(video.views/1000).toFixed(0)}K
-NICHE: ${nicheLabel}
+NICHO: ${NICHES.find(n => n.id === niche)?.l || niche}
+FORMATO: ${video.format === "portrait" ? "9:16 portrait (Short)" : "16:9 landscape"}
 
-LOOK AT THE IMAGE CAREFULLY:
-- What TECHNIQUE is used? (GRID COLLAGE / SPLIT FACE / SYMMETRICAL DUALITY / CUTOUT COMPOSITE / IMPOSSIBLE SCALE / SINGLE CINEMATIC / BEFORE-AFTER / TRIPTYCH)
-- What are the exact layers from back to front?
-- What visual trick makes it scroll-stopping?
-- What is the EXACT spatial arrangement?
+DECOMPONHA frame-a-frame: qual angulo de camera, qual lente, qual iluminacao, qual truque de escala/composicao faz esta thumbnail IMPOSSIVEL de ignorar no feed.
 
-Then generate prompts that use the EXACT SAME VISUAL TECHNIQUE with different subjects.
+Depois gere prompts que usam as MESMAS TECNICAS CINEMATOGRAFICAS mas com cena ORIGINAL e SUPERIOR.
 
-RESPOND ONLY JSON (no backticks):
-{"thumbType":"technique name","formula":"EXACT description of layers and positions","whyItWorks":"Why it works. 3+ sentences.","composition":"LAYER-BY-LAYER: background, main subject (position, % of frame), secondary elements, effects","lightingAnalysis":"Lighting description","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"RAW photo of [scene], tight close-up, shot with DSLR, 85mm lens, f/1.8, natural light with strong directional sunlight. Subject fills 70% of frame, intense eye contact, natural expression. Realistic skin tones, visible pores, natural imperfections. Authentic detailed clothing and materials with real textures. Sharp focus on eyes, shallow depth of field. ${formatPrompt}, 8K. No text. --no illustration, painting, CGI, 3D render, concept art. REPLICATE same technique with different subjects.","promptVariation":"RAW photo of [radical variation, different genre], close-up, DSLR, 50mm lens, f/2.8, soft daylight. Subject dominates frame. Realistic skin, visible pores, natural imperfections. Authentic textures. Sharp focus, shallow depth of field. ${formatPrompt}, 8K. No text. --no illustration, painting, CGI, 3D render, concept art.","textSuggestion":"Text placement","ctrTips":["tip1","tip2","tip3"]}` }
-        ];
-
-        const reply = await aiCall([
-          { role: "system", content: `You reverse-engineer viral YouTube thumbnails and generate ENGLISH ImageFX prompts that look like REAL PHOTOGRAPHS.
-
-PROMPT FORMULA: "RAW photo of [subject], [framing], shot with DSLR, 85mm lens, f/1.8, [natural light type], realistic skin tones, visible pores, natural skin imperfections, sharp focus on eyes, shallow depth of field. [Clothing/props]. [Background]. --no illustration, painting, CGI, 3D render, concept art"
-
-THUMBNAIL IMPACT (without breaking realism):
-- Tight close-up: subject fills 60-80% of frame
-- Intense eye contact, powerful natural gaze
-- Strong directional natural sunlight with deep real shadows
-- Authentic detailed textures: real fabric, genuine patina, weathered materials
-- Vivid natural colors (NOT "saturated" or hex codes)
-
-🚫 BANNED (pulls to digital art): cinematic, epic, dramatic lighting, hyperdetailed, chiaroscuro, subsurface scattering, color grading, hex codes, rim light, volumetric, ArtStation, oil painting, digital art, illustration, bold contrast, high dynamic range
-SAFETY: no blood, weapons, violence.` },
-          { role: "user", content: userContent }
-        ], pg);
-
-        setAnalysis(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
-        pg?.done();
-      }
-    } catch (e) { pg?.fail(e.message, () => analyzeThumb(video)); toast?.error(e.message); }
+JSON (sem backticks):
+{"thumbType":"MONTAGEM ou CENA UNICA","formula":"Descricao da FORMULA exata: quantas layers, o que cada layer contem, como estao posicionados, qual o padrao visual que se repete. Se montagem: 'pessoa recortada centro + X atras + Y nas laterais'. Se cena unica: 'close-up macro com Z'.","whyItWorks":"Porque esta formula funciona: qual gatilho visual, qual truque psicologico, qual contraste. Minimo 3 frases.","composition":"DECOMPOSICAO DETALHADA: foreground (o que, quanto % do frame), midground, background. Ponto focal. Leading lines. Regra composicional. Depth of field.","lightingAnalysis":"Tipo de iluminacao exata, direcao, cor da luz, ratio, efeitos atmosfericos","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"PROMPT 120+ palavras para ImageFX que REPLICA A MESMA FORMULA/LAYOUT. Se o original e montagem: descreva a mesma estrutura de layers (pessoa centralizada + elementos atras + cenas laterais). Se cena unica: mesma tecnica de camera. MUDE os personagens e cenario mas MANTENHA a formula identica. Inclua: posicao de cada elemento, tamanho relativo, iluminacao, paleta hex, atmosfera, render style. ${video.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape"}, sem texto, 8K.","promptVariation":"VARIACAO RADICAL 120+ palavras. Mesma tecnica cinematografica mas genero visual completamente diferente. Se original e sci-fi, faca noir. Se e acao, faca horror. Manter o mesmo IMPACTO mas mudar tudo.","textSuggestion":"Onde posicionar texto sobre esta composicao para maximo CTR (canto, centro, tamanho, cor do texto vs fundo)","ctrTips":["dica tecnica 1 baseada na decomposicao desta thumb","dica 2 sobre o que o original faz melhor que 90% do nicho","dica 3: como SUPERAR este original"]}` }]);
+      setAnalysis(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
+      pg?.done();
+    } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setAnalyzing(false);
   };
 
@@ -1192,26 +1012,6 @@ SAFETY: no blood, weapons, violence.` },
         {/* Analysis panel */}
         {selected && (
           <div>
-            {/* Custom title input for generating thumb for YOUR video */}
-            <div style={{ padding: "12px 16px", borderRadius: 12, background: `${C.orange}06`, border: `1px solid ${C.orange}20`, marginBottom: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: C.orange, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                <span>🎯</span> Gerar para seu vídeo (opcional)
-              </div>
-              <input
-                value={customTitle} onChange={e => setCustomTitle(e.target.value)}
-                placeholder="Cole o título do SEU vídeo aqui — a IA adapta a fórmula visual"
-                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: "rgba(255,255,255,0.04)", color: C.text, fontSize: 12, outline: "none" }}
-                onFocus={e => { e.target.style.borderColor = `${C.orange}60`; }}
-                onBlur={e => { e.target.style.borderColor = C.border; }}
-              />
-              {customTitle.trim() && (
-                <div style={{ marginTop: 6, fontSize: 10, color: C.green, display: "flex", alignItems: "center", gap: 4 }}>
-                  <span>✓</span> Os prompts serão adaptados para: "{customTitle.trim()}"
-                  <button onClick={() => setCustomTitle("")} style={{ marginLeft: "auto", background: "none", border: "none", color: C.dim, cursor: "pointer", fontSize: 10 }}>✕ Limpar</button>
-                </div>
-              )}
-            </div>
-
             <Sec title={`Analise: ${selected.title.slice(0,50)}...`} icon="🔍">
               {analyzing ? (
                 <div style={{ textAlign: "center", padding: 20, color: C.dim }}>Analisando...</div>
@@ -1219,21 +1019,8 @@ SAFETY: no blood, weapons, violence.` },
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {/* Type badge + Formula */}
                   {analysis.thumbType && (
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: "4px 12px", borderRadius: 6, background: C.purple+"20", color: C.purple }}>
-                        {analysis.thumbType.includes("GRID") || analysis.thumbType.includes("COLLAGE") ? "🔲 GRID COLLAGE" :
-                         analysis.thumbType.includes("SPLIT") ? "✂️ SPLIT FACE" :
-                         analysis.thumbType.includes("DUAL") ? "🎭 DUALITY" :
-                         analysis.thumbType.includes("COMPOSITE") || analysis.thumbType.includes("MONTAG") ? "🎭 COMPOSITE" :
-                         analysis.thumbType.includes("SCALE") ? "📏 IMPOSSIBLE SCALE" :
-                         `📸 ${analysis.thumbType}`}
-                      </span>
-                      {analysis._techniqueRef && <span style={{ fontSize: 9, color: C.dim, padding: "3px 8px", borderRadius: 4, background: "rgba(255,255,255,0.03)" }}>via 2-step</span>}
-                    </div>
-                  )}
-                  {analysis._techniqueRef && (
-                    <div style={{ padding: 10, borderRadius: 8, background: C.orange+"06", border: `1px solid ${C.orange}15`, fontSize: 11, color: C.muted, lineHeight: 1.5 }}>
-                      <span style={{ fontWeight: 700, color: C.orange }}>Técnica detectada:</span> {analysis._techniqueRef}
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "4px 12px", borderRadius: 6, background: analysis.thumbType?.includes("MONTAGEM") ? C.purple+"20" : C.blue+"20", color: analysis.thumbType?.includes("MONTAGEM") ? C.purple : C.blue }}>{analysis.thumbType?.includes("MONTAGEM") ? "🎭 MONTAGEM" : "📸 CENA ÚNICA"}</span>
                     </div>
                   )}
                   {analysis.formula && (

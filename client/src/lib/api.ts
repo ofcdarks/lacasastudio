@@ -328,86 +328,8 @@ export const algorithmApi = {
   devices: () => api.get<any>("/algorithm/devices"),
 };
 
-// Retry wrapper for AI calls — retries automatically on timeout/5xx with exponential backoff
-async function chatWithRetry(
-  messages: any[],
-  context?: string,
-  opts?: { maxRetries?: number; timeout?: number; maxTokens?: number; onRetry?: (attempt: number, maxRetries: number) => void }
-): Promise<{ reply: string }> {
-  const maxRetries = opts?.maxRetries ?? 3;
-  const timeout = opts?.timeout ?? 180000; // 3 min default
-  let lastError = "";
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const result = await api.post<{ reply: string }>("/chat", {
-        messages,
-        context,
-        timeout,
-        maxTokens: opts?.maxTokens,
-      });
-      return result;
-    } catch (err: any) {
-      lastError = err.message || "Erro desconhecido";
-      const isRetryable =
-        lastError.includes("demorou") ||
-        lastError.includes("504") ||
-        lastError.includes("503") ||
-        lastError.includes("529") ||
-        lastError.includes("sobrecarregado") ||
-        lastError.includes("indisponível") ||
-        lastError.includes("vazia") ||
-        lastError.includes("Tente novamente");
-
-      if (!isRetryable || attempt >= maxRetries) {
-        throw err;
-      }
-
-      // Notify caller about retry
-      if (opts?.onRetry) opts.onRetry(attempt, maxRetries);
-
-      // Exponential backoff: 2s, 4s, 8s...
-      const delay = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
-      await new Promise(r => setTimeout(r, delay));
-    }
-  }
-  throw new Error(lastError);
-}
-
-// Combo IA — two-model pipeline with retry
-async function comboWithRetry(
-  data: {
-    analysisModel: string;
-    promptModel: string;
-    analysisSystem: string;
-    analysisUser: string;
-    promptSystem: string;
-    promptTemplate: string;
-    maxTokens?: number;
-  },
-  opts?: { maxRetries?: number; onRetry?: (attempt: number, maxRetries: number) => void }
-): Promise<{ reply: string; analysis: string; models: { analysis: string; prompt: string } }> {
-  const maxRetries = opts?.maxRetries ?? 2;
-  let lastError = "";
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await api.post<{ reply: string; analysis: string; models: { analysis: string; prompt: string } }>("/chat/combo", data);
-    } catch (err: any) {
-      lastError = err.message || "Erro combo";
-      const isRetryable = lastError.includes("demorou") || lastError.includes("504") || lastError.includes("503") || lastError.includes("vazia") || lastError.includes("Tente novamente");
-      if (!isRetryable || attempt >= maxRetries) throw err;
-      if (opts?.onRetry) opts.onRetry(attempt, maxRetries);
-      await new Promise(r => setTimeout(r, 3000 * attempt));
-    }
-  }
-  throw new Error(lastError);
-}
-
 export const chatApi = {
-  send: (messages: any[], context?: string) => chatWithRetry(messages, context),
-  sendWithRetry: chatWithRetry,
-  combo: comboWithRetry,
+  send: (messages: any[], context?: string) => api.post<{ reply: string }>("/chat", { messages, context }),
   shorts: (data: any) => api.post<{ shorts: any[] }>("/chat/shorts", data),
 };
 
