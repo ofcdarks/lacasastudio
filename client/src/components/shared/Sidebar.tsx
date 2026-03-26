@@ -50,7 +50,7 @@ const NAV_GROUPS: NavGroup[] = [
     icon: "📈",
     items: [
       { path: "/analytics", label: "Analytics", icon: "📈" },
-      { path: "/my-analytics", label: "Meu Analytics", icon: "📉" },
+      { path: "/my-analytics", label: "Meus Canais", icon: "📺" },
       { path: "/analyzer", label: "Analyzer", icon: "🔬" },
       { path: "/retention", label: "Retenção", icon: "⏱️" },
       { path: "/ab-testing", label: "A/B Testing", icon: "🧪" },

@@ -3,6 +3,7 @@ import { useToast } from "../components/shared/Toast";
 import { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { useConfirm } from "../context/ConfirmContext";
+import { useAuth } from "../context/AuthContext";
 import { assetApi } from "../lib/api";
 import { Card, Btn, Hdr, Label, Input, Select, C } from "../components/shared/UI";
 
@@ -33,7 +34,7 @@ function guessType(ext) {
 }
 
 /* --- Storage Info --- */
-function StoragePanel({ info }) {
+function StoragePanel({ info, isAdmin }) {
   if (!info) return null;
   function fmt(bytes) {
     if (!bytes || bytes <= 0) return "0 B";
@@ -51,6 +52,8 @@ function StoragePanel({ info }) {
   const ramColor = ram.percent > 90 ? "#EF4444" : ram.percent > 70 ? "#F59E0B" : "#22D35E";
   return (
     <div style={{ marginTop: 12, padding: "12px 10px 8px", borderTop: "1px solid rgba(255,255,255,0.055)" }}>
+      {/* Server data - ADMIN ONLY */}
+      {isAdmin && (<>
       <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: "0.05em", marginBottom: 10, textTransform: "uppercase" }}>SERVIDOR</div>
       <div style={{ marginBottom: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
@@ -78,6 +81,9 @@ function StoragePanel({ info }) {
           <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>{fmt(ram.total)}</span>
         </div>
       </div>
+      </>)}
+      {/* User storage - visible to ALL */}
+      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: "0.05em", marginBottom: 10, textTransform: "uppercase" }}>SEU ARMAZENAMENTO</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Seus uploads</span>
@@ -87,6 +93,7 @@ function StoragePanel({ info }) {
           <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Arquivos</span>
           <span style={{ fontSize: 10, fontWeight: 600, color: "#E8E6F0" }}>{uploads.userFiles || 0}</span>
         </div>
+        {isAdmin && (<>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Total server</span>
           <span style={{ fontSize: 10, fontWeight: 600, color: "#E8E6F0" }}>{fmt(uploads.totalSize)}</span>
@@ -101,6 +108,7 @@ function StoragePanel({ info }) {
             <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>{Math.floor(info.uptime / 3600)}h {Math.floor((info.uptime % 3600) / 60)}m</span>
           </div>
         )}
+        </>)}
       </div>
     </div>
   );
@@ -414,6 +422,8 @@ function EditModal({ asset, channels, folders, onClose, onSave }) {
 /* ─── Main Page ─── */
 export default function Ativos() {
   const { channels } = useApp();
+  const { user } = useAuth();
+  const isAdmin = user?.isAdmin === true || user?.email === "rudysilvaads@gmail.com";
   const confirm = useConfirm();
   const toast = useToast();
   const [assets, setAssets] = useState([]);
@@ -521,7 +531,7 @@ export default function Ativos() {
                   <span style={{ fontSize: 12 }}>{v.i}</span><span style={{ fontSize: 11, color: filter === k ? C.text : C.muted, flex: 1 }}>{v.l}</span><span style={{ fontSize: 10, color: v.c, fontWeight: 700 }}>{c}</span>
                 </div>); })}
             </div>
-            <StoragePanel info={diskInfo} />
+            <StoragePanel info={diskInfo} isAdmin={isAdmin} />
           </Card>
         </div>
 

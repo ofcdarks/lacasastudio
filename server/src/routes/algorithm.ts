@@ -111,6 +111,23 @@ router.get("/oauth/callback", async (req: Request, res: Response) => {
         await (prisma as any).oAuthToken.create({ data: { userId, accessToken: at, refreshToken: tokens.refresh_token || "", expiresAt: String(Date.now() + (tokens.expires_in || 3600) * 1000), scope: tokens.scope || "", channelId: chId, channelName: ch.snippet?.title || "", thumbnail: ch.snippet?.thumbnails?.default?.url || "", subscribers: String(ch.statistics?.subscriberCount || "0") } });
       }
       savedCount++;
+
+      // Auto-create platform channel if not exists
+      try {
+        const existingPlatformCh = await prisma.channel.findFirst({ where: { userId, name: ch.snippet?.title || "" } });
+        if (!existingPlatformCh && ch.snippet?.title) {
+          await prisma.channel.create({
+            data: {
+              userId,
+              name: ch.snippet.title,
+              icon: "📺",
+              subs: String(ch.statistics?.subscriberCount || "0"),
+              views: String(ch.statistics?.viewCount || "0"),
+              videoCount: Number(ch.statistics?.videoCount || 0),
+            }
+          });
+        }
+      } catch {} // non-fatal
     }
     res.redirect(`/my-analytics?oauth=success&channels=${savedCount}`);
   } catch (e: any) { res.redirect("/?oauth=error&reason=" + encodeURIComponent(e.message || "unknown")); }

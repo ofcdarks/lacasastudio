@@ -146,10 +146,13 @@ export default function Planner() {
       <div className="filters-row" style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
         <Btn vr={!selChannel ? "primary" : "ghost"} onClick={() => setSelChannel(null)} style={{ padding: "7px 14px", fontSize: 12 }}>Todos</Btn>
         {channels.map(ch => (
-          <Btn key={ch.id} vr={selChannel === ch.id ? "primary" : "ghost"} onClick={() => setSelChannel(ch.id)}
-            style={{ padding: "7px 14px", fontSize: 12, ...(selChannel === ch.id ? { background: ch.color } : {}) }}>
-            <Badge color={ch.color} /> {ch.name}
-          </Btn>
+          <div key={ch.id} style={{ display: "flex", alignItems: "center", gap: 0 }}>
+            <Btn vr={selChannel === ch.id ? "primary" : "ghost"} onClick={() => setSelChannel(ch.id)}
+              style={{ padding: "7px 14px", fontSize: 12, borderRadius: "8px 0 0 8px", ...(selChannel === ch.id ? { background: ch.color } : {}) }}>
+              <Badge color={ch.color} /> {ch.name}
+            </Btn>
+            <button onClick={async () => { if (confirm(`Excluir canal "${ch.name}"?`)) { try { await channelApi.del(ch.id); await refreshChannels(); if (selChannel === ch.id) setSelChannel(null); toast?.success("Canal excluído"); } catch (e) { toast?.error(e.message); } } }} style={{ padding: "7px 6px", borderRadius: "0 8px 8px 0", border: `1px solid ${C.border}`, borderLeft: "none", background: "transparent", color: C.dim, cursor: "pointer", fontSize: 9 }} title="Excluir canal">✕</button>
+          </div>
         ))}
         {channels.length === 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 10, background: "#F5920B10", border: "1px solid #F5920B20" }}>
@@ -197,7 +200,7 @@ export default function Planner() {
       )}
 
       {/* Kanban Board */}
-      <div className="grid-kanban" style={{ display: "grid", gridTemplateColumns: `repeat(${STATUS_KEYS.length}, minmax(155px, 1fr))`, gap: 10, overflowX: "auto" }}>
+      <div className="grid-kanban" style={{ display: "grid", gridTemplateColumns: `repeat(${STATUS_KEYS.length}, minmax(140px, 1fr))`, gap: 8, overflowX: "auto", paddingBottom: 4 }}>
         {Object.entries(ST).map(([sk, sv]) => {
           const col = filtered.filter(v => v.status === sk);
           const isOver = dragOver === sk;
@@ -226,29 +229,30 @@ export default function Planner() {
                       onDragStart={e => onDragStart(e, v.id)}
                       onDragEnd={onDragEnd}
                       style={{
-                        background: C.bgCard, borderRadius: 10, padding: 12,
+                        background: C.bgCard, borderRadius: 10, padding: "8px 10px",
                         borderLeft: `3px solid ${vch?.color || C.dim}`,
                         border: `1px solid ${C.border}`, borderLeftWidth: 3,
                         borderLeftColor: vch?.color || C.dim,
                         cursor: "grab", transition: "transform 0.15s",
+                        overflow: "hidden",
                       }}
                       onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
                       onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
                       <div onClick={() => setEditVideo(v)} style={{ cursor: "pointer" }}>
-                        <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 4, lineHeight: 1.3 }}>{v.title}</div>
-                        <div style={{ fontSize: 10, color: vch?.color, marginBottom: 4 }}>{vch?.name}</div>
-                        <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
-                          {v.priority && <Badge text={v.priority} color={v.priority === "alta" ? C.red : v.priority === "média" ? C.orange : C.blue} v="tag" />}
-                          {v.duration && <Badge text={v.duration} color={C.dim} v="tag" />}
+                        <div style={{ fontWeight: 600, fontSize: 11, marginBottom: 3, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.title}</div>
+                        <div style={{ fontSize: 9, color: vch?.color, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{vch?.name}</div>
+                        <div style={{ display: "flex", gap: 3, marginBottom: 4, flexWrap: "wrap" }}>
+                          {v.priority && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: (v.priority === "alta" ? C.red : v.priority === "média" ? C.orange : C.blue) + "15", color: v.priority === "alta" ? C.red : v.priority === "média" ? C.orange : C.blue, fontWeight: 600 }}>{v.priority}</span>}
+                          {v.duration && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, background: "rgba(255,255,255,0.04)", color: C.dim }}>{v.duration}</span>}
                         </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: C.dim }}>{v.date}</span>
-                        <div style={{ display: "flex", gap: 3 }}>
-                          <Btn vr="subtle" onClick={() => moveStatus(v.id, -1)} style={{ fontSize: 9, padding: "3px 6px" }}>◀</Btn>
-                          <Btn vr="subtle" onClick={() => moveStatus(v.id, 1)} style={{ fontSize: 9, padding: "3px 6px" }}>▶</Btn>
-                          <Btn vr="subtle" onClick={() => setEditVideo(v)} style={{ fontSize: 9, padding: "3px 6px" }}>✎</Btn>
-                          <Btn vr="subtle" onClick={() => delVideo(v.id)} style={{ fontSize: 9, padding: "3px 6px", color: C.red }}>✕</Btn>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
+                        <span style={{ fontFamily: "var(--mono)", fontSize: 8, color: C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 60 }}>{v.date?.slice(5) || ""}</span>
+                        <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                          <button onClick={() => moveStatus(v.id, -1)} style={{ width: 20, height: 20, borderRadius: 4, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, cursor: "pointer", fontSize: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>◀</button>
+                          <button onClick={() => moveStatus(v.id, 1)} style={{ width: 20, height: 20, borderRadius: 4, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, cursor: "pointer", fontSize: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>▶</button>
+                          <button onClick={() => setEditVideo(v)} style={{ width: 20, height: 20, borderRadius: 4, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, cursor: "pointer", fontSize: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>✎</button>
+                          <button onClick={() => delVideo(v.id)} style={{ width: 20, height: 20, borderRadius: 4, border: `1px solid ${C.red}30`, background: "transparent", color: C.red, cursor: "pointer", fontSize: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
                         </div>
                       </div>
                     </div>
