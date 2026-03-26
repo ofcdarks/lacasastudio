@@ -151,7 +151,7 @@ export default function Planner() {
               style={{ padding: "7px 14px", fontSize: 12, borderRadius: "8px 0 0 8px", ...(selChannel === ch.id ? { background: ch.color } : {}) }}>
               <Badge color={ch.color} /> {ch.name}
             </Btn>
-            <button onClick={async () => { if (confirm(`Excluir canal "${ch.name}"?`)) { try { await channelApi.del(ch.id); await refreshChannels(); if (selChannel === ch.id) setSelChannel(null); toast?.success("Canal excluído"); } catch (e) { toast?.error(e.message); } } }} style={{ padding: "7px 6px", borderRadius: "0 8px 8px 0", border: `1px solid ${C.border}`, borderLeft: "none", background: "transparent", color: C.dim, cursor: "pointer", fontSize: 9 }} title="Excluir canal">✕</button>
+            <button onClick={async () => { if (await confirmDel({ title: "Excluir Canal", message: `Tem certeza que deseja excluir o canal "${ch.name}"? Todos os vídeos associados serão removidos.` })) { try { await channelApi.del(ch.id); await refreshChannels(); if (selChannel === ch.id) setSelChannel(null); toast?.success("Canal excluído"); } catch (e) { toast?.error(e.message); } } }} style={{ padding: "7px 6px", borderRadius: "0 8px 8px 0", border: `1px solid ${C.border}`, borderLeft: "none", background: "transparent", color: C.dim, cursor: "pointer", fontSize: 9 }} title="Excluir canal">✕</button>
           </div>
         ))}
         {channels.length === 0 && (

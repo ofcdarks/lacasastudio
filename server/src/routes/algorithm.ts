@@ -310,7 +310,7 @@ RETORNE JSON (sem markdown, sem backticks):
 // AI insights for Command Center (post-publish)
 router.post("/command-center/insights", async (req: any, res: Response, next: NextFunction) => {
   try {
-    const { video, layer, vsChannel, channelName } = req.body;
+    const { video, layer, vsChannel, channelName, isMonetized } = req.body;
     const v = video || {};
     const totalViews = v.totalViews || v.views || 0;
     const totalLikes = v.totalLikes || v.likes || 0;
@@ -319,10 +319,21 @@ router.post("/command-center/insights", async (req: any, res: Response, next: Ne
     const likesRate = totalViews > 0 ? ((totalLikes / totalViews) * 100).toFixed(1) : "0";
     const isRecent = v.daysSincePublish !== null && v.daysSincePublish <= 7;
 
+    // Check channel info
+    const channel = await prisma.channel.findFirst({ where: { userId: req.userId }, select: { subs: true, views: true, videoCount: true } });
+    const subsCount = channel?.subs ? parseInt(channel.subs) : 0;
+    const isChannelMonetized = isMonetized || subsCount >= 1000;
+
     const result = await fetchAI(
-      `Expert #1 em primeiras 48h-7 dias pós-publicação YouTube. Analise dados REAIS e diga EXATAMENTE o que fazer. NUNCA recomende ferramentas externas — APENAS ferramentas do LaCasaStudio. ` + LANG_RULE,
-      `DADOS REAIS DO VÍDEO "${v.title || ""}":
-Canal: "${channelName}"
+      `Voce e o EXPERT #1 em otimizacao de videos YouTube pos-publicacao. Voce analisa dados REAIS e gera acoes ESPECIFICAS E COPIAVEIS — o usuario so precisa copiar e colar.
+REGRAS ABSOLUTAS:
+- NUNCA sugira ferramentas externas. APENAS ferramentas do LaCasaStudio.
+- NUNCA sugira "monetizar" se o canal JA E MONETIZADO.
+- Cada acao DEVE ter um texto EXATO para copiar (titulo novo, descricao, tags, comentario fixado).
+- Responda em portugues brasileiro. ` + LANG_RULE,
+      `DADOS REAIS DO VIDEO "${v.title || ""}":
+Canal: "${channelName}" (${subsCount > 0 ? subsCount + " subs" : "subs desconhecido"})
+Status monetizacao: ${isChannelMonetized ? "JA MONETIZADO — nao sugerir monetizacao" : "Nao monetizado ainda"}
 Views totais: ${totalViews} (Data API, tempo real)
 Likes: ${totalLikes} | Comments: ${totalComments} | Shares: ${v.shares||0}
 Taxa de engajamento: ${engRate}% | Likes/views: ${likesRate}%
@@ -330,31 +341,35 @@ AVD: ${Math.round(v.avgDuration||0)}s (avg canal: ${vsChannel?.avgDuration||0}s)
 Views vs Canal: ${vsChannel?.viewsVsAvg||0}%
 Satisfaction: ${v.satisfaction||0}%
 Camada atual: ${layer||"testing"}
-Publicado há: ${v.daysSincePublish !== null ? v.daysSincePublish + " dias" : "desconhecido"}
+Publicado ha: ${v.daysSincePublish !== null ? v.daysSincePublish + " dias" : "desconhecido"}
 Velocidade: ${v.velocity || 0} views/dia
 Tags: ${v.tagCount||0}
-${v.avgDuration === 0 && isRecent ? "NOTA: AVD/WatchTime ainda indisponíveis (Analytics API tem delay de 48-72h para vídeos recentes)" : ""}
+Titulo atual: "${v.title || ""}"
+${v.avgDuration === 0 && isRecent ? "NOTA: AVD/WatchTime ainda indisponiveis (delay 48-72h)" : ""}
 
-Análise COMPLETA com ações PRÁTICAS. JSON:
+GERE ACOES COM TEXTOS PRONTOS PARA COPIAR. JSON:
 {
-  "status": "🟢 Performando bem / 🟡 Precisa ajustes / 🔴 Baixo desempenho + detalhe específico",
-  "diagnosis": "3-4 frases DETALHADAS analisando: CTR implícito (views vs impressões estimadas), engajamento (${engRate}% é bom?), retenção, posição na camada do algoritmo. Referente dados reais.",
+  "status": "🟢 Performando bem / 🟡 Precisa ajustes / 🔴 Baixo desempenho + motivo especifico",
+  "diagnosis": "3-4 frases analisando dados reais. ${isChannelMonetized ? "Canal ja monetizado, focar em otimizar receita e CTR." : ""}",
   "immediateActions": [
-    {"action": "Ação específica baseada nos dados reais", "priority": "urgente", "timeNeeded": "5min"},
-    {"action": "Segunda ação prática", "priority": "importante", "timeNeeded": "10min"},
-    {"action": "Terceira ação de médio prazo", "priority": "recomendado", "timeNeeded": "30min"}
+    {"action": "Acao especifica", "priority": "urgente", "timeNeeded": "5min", "copyText": "Texto exato para copiar e colar (titulo, descricao, tag, comentario fixado)"},
+    {"action": "Segunda acao", "priority": "importante", "timeNeeded": "10min", "copyText": "Texto para copiar"},
+    {"action": "Terceira acao", "priority": "recomendado", "timeNeeded": "30min", "copyText": "Texto para copiar"}
   ],
   "thumbChange": true/false,
-  "thumbReason": "Motivo baseado nos dados — se views baixo vs canal pode ser CTR, sugerir mudança",
+  "thumbReason": "Motivo baseado nos dados",
   "titleChange": true/false,
-  "titleSuggestion": "Novo título otimizado mantendo o MESMO tema",
-  "layerPrediction": "Previsão de quando muda de camada baseado na velocidade atual de ${v.velocity||0}/dia",
-  "whatToPost": "Conteúdo complementar pra postar AGORA (comunidade, shorts, stories) pra impulsionar",
-  "nextCheckIn": "Quando checar (baseado em publicado há ${v.daysSincePublish} dias)",
-  "seoQuickFix": "Se tags/título podem melhorar, sugerir usar SEO Audit ou Catalog Optimizer do LaCasaStudio",
-  "engagementTip": "Como aumentar engajamento de ${engRate}% baseado nos ${totalComments} comentários atuais"
+  "titleSuggestion": "Novo titulo COMPLETO pronto para copiar e colar no YouTube Studio",
+  "newDescription": "Descricao nova COMPLETA (5-10 linhas) otimizada para SEO, pronta para copiar e colar. Inclui hashtags.",
+  "newTags": "lista,de,tags,separadas,por,virgula,prontas,para,colar,no,youtube,studio",
+  "pinnedComment": "Texto do comentario fixado que aumenta engajamento — pronto para copiar",
+  "layerPrediction": "Previsao de quando muda de camada",
+  "whatToPost": "Conteudo complementar pra postar AGORA",
+  "nextCheckIn": "Quando checar novamente",
+  "seoQuickFix": "Usar SEO Audit ou Catalog Optimizer do LaCasaStudio",
+  "engagementTip": "Como aumentar engajamento"
 }`,
-      2500
+      3000
     );
     res.json(result);
   } catch (err) { next(err); }

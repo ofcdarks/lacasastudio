@@ -53,7 +53,7 @@ export default function CommandCenter(){
         if(!ai.error){setAiResult(ai);
           // Build checklist from AI actions
           const items=[];
-          if(ai.immediateActions?.length){ai.immediateActions.forEach((a,i)=>items.push({id:`ia-${i}`,action:a.action,category:"imediato",priority:a.priority||"urgente",aiSuggestion:a.action,timeNeeded:a.timeNeeded,done:false}));}
+          if(ai.immediateActions?.length){ai.immediateActions.forEach((a,i)=>items.push({id:`ia-${i}`,action:a.action,category:"imediato",priority:a.priority||"urgente",aiSuggestion:a.action,timeNeeded:a.timeNeeded,copyText:a.copyText||"",done:false}));}
           if(ai.thumbChange)items.push({id:"thumb",action:"Trocar Thumbnail: "+(ai.thumbReason||"").slice(0,80),category:"thumbnail",priority:"urgente",aiSuggestion:ai.thumbReason,done:false});
           if(ai.titleChange)items.push({id:"title",action:"Trocar Título para: "+ai.titleSuggestion,category:"titulo",priority:"urgente",aiSuggestion:ai.titleSuggestion,done:false});
           if(ai.seoQuickFix)items.push({id:"seo",action:"SEO: "+ai.seoQuickFix.slice(0,100),category:"seo",priority:"medio",aiSuggestion:ai.seoQuickFix,done:false});
@@ -225,6 +225,7 @@ export default function CommandCenter(){
               <div style={{flex:1}}>
                 <div style={{fontWeight:600,fontSize:13,textDecoration:item.done?"line-through":"none",color:item.done?C.green:C.text}}>{item.action}</div>
                 {item.timeNeeded&&<div style={{fontSize:10,color:C.dim,marginTop:2}}>⏱️ {item.timeNeeded}</div>}
+                {item.copyText&&!item.done&&<button onClick={e=>{e.stopPropagation();cp(item.copyText);toast?.success("Copiado!");}} style={{marginTop:4,padding:"3px 10px",borderRadius:5,border:`1px solid ${C.blue}30`,background:`${C.blue}08`,color:C.blue,cursor:"pointer",fontSize:9,fontWeight:600}}>📋 Copiar texto</button>}
               </div>
               <span style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:4,background:`${pColor}12`,color:pColor,flexShrink:0}}>{item.priority}</span>
             </div>;
@@ -235,6 +236,35 @@ export default function CommandCenter(){
           <div style={{fontSize:16,fontWeight:800,color:C.green}}>🎉 Todas as ações concluídas!</div>
           <div style={{fontSize:11,color:C.muted,marginTop:4}}>Re-analise em 24-48h para ver o impacto das mudanças.</div>
         </div>}
+      </div>}
+
+      {/* ═══ COPYABLE CHANGES ═══ */}
+      {(aiResult?.titleChange||aiResult?.newDescription||aiResult?.newTags||aiResult?.pinnedComment)&&<div style={{background:"rgba(255,255,255,.02)",borderRadius:14,border:`1px solid ${C.border}`,padding:20,marginBottom:20}}>
+        <div style={{fontWeight:800,fontSize:14,marginBottom:14}}>📋 Copie e Cole no YouTube Studio</div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {aiResult.titleSuggestion&&<div>
+            <div style={{fontSize:11,fontWeight:700,color:C.blue,marginBottom:4}}>Novo Título</div>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <div style={{flex:1,padding:"10px 14px",borderRadius:8,background:"rgba(255,255,255,.04)",border:`1px solid ${C.blue}20`,fontSize:13,fontWeight:600,color:C.text}}>{aiResult.titleSuggestion}</div>
+              <button onClick={()=>{cp(aiResult.titleSuggestion);toast?.success("Título copiado!");}} style={{padding:"10px 16px",borderRadius:8,border:"none",background:`${C.blue}15`,color:C.blue,cursor:"pointer",fontSize:11,fontWeight:700,whiteSpace:"nowrap"}}>📋 Copiar</button>
+            </div>
+          </div>}
+          {aiResult.newDescription&&<div>
+            <div style={{fontSize:11,fontWeight:700,color:C.green,marginBottom:4}}>Nova Descrição</div>
+            <div style={{padding:"10px 14px",borderRadius:8,background:"rgba(255,255,255,.04)",border:`1px solid ${C.green}20`,fontSize:11,color:C.muted,lineHeight:1.6,whiteSpace:"pre-wrap",maxHeight:120,overflow:"auto"}}>{aiResult.newDescription}</div>
+            <button onClick={()=>{cp(aiResult.newDescription);toast?.success("Descrição copiada!");}} style={{marginTop:6,padding:"6px 14px",borderRadius:6,border:"none",background:`${C.green}15`,color:C.green,cursor:"pointer",fontSize:10,fontWeight:700}}>📋 Copiar Descrição</button>
+          </div>}
+          {aiResult.newTags&&<div>
+            <div style={{fontSize:11,fontWeight:700,color:C.orange,marginBottom:4}}>Tags Otimizadas</div>
+            <div style={{padding:"10px 14px",borderRadius:8,background:"rgba(255,255,255,.04)",border:`1px solid ${C.orange}20`,fontSize:11,color:C.muted}}>{aiResult.newTags}</div>
+            <button onClick={()=>{cp(aiResult.newTags);toast?.success("Tags copiadas!");}} style={{marginTop:6,padding:"6px 14px",borderRadius:6,border:"none",background:`${C.orange}15`,color:C.orange,cursor:"pointer",fontSize:10,fontWeight:700}}>📋 Copiar Tags</button>
+          </div>}
+          {aiResult.pinnedComment&&<div>
+            <div style={{fontSize:11,fontWeight:700,color:C.purple,marginBottom:4}}>Comentário Fixado</div>
+            <div style={{padding:"10px 14px",borderRadius:8,background:"rgba(255,255,255,.04)",border:`1px solid ${C.purple}20`,fontSize:12,color:C.muted,lineHeight:1.6}}>{aiResult.pinnedComment}</div>
+            <button onClick={()=>{cp(aiResult.pinnedComment);toast?.success("Comentário copiado!");}} style={{marginTop:6,padding:"6px 14px",borderRadius:6,border:"none",background:`${C.purple}15`,color:C.purple,cursor:"pointer",fontSize:10,fontWeight:700}}>📋 Copiar Comentário</button>
+          </div>}
+        </div>
       </div>}
 
       {/* Title/Thumb change cards */}

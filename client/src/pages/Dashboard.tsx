@@ -42,9 +42,11 @@ export default function Dashboard(){
   const[streak,setStreak]=useState(null);
   const[oauthLoading,setOauthLoading]=useState(true);
   const[oauthError,setOauthError]=useState("");
+  const[actionHistory,setActionHistory]=useState([]);
 
   useEffect(()=>{
     researchApi.listSaved().then(s=>setSaved(Array.isArray(s)?s:[])).catch(()=>{});
+    fetch("/api/algorithm/actions-history",{headers:hdr()}).then(r=>r.json()).then(h=>{if(Array.isArray(h))setActionHistory(h);}).catch(()=>{});
     fetch("/api/algorithm/oauth/status",{headers:hdr()}).then(r=>r.json()).then(d=>{
       if(d.connected){
         setChannels(d.channels||[]);
@@ -167,6 +169,40 @@ export default function Dashboard(){
       <QuickAction icon="💸" label="Monetizar" desc="CPM + sponsors" path="/monetizar" color={C.green}/>
       <QuickAction icon="♻️" label="Repurpose" desc="1 vídeo → 10+ peças" path="/repurpose" color={C.blue}/>
     </div>
+
+    {/* ── VÍDEOS ALTERADOS — COUNTDOWN 48h ── */}
+    {actionHistory.length>0&&<div style={{marginBottom:20}}>
+      <div style={{fontWeight:800,fontSize:15,display:"flex",alignItems:"center",gap:8,marginBottom:14}}><span>🔄</span> Vídeos Alterados</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:10}}>
+        {actionHistory.slice(0,4).map((h,i)=>{
+          const lastAction=h.actions?.find(a=>a.completedAt);
+          const lastDate=lastAction?new Date(lastAction.completedAt):new Date(h.actions?.[0]?.createdAt||Date.now());
+          const hoursAgo=Math.floor((Date.now()-lastDate.getTime())/3600000);
+          const hoursLeft=Math.max(48-hoursAgo,0);
+          const canRecheck=hoursLeft<=0;
+          const pct=h.total>0?Math.round(h.completed/h.total*100):0;
+          return<div key={i} style={{background:C.bgCard,borderRadius:12,border:`1px solid ${canRecheck?C.green+"40":C.border}`,padding:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.videoTitle||"Vídeo"}</div>
+                <div style={{fontSize:10,color:C.dim}}>{h.completed}/{h.total} ações · {pct}% concluído</div>
+              </div>
+              {canRecheck?
+                <button onClick={()=>nav("/command-center")} style={{padding:"6px 12px",borderRadius:8,border:"none",background:`${C.green}15`,color:C.green,cursor:"pointer",fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>🔍 Re-analisar</button>:
+                <div style={{textAlign:"center",flexShrink:0}}>
+                  <div style={{fontSize:18,fontWeight:800,color:C.orange}}>{hoursLeft}h</div>
+                  <div style={{fontSize:8,color:C.dim}}>para re-check</div>
+                </div>
+              }
+            </div>
+            <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,.06)",overflow:"hidden"}}>
+              <div style={{width:`${pct}%`,height:"100%",borderRadius:2,background:pct===100?C.green:C.orange}}/>
+            </div>
+          </div>;
+        })}
+      </div>
+      {actionHistory.length>4&&<button onClick={()=>nav("/command-center")} style={{marginTop:8,fontSize:11,color:C.blue,background:"transparent",border:"none",cursor:"pointer",fontWeight:600}}>Ver todos ({actionHistory.length}) →</button>}
+    </div>}
 
     {saved.length>0&&<div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
