@@ -232,7 +232,7 @@ router.get("/thumbnails/:niche", async (req: any, res: Response, next: NextFunct
     const result = { videos, query: searchQuery, niche, format, fetchedAt: new Date().toISOString() };
     cache.set(cacheKey, result, 30 * 60 * 1000);
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("trends error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Save niche to channel
@@ -247,7 +247,7 @@ router.put("/channel-niche/:channelId", async (req: any, res: Response, next: Ne
     res.json(updated);
   } catch (err: any) {
     if (err.message?.includes("niche")) { res.json({ ok: true, note: "niche column not yet available" }); }
-    else next(err);
+    else console.error("trends error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" });
   }
 });
 
@@ -285,7 +285,7 @@ router.post("/thumb-history", async (req: any, res: Response, next: NextFunction
   } catch (err: any) {
     if (err.message?.includes("ThumbHistory") || err.code === "P2021") {
       res.json({ ok: true, note: "table not yet created" });
-    } else { next(err); }
+    } else { console.error("trends error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" }); }
   }
 });
 
@@ -302,7 +302,7 @@ router.get("/thumb-history", async (req: any, res: Response, next: NextFunction)
   } catch (err: any) {
     if (err.message?.includes("ThumbHistory") || err.code === "P2021") {
       res.json([]);
-    } else { next(err); }
+    } else { console.error("trends error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" }); }
   }
 });
 
@@ -313,7 +313,7 @@ router.delete("/thumb-history/:id", async (req: any, res: Response, next: NextFu
     res.json({ ok: true });
   } catch (err: any) {
     if (err.message?.includes("ThumbHistory")) { res.json({ ok: true }); }
-    else { next(err); }
+    else { console.error("trends error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" }); }
   }
 });
 

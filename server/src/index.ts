@@ -77,7 +77,19 @@ app.use(helmet({
 
 app.use(compression());
 app.use(requestId);
-app.use(express.json({ limit: "5mb" })); // Reduced from 50mb
+app.use(express.json({ limit: "5mb" }));
+
+// Sanitize all string inputs in request body
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  if (req.body && typeof req.body === "object") {
+    for (const [key, val] of Object.entries(req.body)) {
+      if (typeof val === "string" && key !== "password" && key !== "cookie" && key !== "imagefx_cookie" && key !== "user_imagefx_cookie" && key !== "prompt" && key !== "content" && key !== "script" && key !== "analysisJson" && key !== "notes") {
+        (req.body as any)[key] = val.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/javascript:/gi, "").replace(/on\w+\s*=/gi, "");
+      }
+    }
+  }
+  next();
+}); // Reduced from 50mb
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // Rate limiting

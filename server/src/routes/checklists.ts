@@ -11,7 +11,7 @@ router.get("/video/:videoId", async (req: any, res: Response, next: NextFunction
     if (!video) return res.status(404).json({ error: "Vídeo não encontrado" });
     const items = await prisma.checklist.findMany({ take: 100, where: { videoId: video.id } });
     res.json(items);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("checklists error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
@@ -22,7 +22,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
     if (!video) return res.status(403).json({ error: "Acesso negado" });
     const item = await prisma.checklist.create({ data: { label, videoId: video.id } });
     res.status(201).json(item);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("checklists error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -35,7 +35,7 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
       data: { ...(label !== undefined && { label }), ...(done !== undefined && { done }) },
     });
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("checklists error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -44,7 +44,7 @@ router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
     if (!cl || cl.video.userId !== req.userId) return res.status(404).json({ error: "Item não encontrado" });
     await prisma.checklist.delete({ where: { id: cl.id } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("checklists error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

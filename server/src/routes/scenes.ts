@@ -15,7 +15,7 @@ router.get("/video/:videoId", async (req: any, res: Response, next: NextFunction
     if (!video) return res.status(404).json({ error: "Vídeo não encontrado" });
     const scenes = await prisma.scene.findMany({ take: 100, where: { videoId: video.id }, orderBy: { order: "asc" } });
     res.json(scenes);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("scenes error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
@@ -26,7 +26,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
     if (!video) return res.status(403).json({ error: "Acesso negado" });
     const scene = await prisma.scene.create({ data: { title, videoId: video.id, type, duration, notes, camera, audio, color, order: order || 0 } });
     res.status(201).json(scene);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("scenes error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -45,7 +45,7 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
     if (order !== undefined) data.order = order;
     const updated = await prisma.scene.update({ where: { id: scene.id }, data });
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("scenes error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/reorder/:videoId", async (req: any, res: Response, next: NextFunction) => {
@@ -56,7 +56,7 @@ router.put("/reorder/:videoId", async (req: any, res: Response, next: NextFuncti
     if (!Array.isArray(orderedIds)) return res.status(400).json({ error: "orderedIds obrigatório" });
     await Promise.all(orderedIds.map((id, i) => prisma.scene.update({ where: { id }, data: { order: i } })));
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("scenes error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -65,7 +65,7 @@ router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
     if (!scene || scene.video.userId !== req.userId) return res.status(404).json({ error: "Cena não encontrada" });
     await prisma.scene.delete({ where: { id: scene.id } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("scenes error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

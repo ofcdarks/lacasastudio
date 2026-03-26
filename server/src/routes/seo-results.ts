@@ -11,7 +11,7 @@ router.get("/video/:videoId", async (req: any, res: Response, next: NextFunction
     if (!video) return res.status(404).json({ error: "Vídeo não encontrado" });
     const results = await prisma.seoResult.findMany({ take: 100, where: { videoId: video.id }, orderBy: { createdAt: "desc" } });
     res.json(results);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("seo-results error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
@@ -24,7 +24,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
       data: { videoId: video.id, titles: titles || "", description: description || "", tags: tags || "", score: score || "", tips: tips || "" },
     });
     res.status(201).json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("seo-results error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -33,7 +33,7 @@ router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
     if (!sr || sr.video.userId !== req.userId) return res.status(404).json({ error: "Resultado não encontrado" });
     await prisma.seoResult.delete({ where: { id: sr.id } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("seo-results error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

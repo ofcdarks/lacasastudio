@@ -14,7 +14,7 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
       take: 50,
     });
     res.json(notifs);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("notifications error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/:id/read", async (req: any, res: Response, next: NextFunction) => {
@@ -23,21 +23,21 @@ router.put("/:id/read", async (req: any, res: Response, next: NextFunction) => {
     if (!notif) return res.status(404).json({ error: "Notificação não encontrada" });
     await prisma.notification.update({ where: { id: notif.id }, data: { read: true } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("notifications error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/read-all", async (req: any, res: Response, next: NextFunction) => {
   try {
     await prisma.notification.updateMany({ where: { userId: req.userId, read: false }, data: { read: true } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("notifications error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.delete("/clear", async (req: any, res: Response, next: NextFunction) => {
   try {
     await prisma.notification.deleteMany({ where: { userId: req.userId, read: true } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("notifications error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

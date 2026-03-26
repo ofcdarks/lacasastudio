@@ -15,7 +15,7 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
       period: i.month || "mensal", notes: i.notes, channel: i.type !== "expense" ? i.type : "",
       createdAt: i.createdAt
     })));
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("budget error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
@@ -30,7 +30,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
       }
     });
     res.status(201).json({ id: item.id, name: item.desc, category: item.category, amount: item.value, period: item.month, notes: item.notes, channel: item.type !== "expense" ? item.type : "" });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("budget error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -50,7 +50,7 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
       }
     });
     res.json({ id: updated.id, name: updated.desc, category: updated.category, amount: updated.value, period: updated.month, notes: updated.notes, channel: updated.type !== "expense" ? updated.type : "" });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("budget error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -59,7 +59,7 @@ router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
     if (!item) { res.status(404).json({ error: "Item não encontrado" }); return; }
     await prisma.budgetItem.delete({ where: { id: item.id } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("budget error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

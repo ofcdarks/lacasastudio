@@ -15,7 +15,7 @@ router.get("/video/:videoId", async (req: any, res: Response, next: NextFunction
       orderBy: { version: "desc" },
     });
     res.json(scripts);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("scripts error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
@@ -35,7 +35,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
       data: { content: content || "", videoId: video.id, version: nextVersion, label: label || `v${nextVersion}` },
     });
     res.status(201).json(script);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("scripts error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -48,7 +48,7 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
       data: { ...(content !== undefined && { content }), ...(label !== undefined && { label }) },
     });
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("scripts error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -57,7 +57,7 @@ router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
     if (!script || script.video.userId !== req.userId) return res.status(404).json({ error: "Script não encontrado" });
     await prisma.script.delete({ where: { id: script.id } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("scripts error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

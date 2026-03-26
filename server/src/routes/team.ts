@@ -11,7 +11,7 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
       include: { channels: { select: { id: true, name: true, color: true } } },
     });
     res.json(members);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("team error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
@@ -23,7 +23,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
       include: { channels: true },
     });
     res.status(201).json(member);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("team error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -38,14 +38,14 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
     if (tasks !== undefined) data.tasks = tasks;
     const updated = await prisma.teamMember.update({ where: { id: Number(req.params.id) }, data });
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("team error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
   try {
     await prisma.teamMember.delete({ where: { id: Number(req.params.id) } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("team error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

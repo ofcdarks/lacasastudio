@@ -1,5 +1,6 @@
 import prisma from "../db/prisma";
 import cache from "./cache";
+import { decryptValue } from "../middleware/encrypt";
 import logger from "./logger";
 
 // Provider endpoints (all OpenAI-compatible format)
@@ -83,7 +84,7 @@ export async function resolveAIConfig(userId: number): Promise<AIConfig> {
   ]);
 
   const config: AIConfig = {
-    apiKey: keySetting?.value || "",
+    apiKey: decryptValue(keySetting?.value || ""),
     apiUrl: PROVIDERS.laozhang.url,
     model: modelSetting?.value || "claude-sonnet-4-6",
     provider: "laozhang",

@@ -14,7 +14,7 @@ router.get("/video/:id", async (req: any, res: Response, next: NextFunction) => 
     });
     if (!video) { res.status(404).json({ error: "Vídeo não encontrado" }); return; }
     res.json(video);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("export error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/script/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -25,7 +25,7 @@ router.get("/script/:id", async (req: any, res: Response, next: NextFunction) =>
     res.setHeader("Content-Disposition", "attachment; filename=\"" + script.video.title + "-v" + script.version + ".txt\"");
     const text = "# " + script.video.title + "\n# Versão " + script.version + " — " + script.label + "\n# " + new Date(script.updatedAt).toLocaleDateString("pt-BR") + "\n\n" + script.content;
     res.send(text);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("export error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/videos-csv", async (req: any, res: Response, next: NextFunction) => {
@@ -42,7 +42,7 @@ router.get("/videos-csv", async (req: any, res: Response, next: NextFunction) =>
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", "attachment; filename=videos-lacasastudio.csv");
     res.send("\uFEFF" + header + rows);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("export error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/budget-csv", async (req: any, res: Response, next: NextFunction) => {
@@ -55,7 +55,7 @@ router.get("/budget-csv", async (req: any, res: Response, next: NextFunction) =>
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", "attachment; filename=orcamento-lacasastudio.csv");
     res.send("\uFEFF" + header + rows);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("export error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

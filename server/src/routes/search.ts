@@ -33,7 +33,7 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
     ]);
 
     res.json({ videos, ideas, assets, scripts });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("search error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

@@ -2,6 +2,7 @@
 import { Router, Response, NextFunction } from "express";
 import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
+import { encryptValue, decryptValue } from "../middleware/encrypt";
 import logger from "../services/logger";
 
 const router = Router();
@@ -21,11 +22,11 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
     const settings = await prisma.setting.findMany();
     const obj: any = {};
     settings.forEach((s: any) => {
-      if (isAdmin || PUBLIC_KEYS.has(s.key)) obj[s.key] = s.value;
+      if (isAdmin || PUBLIC_KEYS.has(s.key)) obj[s.key] = ADMIN_KEYS.has(s.key) ? decryptValue(s.value) : s.value;
       else if (ADMIN_KEYS.has(s.key)) obj[s.key] = s.value ? "••••••••" : "";
     });
     res.json(obj);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("settings error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/raw/:key", async (req: any, res: Response, next: NextFunction) => {
@@ -35,8 +36,8 @@ router.get("/raw/:key", async (req: any, res: Response, next: NextFunction) => {
       if (!user?.isAdmin && user?.email !== "rudysilvaads@gmail.com") { res.status(403).json({ error: "Apenas admin" }); return; }
     }
     const s = await prisma.setting.findUnique({ where: { key: req.params.key } });
-    res.json(s || { key: req.params.key, value: "" });
-  } catch (err) { next(err); }
+    res.json(s ? { ...s, value: ADMIN_KEYS.has(s.key) ? decryptValue(s.value) : s.value } : { key: req.params.key, value: "" });
+  } catch (err: any) { console.error("settings error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/", async (req: any, res: Response, next: NextFunction) => {
@@ -49,11 +50,12 @@ router.put("/", async (req: any, res: Response, next: NextFunction) => {
       if (ADMIN_KEYS.has(key) && !isAdmin) { res.status(403).json({ error: `Apenas admin pode alterar "${key}"` }); return; }
     }
     for (const [key, value] of entries) {
-      await prisma.setting.upsert({ where: { key }, create: { key, value }, update: { value } });
+      const storeVal = ADMIN_KEYS.has(key) ? encryptValue(value) : value;
+      await prisma.setting.upsert({ where: { key }, create: { key, value: storeVal }, update: { value: storeVal } });
     }
     logger.info("Settings updated", { userId: req.userId, keys: entries.map(([k]) => k) });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("settings error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/status", async (req: any, res: Response, next: NextFunction) => {
@@ -97,7 +99,7 @@ router.get("/user", async (req: any, res: Response, next: NextFunction) => {
     // Table might not exist yet after migration
     if (err.message?.includes("UserSetting") || err.code === "P2021") {
       res.json({});
-    } else { next(err); }
+    } else { console.error("settings error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" }); }
   }
 });
 
@@ -120,7 +122,7 @@ router.put("/user", async (req: any, res: Response, next: NextFunction) => {
   } catch (err: any) {
     if (err.message?.includes("UserSetting") || err.code === "P2021") {
       res.status(500).json({ error: "Execute 'npx prisma db push' para criar a tabela de configurações do usuário" });
-    } else { next(err); }
+    } else { console.error("settings error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" }); }
   }
 });
 

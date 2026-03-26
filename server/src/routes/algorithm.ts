@@ -304,7 +304,7 @@ RETORNE JSON (sem markdown, sem backticks):
       4096
     );
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // AI insights for Command Center (post-publish)
@@ -372,7 +372,7 @@ GERE ACOES COM TEXTOS PRONTOS PARA COPIAR. JSON:
       3000
     );
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Get latest video from connected channel
@@ -388,7 +388,7 @@ router.get("/my-channel/latest-video", async (req: any, res: Response, next: Nex
     const pl = await ytFetch(`playlistItems?part=contentDetails,snippet&playlistId=${uploads}&maxResults=5`, ytKey);
     const items = (pl.items || []).map((i: any) => ({ videoId: i.contentDetails?.videoId, title: i.snippet?.title, thumbnail: i.snippet?.thumbnails?.medium?.url, publishedAt: i.snippet?.publishedAt }));
     res.json({ videos: items, latest: items[0] || null, channelName: oauthToken.channelName });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // AI Fix for SEO Audit — generates corrected title/description/tags
@@ -424,7 +424,7 @@ JSON: {
       3000
     );
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -545,7 +545,7 @@ router.get("/my-channel/overview", async (req: any, res: Response, next: NextFun
     const dailyChart = rows.map((r: any) => ({ date: r[0], views: r[1], watchTime: Math.round(r[2]), avgDuration: Math.round(r[3]||0), avgPct: Math.round(r[4]||0), likes: r[5], comments: r[7], subsGained: r[9] }));
 
     res.json({ totals, growth, traffic, devices, countries, searches, playback, revenue, channelInfo, daily: dailyChart, period: { start, end, days } });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/my-channel/videos", async (req: any, res: Response, next: NextFunction) => {
@@ -575,7 +575,7 @@ router.get("/my-channel/videos", async (req: any, res: Response, next: NextFunct
     }
 
     res.json({ videos });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Traffic sources & devices for a specific video
@@ -598,7 +598,7 @@ router.get("/my-channel/video/:videoId/details", async (req: any, res: Response,
       devices: (devices.rows || []).map((r: any) => ({ device: r[0], views: r[1], watchTime: Math.round(r[2]) })),
       countries: (countries.rows || []).map((r: any) => ({ country: r[0], views: r[1] })),
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -616,14 +616,14 @@ router.post("/ab-test/create", async (req: any, res: Response, next: NextFunctio
       data: { videoId, type: type || "thumbnail", variants: JSON.stringify(variants.map((v: any, i: number) => ({ ...v, id: i, impressions: 0, clicks: 0, ctr: 0, watchTime: 0 }))), rotationHrs: rotationHrs || 1, userId: req.userId }
     });
     res.json(test);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/ab-test/list", async (req: any, res: Response, next: NextFunction) => {
   try {
     const tests = await (prisma as any).aBTest.findMany({ take: 100, where: { userId: req.userId }, orderBy: { createdAt: "desc" }, take: 20 });
     res.json(tests.map((t: any) => ({ ...t, variants: JSON.parse(t.variants || "[]") })));
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/ab-test/:id/rotate", async (req: any, res: Response, next: NextFunction) => {
@@ -653,7 +653,7 @@ router.post("/ab-test/:id/rotate", async (req: any, res: Response, next: NextFun
     } else {
       res.json({ rotated: false, note: "Unsupported variant type" });
     }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/ab-test/:id/complete", async (req: any, res: Response, next: NextFunction) => {
@@ -661,7 +661,7 @@ router.post("/ab-test/:id/complete", async (req: any, res: Response, next: NextF
     const { winnerId } = req.body;
     await (prisma as any).aBTest.update({ where: { id: Number(req.params.id) }, data: { status: "completed", winnerId, endedAt: new Date().toISOString() } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -773,7 +773,7 @@ router.post("/command-center", async (req: any, res: Response, next: NextFunctio
       },
       daily,
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -802,7 +802,7 @@ router.get("/satisfaction", async (req: any, res: Response, next: NextFunction) 
       trend: daily.length >= 14 ? (daily.slice(-7).reduce((a: number, d: any) => a + d.satisfaction, 0) / 7 > daily.slice(-14, -7).reduce((a: number, d: any) => a + d.satisfaction, 0) / 7 ? "up" : "down") : "stable",
       daily,
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -824,7 +824,7 @@ JSON: {"optimizedOrder":[{"videoId":"id","title":"título","reason":"por que nes
       2000
     );
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -845,7 +845,7 @@ JSON: {"posts":[{"type":"poll|text|teaser|behind","content":"Texto do post","opt
       2000
     );
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/community/save", async (req: any, res: Response, next: NextFunction) => {
@@ -855,14 +855,14 @@ router.post("/community/save", async (req: any, res: Response, next: NextFunctio
       data: { type, content, options: JSON.stringify(options || []), scheduledAt: scheduledAt || "", videoId, channelId, userId: req.userId }
     });
     res.json(post);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/community/list", async (req: any, res: Response, next: NextFunction) => {
   try {
     const posts = await (prisma as any).communityPost.findMany({ take: 100, where: { userId: req.userId }, orderBy: { createdAt: "desc" }, take: 30 });
     res.json(posts.map((p: any) => ({ ...p, options: JSON.parse(p.options || "[]") })));
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -884,7 +884,7 @@ JSON: {"optimizedTitle":"Título otimizado para Shorts Search","seoKeywords":["k
       2000
     );
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -897,7 +897,7 @@ router.post("/streak/log", async (req: any, res: Response, next: NextFunction) =
     const d = date || new Date().toISOString().split("T")[0];
     await (prisma as any).uploadStreak.create({ data: { userId: req.userId, channelId, date: d, videoTitle: videoTitle || "", type: type || "long" } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/streak/data", async (req: any, res: Response, next: NextFunction) => {
@@ -967,7 +967,7 @@ router.get("/streak/data", async (req: any, res: Response, next: NextFunction) =
       consistencyScore: Math.min(100, Math.round((thisMonth / 12) * 100)), // Assuming 3x/week target
       heatmap, entries: entries.slice(0, 50),
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -988,7 +988,7 @@ JSON: {"bestNext":{"title":"Título do melhor próximo vídeo","reason":"Por que
       1500
     );
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -1011,7 +1011,7 @@ JSON: {"eligible":true,"strategy":"Estratégia completa para maximizar Hypes","c
       2000
     );
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -1045,7 +1045,7 @@ router.post("/ai-disclosure/check", async (req: any, res: Response, next: NextFu
     if (!hasYTLabel) score -= 20;
 
     res.json({ score: Math.max(0, score), compliant: score >= 80, checks, recommendation: score >= 80 ? "Compliance OK — pode publicar" : "Corrija os itens antes de publicar para evitar supressão algorítmica" });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -1107,7 +1107,7 @@ router.post("/catalog/scan", async (req: any, res: Response, next: NextFunction)
 
     results.sort((a: any, b: any) => a.seoScore - b.seoScore);
     res.json({ totalScanned: vData.items?.length || 0, needsWork: results.filter((r: any) => r.seoScore < 70).length, videos: results });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/catalog/fix", async (req: any, res: Response, next: NextFunction) => {
@@ -1160,7 +1160,7 @@ CORRIJA mantendo o MESMO tema/assunto do vídeo. JSON:
       3000
     );
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -1192,7 +1192,7 @@ router.get("/devices", async (req: any, res: Response, next: NextFunction) => {
     if (mobileShare > 40 && tvShare > 20) recs.push("Mix mobile+TV — crie versão curta (mobile) e longa (TV) do mesmo conteúdo");
 
     res.json({ devices, recommendations: recs });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -1219,7 +1219,7 @@ router.post("/actions", authenticate, async (req: any, res: Response, next: Next
     res.json({ created: created.length, actions: created });
   } catch (err: any) {
     if (err.code === "P2021") res.json({ created: 0, actions: [] });
-    else next(err);
+    else console.error("algorithm error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" });
   }
 });
 
@@ -1235,7 +1235,7 @@ router.put("/actions/:id/toggle", authenticate, async (req: any, res: Response, 
     res.json(updated);
   } catch (err: any) {
     if (err.code === "P2021") res.json({ ok: true });
-    else next(err);
+    else console.error("algorithm error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" });
   }
 });
 
@@ -1249,7 +1249,7 @@ router.get("/actions/:videoId", authenticate, async (req: any, res: Response, ne
     res.json(actions);
   } catch (err: any) {
     if (err.code === "P2021") res.json([]);
-    else next(err);
+    else console.error("algorithm error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" });
   }
 });
 
@@ -1272,6 +1272,6 @@ router.get("/actions-history", authenticate, async (req: any, res: Response, nex
     res.json(Object.values(grouped));
   } catch (err: any) {
     if (err.code === "P2021") res.json([]);
-    else next(err);
+    else console.error("algorithm error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" });
   }
 });

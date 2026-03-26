@@ -20,7 +20,7 @@ router.get("/stats", async (req: any, res: Response, next: NextFunction) => {
     ]);
     const recentUsers = await prisma.user.findMany({ orderBy: { createdAt: "desc" }, take: 5, select: { id: true, name: true, email: true, createdAt: true, isAdmin: true } });
     res.json({ users, videos, ideas, channels, recentUsers });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("admin error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // GET /admin/users
@@ -33,7 +33,7 @@ router.get("/users", async (req: any, res: Response, next: NextFunction) => {
       }
     });
     res.json(users);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("admin error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // PUT /admin/users/:id — update user (toggle admin, change role)
@@ -47,7 +47,7 @@ router.put("/users/:id", async (req: any, res: Response, next: NextFunction) => 
     if (email !== undefined) data.email = email;
     const user = await prisma.user.update({ where: { id: Number(req.params.id) }, data });
     res.json({ id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, role: user.role });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("admin error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // DELETE /admin/users/:id
@@ -72,7 +72,7 @@ router.delete("/users/:id", async (req: any, res: Response, next: NextFunction) 
       prisma.user.delete({ where: { id } }),
     ]);
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("admin error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // GET /admin/config — get system config
@@ -82,7 +82,7 @@ router.get("/config", async (req: any, res: Response, next: NextFunction) => {
     const obj: any = {};
     configs.forEach((c: any) => { obj[c.key] = c.value; });
     res.json(obj);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("admin error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // PUT /admin/config — update system config
@@ -93,7 +93,7 @@ router.put("/config", async (req: any, res: Response, next: NextFunction) => {
       await prisma.systemConfig.upsert({ where: { key }, create: { key, value: String(value) }, update: { value: String(value) } });
     }
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("admin error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // POST /admin/reset-password/:id
@@ -104,7 +104,7 @@ router.post("/reset-password/:id", async (req: any, res: Response, next: NextFun
     const hashed = await bcrypt.hash(password, 10);
     await prisma.user.update({ where: { id: Number(req.params.id) }, data: { password: hashed } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("admin error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

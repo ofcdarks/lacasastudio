@@ -26,7 +26,7 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
       orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
     });
     res.json(ideas);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("ideas error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/", validate(ideaSchema), async (req: any, res: Response, next: NextFunction) => {
@@ -36,7 +36,7 @@ router.post("/", validate(ideaSchema), async (req: any, res: Response, next: Nex
       include: { channel: { select: { id: true, name: true, color: true } } },
     });
     res.status(201).json(idea);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("ideas error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/:id", validate(ideaSchema.partial()), async (req: any, res: Response, next: NextFunction) => {
@@ -48,7 +48,7 @@ router.put("/:id", validate(ideaSchema.partial()), async (req: any, res: Respons
       include: { channel: { select: { id: true, name: true, color: true } } },
     });
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("ideas error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -57,7 +57,7 @@ router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
     if (!idea) return res.status(404).json({ error: "Ideia não encontrada" });
     await prisma.idea.delete({ where: { id: idea.id } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("ideas error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

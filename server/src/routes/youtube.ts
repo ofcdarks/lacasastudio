@@ -50,7 +50,7 @@ router.get("/channel/:channelId", async (req: any, res: Response, next: NextFunc
       stats: { subscribers: Number(ch.statistics.subscriberCount), views: Number(ch.statistics.viewCount), videos: Number(ch.statistics.videoCount) },
       uploadsPlaylist: ch.contentDetails?.relatedPlaylists?.uploads,
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("youtube error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/videos/:channelId", async (req: any, res: Response, next: NextFunction) => {
@@ -80,7 +80,7 @@ router.get("/videos/:channelId", async (req: any, res: Response, next: NextFunct
       stats: { views: Number(v.statistics.viewCount || 0), likes: Number(v.statistics.likeCount || 0), comments: Number(v.statistics.commentCount || 0) },
     }));
     res.json(videos);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("youtube error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/analyze", async (req: any, res: Response, next: NextFunction) => {
@@ -107,7 +107,7 @@ router.post("/analyze", async (req: any, res: Response, next: NextFunction) => {
     } catch {
       res.status(500).json({ error: "IA retornou formato inválido", raw });
     }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("youtube error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

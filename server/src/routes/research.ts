@@ -132,7 +132,7 @@ router.post("/search", async (req: any, res: Response, next: NextFunction) => {
     const filtered = channels.filter((c: any) => c.score >= 35 && c.videoCount >= 3);
     filtered.sort((a: any, b: any) => b.score - a.score);
     res.json({ channels: filtered, totalFound: channels.length, filtered: channels.length - filtered.length });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -270,7 +270,7 @@ Formato JSON:
     }
 
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Save channel
@@ -349,7 +349,7 @@ router.put("/saved/:id", async (req: any, res: Response, next: NextFunction) => 
   try {
     const updated = await prisma.savedChannel.update({ where: { id: Number(req.params.id) }, data: req.body });
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -395,7 +395,7 @@ Extraia e retorne JSON:
     const raw = aiData.choices?.[0]?.message?.content || "";
     try { const parsed = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
     res.json(parsed); } catch { res.status(500).json({ error: "IA retornou formato inválido" }); return; }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 📐 Blueprint de Modelagem
@@ -474,7 +474,7 @@ Retorne JSON:
     const raw = aiData.choices?.[0]?.message?.content || "";
     const parsed = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
     res.json(parsed);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 💰 Calculadora de Monetização
@@ -517,7 +517,7 @@ router.post("/monetization", async (req: any, res: Response, next: NextFunction)
     });
 
     res.json({ countries, selected, projections, nicheKey });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 🎯 Gerador de Títulos + Thumbnails
@@ -554,7 +554,7 @@ Gere 10 ideias de vídeo com título + prompt de thumbnail. JSON:
     const raw = aiData.choices?.[0]?.message?.content || "";
     const parsed = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
     res.json({ ideas: Array.isArray(parsed) ? parsed : [] });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 🔥 Trending/Hype videos
@@ -599,7 +599,7 @@ router.post("/trending", async (req: any, res: Response, next: NextFunction) => 
     }).sort((a: any, b: any) => b.views - a.views);
 
     res.json({ videos: videos.slice(0, 20) });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -644,7 +644,7 @@ Retorne JSON: [{"trend":"Nome da tendência","description":"Explicação","origi
     const raw = aiData.choices?.[0]?.message?.content || "[]";
     try { const trends = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()); res.json({ trends: Array.isArray(trends) ? trends : [] }); }
     catch { res.json({ trends: [] }); }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 🕵️ Spy — compare saved channels activity
@@ -685,7 +685,7 @@ router.post("/spy", async (req: any, res: Response, next: NextFunction) => {
       } catch {}
     }
     res.json({ channels: results });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 🧪 A/B Test de Títulos
@@ -712,7 +712,7 @@ Ordene por ctrScore descendente.` }]
     const aiData = await aiRes.json() as any;
     const raw = aiData.choices?.[0]?.message?.content || "[]";
     res.json({ results: JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()) });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 🗓️ Calendário 30 dias
@@ -741,7 +741,7 @@ Retorne JSON array com ${(videosPerWeek || 3) * 4} vídeos:
     const aiData = await aiRes.json() as any;
     const raw = aiData.choices?.[0]?.message?.content || "[]";
     try { res.json({ calendar: JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()) }); } catch { res.status(500).json({ error: "Formato inválido da IA. Tente novamente." }); }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 📺 Channel Preview/Mockup — generate full channel identity
@@ -811,7 +811,7 @@ JSON:
     const raw = aiData.choices?.[0]?.message?.content || "{}";
     try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
     catch { res.status(500).json({ error: "IA retornou formato inválido. Tente novamente." }); }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -876,7 +876,7 @@ RESPONDA APENAS JSON (sem \`\`\`):
     }
   } catch (err: any) {
     console.error("[Screenshots] Error:", err.message);
-    next(err);
+    console.error("research error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" });
   }
 });
 
@@ -904,7 +904,7 @@ JSON: {"winner":"Canal","comparison":[{"metric":"M","analysis":"Quem ganha"}],"g
     const raw = data.choices?.[0]?.message?.content || "{}";
     try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
     catch { res.status(500).json({ error: "Formato inválido" }); }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -933,7 +933,7 @@ JSON: {"overallScore":85,"titleScore":{"score":90,"feedback":"Feedback","improve
     const raw = data.choices?.[0]?.message?.content || "{}";
     try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
     catch { res.status(500).json({ error: "Formato inválido" }); }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 🌐 Multi-Idioma
@@ -962,7 +962,7 @@ Para CADA idioma, otimize pra viralizar naquele mercado. JSON:
     const raw = data.choices?.[0]?.message?.content || "{}";
     try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
     catch { res.status(500).json({ error: "Formato inválido" }); }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 🎬 Pipeline Wizard
@@ -993,7 +993,7 @@ router.post("/pipeline", async (req: any, res: Response, next: NextFunction) => 
     console.log(`[Pipeline] Step: ${step}, Raw length: ${raw.length}, Preview: ${raw.slice(0,150)}`);
     try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
     catch(e) { console.error("[Pipeline] JSON parse failed:", raw.slice(0,500)); res.status(500).json({ error: "Formato inválido. Tente novamente." }); }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -1078,7 +1078,7 @@ JSON:
     const raw = (data.choices?.[0]?.message?.content || "{}").trim();
     try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
     catch { res.status(500).json({ error: "Formato inválido" }); }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 🔮 Viral Predictor
@@ -1103,7 +1103,7 @@ JSON: {"viralScore":85,"views":{"pessimist":"1K-5K","realistic":"10K-50K","optim
     const raw = (data.choices?.[0]?.message?.content || "{}").trim();
     try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
     catch { res.status(500).json({ error: "Formato inválido" }); }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 💸 Monetization 360
@@ -1127,7 +1127,7 @@ JSON: {"totalPotential":"R$X-Y/mês","streams":[{"name":"AdSense","icon":"💰",
     const raw = (data.choices?.[0]?.message?.content || "{}").trim();
     try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
     catch { res.status(500).json({ error: "Formato inválido" }); }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // ♻️ Repurpose Machine
@@ -1152,7 +1152,7 @@ JSON: {"original":"${title}","pieces":[{"type":"short","platform":"YouTube Short
     const raw = (data.choices?.[0]?.message?.content || "{}").trim();
     try { res.json(JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim())); }
     catch { res.status(500).json({ error: "Formato inválido" }); }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -1231,7 +1231,7 @@ JSON:
       recentVideos: recentVids,
       analysis: aiData
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -1243,14 +1243,14 @@ router.post("/save-script-version", async (req: any, res: Response, next: NextFu
     const version = (last?.version || 0) + 1;
     const sv = await prisma.scriptVersion.create({ data: { videoId, version, title: title || "", content: content || "", sections: JSON.stringify(sections || []), notes: notes || "" } });
     res.json(sv);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/script-versions/:videoId", async (req: any, res: Response, next: NextFunction) => {
   try {
     const versions = await prisma.scriptVersion.findMany({ take: 100, where: { videoId: Number(req.params.videoId) }, orderBy: { version: "desc" } });
     res.json(versions);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 📤 Export full channel PDF data
@@ -1264,7 +1264,7 @@ router.post("/export-channel", async (req: any, res: Response, next: NextFunctio
     let analysis = null;
     try { analysis = JSON.parse(ch.analysisJson || "{}"); } catch {}
     res.json({ channel: ch, identity: mockData?.mockup || null, images: mockData?.mockImgs || null, analysis });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -1307,7 +1307,7 @@ router.post("/spy-alerts", async (req: any, res: Response, next: NextFunction) =
 
     alerts.sort((a, b) => b.velocity - a.velocity);
     res.json({ alerts, checkedAt: new Date().toISOString(), channelsChecked: saved.length });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // ⏰ Best upload time by niche/country
@@ -1405,7 +1405,7 @@ Analise e retorne JSON:
     }
 
     res.json({ trending: trendingList, nicheVirals, insights: aiInsights, checkedAt: new Date().toISOString() });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("research error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // 💬 Engagement Generator

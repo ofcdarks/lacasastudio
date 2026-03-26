@@ -32,7 +32,7 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
       prisma.channel.count({ where }),
     ]);
     res.json(paginatedResponse(channels, total, page, limit));
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("channels error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/", validate(channelSchema), async (req: any, res: Response, next: NextFunction) => {
@@ -44,7 +44,7 @@ router.post("/", validate(channelSchema), async (req: any, res: Response, next: 
     await NotifService.channelCreated(req.userId, name);
     logger.info("Channel created", { userId: req.userId, channelId: ch.id });
     res.status(201).json(ch);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("channels error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/:id", validate(channelSchema.partial()), async (req: any, res: Response, next: NextFunction) => {
@@ -53,7 +53,7 @@ router.put("/:id", validate(channelSchema.partial()), async (req: any, res: Resp
     if (!ch) { res.status(404).json({ error: "Canal não encontrado" }); return; }
     const updated = await prisma.channel.update({ where: { id: ch.id }, data: req.validated });
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("channels error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -64,7 +64,7 @@ router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
     await AuditService.dataDeleted(req.userId, "channel", ch.id, req.ip || "");
     logger.info("Channel deleted", { userId: req.userId, channelId: ch.id });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("channels error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

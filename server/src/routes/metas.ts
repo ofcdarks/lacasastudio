@@ -28,7 +28,7 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
       orderBy: { createdAt: "desc" },
     });
     res.json(metas);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("metas error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/", validate(metaSchema), async (req: any, res: Response, next: NextFunction) => {
@@ -42,7 +42,7 @@ router.post("/", validate(metaSchema), async (req: any, res: Response, next: Nex
       include: { items: true },
     });
     res.status(201).json(meta);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("metas error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/item/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -62,7 +62,7 @@ router.put("/item/:id", async (req: any, res: Response, next: NextFunction) => {
     }
 
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("metas error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -71,7 +71,7 @@ router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
     if (!meta) return res.status(404).json({ error: "Meta não encontrada" });
     await prisma.meta.delete({ where: { id: meta.id } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("metas error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

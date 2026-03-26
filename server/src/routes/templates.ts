@@ -14,7 +14,7 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
       orderBy: { createdAt: "desc" },
     });
     res.json(templates);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("templates error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/", async (req: any, res: Response, next: NextFunction) => {
@@ -25,7 +25,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
       data: { name, desc, episodes, structure, color, tags, userId: req.userId, channelId: channelId ? Number(channelId) : null },
     });
     res.status(201).json(t);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("templates error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -34,7 +34,7 @@ router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
     if (!t) return res.status(404).json({ error: "Template não encontrado" });
     await prisma.template.delete({ where: { id: t.id } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("templates error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

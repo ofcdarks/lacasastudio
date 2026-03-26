@@ -191,7 +191,7 @@ router.post("/keywords/search", async (req: any, res: Response, next: NextFuncti
       related,
       topTags,
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Keyword history
@@ -203,7 +203,7 @@ router.get("/keywords/history", async (req: any, res: Response, next: NextFuncti
       take: 50,
     });
     res.json(results);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -268,7 +268,7 @@ router.post("/tag-spy", async (req: any, res: Response, next: NextFunction) => {
       hasTimestamps: /\d{1,2}:\d{2}/.test(video.snippet?.description || ""),
       hasLinks: /https?:\/\//.test(video.snippet?.description || ""),
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Bulk tag spy (multiple videos)
@@ -307,7 +307,7 @@ router.post("/tag-spy/bulk", async (req: any, res: Response, next: NextFunction)
       }));
 
     res.json({ totalVideos: vData.items?.length || 0, commonTags });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -471,7 +471,7 @@ router.post("/seo-audit", async (req: any, res: Response, next: NextFunction) =>
       titleLength: title.length,
       engagementRate: Number(engRate.toFixed(2)),
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Pre-publish audit (without URL — uses local data)
@@ -495,7 +495,7 @@ JSON: {"score":85,"grade":"A","titleAnalysis":{"score":90,"strengths":["Ponto 1"
       2000
     );
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -624,7 +624,7 @@ PRIORIZE:
       trendingByCountry: trendingResults,
       nicheVideos: nicheResults,
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/daily-ideas", async (req: any, res: Response, next: NextFunction) => {
@@ -636,14 +636,14 @@ router.get("/daily-ideas", async (req: any, res: Response, next: NextFunction) =
       take: 30,
     });
     res.json(ideas);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/daily-ideas/:id/use", async (req: any, res: Response, next: NextFunction) => {
   try {
     await (prisma as any).dailyIdea.update({ where: { id: Number(req.params.id) }, data: { used: true } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -733,7 +733,7 @@ JSON: {"winner":"Nome do canal mais forte","reason":"Por que é o mais forte (2 
     }
 
     res.json({ channels, radarData, insight });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -800,7 +800,7 @@ router.post("/velocity/check", async (req: any, res: Response, next: NextFunctio
 
     results.sort((a, b) => b.velocity - a.velocity);
     res.json({ videos: results, checkedAt: new Date().toISOString() });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Velocity history for a specific video
@@ -812,7 +812,7 @@ router.get("/velocity/history/:videoId", async (req: any, res: Response, next: N
       take: 48,
     });
     res.json(records);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -842,7 +842,7 @@ JSON: {"overallRetention":75,"retentionCurve":[{"scene":1,"predicted":95,"risk":
       3000
     );
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -873,7 +873,7 @@ JSON: {"shorts":[{"title":"Título viral do Short","hook":"Primeiros 3 segundos 
       3500
     );
     res.json(result);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 
@@ -918,7 +918,7 @@ router.post("/snapshots/collect", async (req: any, res: Response, next: NextFunc
     }
 
     res.json({ collected, total: saved.length, date: today });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/snapshots/:channelId", async (req: any, res: Response, next: NextFunction) => {
@@ -929,7 +929,7 @@ router.get("/snapshots/:channelId", async (req: any, res: Response, next: NextFu
       take: 90,
     });
     res.json(snapshots);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("competitive error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 

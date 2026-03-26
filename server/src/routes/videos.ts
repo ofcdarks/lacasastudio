@@ -51,7 +51,7 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
     ]);
 
     res.json(paginatedResponse(videos, total, page, limit));
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("videos error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.get("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -62,7 +62,7 @@ router.get("/:id", async (req: any, res: Response, next: NextFunction) => {
     });
     if (!video) { res.status(404).json({ error: "Vídeo não encontrado" }); return; }
     res.json(video);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("videos error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/", validate(createVideoSchema), async (req: any, res: Response, next: NextFunction) => {
@@ -78,7 +78,7 @@ router.post("/", validate(createVideoSchema), async (req: any, res: Response, ne
     await NotifService.videoCreated(req.userId, title);
     logger.info("Video created", { userId: req.userId, videoId: video.id });
     res.status(201).json(video);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("videos error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.put("/:id", validate(updateVideoSchema), async (req: any, res: Response, next: NextFunction) => {
@@ -100,7 +100,7 @@ router.put("/:id", validate(updateVideoSchema), async (req: any, res: Response, 
     }
     logger.info("Video updated", { userId: req.userId, videoId: video.id });
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("videos error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
@@ -111,7 +111,7 @@ router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
     await AuditService.dataDeleted(req.userId, "video", video.id, req.ip || "");
     logger.info("Video deleted", { userId: req.userId, videoId: video.id });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("videos error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

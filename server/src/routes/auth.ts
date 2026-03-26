@@ -36,7 +36,7 @@ router.post("/register", validate(registerSchema), async (req: any, res: Respons
       token: accessToken, refreshToken,
       user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar, isAdmin: user.isAdmin },
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("auth error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Login
@@ -61,7 +61,7 @@ router.post("/login", validate(loginSchema), async (req: any, res: Response, nex
       token: accessToken, refreshToken,
       user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar, isAdmin: user.isAdmin },
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("auth error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Refresh token
@@ -72,7 +72,7 @@ router.post("/refresh", async (req: any, res: Response, next: NextFunction) => {
     const result = await rotateRefreshToken(refreshToken);
     if (!result) { res.status(401).json({ error: "Refresh token inválido ou expirado" }); return; }
     res.json({ token: result.accessToken, refreshToken: result.refreshToken });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("auth error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Logout (revoke all refresh tokens)
@@ -81,7 +81,7 @@ router.post("/logout", authenticate, async (req: any, res: Response, next: NextF
     await revokeAllUserTokens(req.userId);
     await AuditService.log(req.userId, "logout", "auth", undefined, undefined, req.ip || "");
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("auth error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Promote to admin — only specific email allowed
@@ -98,7 +98,7 @@ router.post("/promote-admin", authenticate, async (req: any, res: Response, next
     const user = await prisma.user.update({ where: { id: req.userId }, data: { isAdmin: true } });
     await AuditService.adminAction(req.userId, "promote", "Self-promoted to admin", req.ip || "");
     res.json({ ok: true, user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar, isAdmin: true } });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("auth error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Me
@@ -110,7 +110,7 @@ router.get("/me", authenticate, async (req: any, res: Response, next: NextFuncti
     });
     if (!user) { res.status(404).json({ error: "Usuário não encontrado" }); return; }
     res.json(user);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("auth error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 export default router;

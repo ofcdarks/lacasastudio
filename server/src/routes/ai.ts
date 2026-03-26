@@ -3,6 +3,7 @@ import { Router, Response, NextFunction } from "express";
 import { ImageFX } from "../services/imagefx";
 import prisma from "../db/prisma";
 import { authenticate } from "../middleware/auth";
+import { decryptValue } from "../middleware/encrypt";
 import { upload } from "../middleware/upload";
 import NotifService from "../services/notifications";
 import cache from "../services/cache";
@@ -92,7 +93,7 @@ JSON:
     res.json(parseJSON(raw));
   } catch (err: any) {
     if (err.message?.includes("JSON")) { res.status(500).json({ error: "IA retornou formato inválido." }); return; }
-    next(err);
+    console.error("ai error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" });
   }
 });
 
@@ -115,7 +116,7 @@ router.post("/script", async (req: any, res: Response, next: NextFunction) => {
     const content = await callAI(apiKey, model, VIRAL_SYSTEM, prompt);
     await NotifService.aiGenerated(req.userId, "script");
     res.json({ script: content });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("ai error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/storyboard", async (req: any, res: Response, next: NextFunction) => {
@@ -166,7 +167,7 @@ Tipos: hook,intro,problem,content,demo,reveal,transition,cta,outro,broll` }
       return;
     }
     if (err.message?.includes("JSON")) { res.status(500).json({ error: "Formato inválido. Tente novamente." }); return; }
-    next(err);
+    console.error("ai error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" });
   }
 });
 
@@ -183,7 +184,7 @@ router.post("/titles", async (req: any, res: Response, next: NextFunction) => {
     );
     try { res.json({ titles: parseJSON<string[]>(raw) }); }
     catch { res.json({ titles: raw.split("\n").filter((l: string) => l.trim()).map((l: string) => l.replace(/^\d+\.\s*/, "").replace(/^["']|["']$/g, "")) }); }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("ai error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 router.post("/analyze-idea", async (req: any, res: Response, next: NextFunction) => {
@@ -201,7 +202,7 @@ JSON sem markdown: {"viralScore":0-100,"analysis":"2-3 frases","strengths":["3"]
     res.json(parseJSON(raw));
   } catch (err: any) {
     if (err.message?.includes("JSON")) { res.status(500).json({ error: "IA retornou formato inválido." }); return; }
-    next(err);
+    console.error("ai error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" });
   }
 });
 
@@ -243,7 +244,7 @@ router.post("/generate-asset", async (req: any, res: Response, next: NextFunctio
     // 2. Fallback to admin cookie
     if (!cookie) {
       const cookieSetting = await prisma.setting.findUnique({ where: { key: "imagefx_cookie" } });
-      cookie = cookieSetting?.value || "";
+      cookie = decryptValue(cookieSetting?.value || "");
     }
 
     if (!cookie) {
@@ -270,7 +271,7 @@ router.post("/generate-asset", async (req: any, res: Response, next: NextFunctio
     }
     if (err.message?.includes("bloqueado")) { res.status(400).json({ error: err.message }); return; }
     if (err.message?.includes("429") || err.message?.includes("Limite")) { res.status(429).json({ error: "Limite do ImageFX atingido. Aguarde alguns minutos." }); return; }
-    next(err);
+    console.error("ai error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" });
   }
 });
 
@@ -353,5 +354,5 @@ router.post("/remove-bg", upload.single("image"), async (req: any, res: Response
       message: "Use o editor do canvas para posicionar a imagem sobre o background",
       tip: "Para remover fundo profissional, use remove.bg ou Canva"
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("ai error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });

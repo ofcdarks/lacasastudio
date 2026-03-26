@@ -33,46 +33,88 @@ async function tryRefresh(): Promise<boolean> {
   return refreshPromise;
 }
 
+// Simple in-memory cache for GET requests
+const _cache = new Map<string, { data: any; ts: number }>();
+const CACHE_TTL = 15000; // 15s
+
 async function request<T>(path: string, opts: RequestInit = {}, skipAuthRedirect = false): Promise<T> {
+  const method = opts.method || "GET";
+  const cacheKey = method === "GET" ? path : "";
+
+  // Return cached data for GET requests
+  if (cacheKey) {
+    const cached = _cache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.data as T;
+  }
+
   const token = getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json", ...(opts.headers as Record<string, string> || {}) };
   if (token) headers["Authorization"] = `Bearer ${token}`;
   if (opts.body instanceof FormData) delete headers["Content-Type"];
 
-  let res = await fetch(`${BASE}${path}`, { ...opts, headers });
+  // Retry logic (max 2 retries for GET, 1 for POST)
+  const maxRetries = method === "GET" ? 2 : 1;
+  let lastError: Error | null = null;
 
-  if (res.status === 401 && !skipAuthRedirect) {
-    const refreshed = await tryRefresh();
-    if (refreshed) {
-      headers["Authorization"] = `Bearer ${getToken()}`;
-      res = await fetch(`${BASE}${path}`, { ...opts, headers });
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      let res = await fetch(`${BASE}${path}`, { ...opts, headers });
+
+      if (res.status === 401 && !skipAuthRedirect) {
+        const refreshed = await tryRefresh();
+        if (refreshed) {
+          headers["Authorization"] = `Bearer ${getToken()}`;
+          res = await fetch(`${BASE}${path}`, { ...opts, headers });
+        }
+      }
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        if (!res.ok) throw new Error(`Erro ${res.status} — servidor retornou resposta inválida`);
+        const text = await res.text();
+        try { const parsed = JSON.parse(text) as T; if (cacheKey) _cache.set(cacheKey, { data: parsed, ts: Date.now() }); return parsed; }
+        catch { throw new Error("Resposta inválida do servidor"); }
+      }
+
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 401 && !skipAuthRedirect) {
+          localStorage.removeItem("lc_token");
+          localStorage.removeItem("lc_refresh");
+          window.location.href = "/login";
+        }
+        throw new Error(data.error || "Erro na requisição");
+      }
+
+      // Cache successful GET responses
+      if (cacheKey) _cache.set(cacheKey, { data, ts: Date.now() });
+      return data as T;
+    } catch (err: any) {
+      lastError = err;
+      // Only retry on network errors, not on 4xx/5xx with message
+      if (err.message?.includes("fetch") || err.message?.includes("network") || err.message?.includes("Failed")) {
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 500 * (attempt + 1))); // 500ms, 1000ms backoff
+          continue;
+        }
+      }
+      throw err;
     }
   }
+  throw lastError || new Error("Erro de rede. Verifique sua conexão.");
+}
 
-  const contentType = res.headers.get("content-type") || "";
-  if (!contentType.includes("application/json")) {
-    if (!res.ok) throw new Error(`Erro ${res.status} — servidor retornou resposta inválida`);
-    const text = await res.text();
-    try { return JSON.parse(text) as T; } catch { throw new Error("Resposta inválida do servidor"); }
-  }
-
-  const data = await res.json();
-  if (!res.ok) {
-    if (res.status === 401 && !skipAuthRedirect) {
-      localStorage.removeItem("lc_token");
-      localStorage.removeItem("lc_refresh");
-      window.location.href = "/login";
-    }
-    throw new Error(data.error || "Erro na requisição");
-  }
-  return data as T;
+// Invalidate cache for a path prefix (call after mutations)
+export function invalidateCache(prefix?: string) {
+  if (prefix) { _cache.forEach((_, k) => { if (k.startsWith(prefix)) _cache.delete(k); }); }
+  else _cache.clear();
 }
 
 const api = {
   get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: any, skipAuth = false) => request<T>(path, { method: "POST", body: JSON.stringify(body) }, skipAuth),
-  put: <T>(path: string, body?: any) => request<T>(path, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
-  del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  post: <T>(path: string, body?: any, skipAuth = false) => request<T>(path, { method: "POST", body: JSON.stringify(body) }, skipAuth).then(r => { invalidateCache(path.split("/").slice(0,2).join("/")); return r; }),
+  put: <T>(path: string, body?: any) => request<T>(path, { method: "PUT", body: body ? JSON.stringify(body) : undefined }).then(r => { invalidateCache(path.split("/").slice(0,2).join("/")); return r; }),
+  del: <T>(path: string) => request<T>(path, { method: "DELETE" }).then(r => { invalidateCache(path.split("/").slice(0,2).join("/")); return r; }),
 };
 
 // Helper for paginated responses

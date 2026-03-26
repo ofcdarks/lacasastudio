@@ -25,7 +25,7 @@ router.get("/", async (req: any, res: Response, next: NextFunction) => {
       take: 200,
     });
     res.json(assets);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("assets error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Get folders
@@ -102,7 +102,7 @@ router.post("/upload", upload.single("file"), async (req: any, res: Response, ne
     res.status(201).json(asset);
   } catch (err: any) {
     logger.error("Upload failed", { error: err.message, stack: err.stack });
-    next(err);
+    console.error("assets error:", err?.message || err); res.status(500).json({ error: err?.message || "Erro interno" });
   }
 });
 
@@ -137,7 +137,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
         res.status(201).json(asset);
       } else { throw e; }
     }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("assets error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Update
@@ -158,7 +158,7 @@ router.put("/:id", async (req: any, res: Response, next: NextFunction) => {
       include: { channel: { select: { id: true, name: true, color: true } } },
     });
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("assets error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Move
@@ -172,7 +172,7 @@ router.put("/:id/move", async (req: any, res: Response, next: NextFunction) => {
       include: { channel: { select: { id: true, name: true, color: true } } },
     });
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("assets error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Bulk move
@@ -185,7 +185,7 @@ router.post("/bulk-move", async (req: any, res: Response, next: NextFunction) =>
       data: { folder: sanitizeFolder(folder) },
     });
     res.json({ ok: true, moved: ids.length });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("assets error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Delete
@@ -198,7 +198,7 @@ router.delete("/:id", async (req: any, res: Response, next: NextFunction) => {
     }
     await prisma.asset.delete({ where: { id: asset.id } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("assets error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 function detectType(ext: string): string {
@@ -241,7 +241,7 @@ router.get("/:id/download", async (req: any, res: Response, next: NextFunction) 
     } else {
       res.status(404).json({ error: "Arquivo não encontrado no servidor" });
     }
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("assets error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
 // Disk usage info
@@ -322,5 +322,5 @@ router.get("/disk-usage", async (req: any, res: Response, next: NextFunction) =>
       ram,
       uptime: process.uptime(),
     });
-  } catch (err) { next(err); }
+  } catch (err: any) { console.error("assets error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
