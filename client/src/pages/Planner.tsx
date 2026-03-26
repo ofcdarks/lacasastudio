@@ -3,7 +3,7 @@ import { useToast } from "../components/shared/Toast";
 import { useState, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { useConfirm } from "../context/ConfirmContext";
-import { videoApi } from "../lib/api";
+import { videoApi, channelApi } from "../lib/api";
 import { Card, Badge, Btn, Hdr, Label, Input, Select, C, ST, STATUS_KEYS } from "../components/shared/UI";
 
 function EditModal({ video, channels, onClose, onSave }) {
@@ -43,7 +43,7 @@ function EditModal({ video, channels, onClose, onSave }) {
 }
 
 export default function Planner() {
-  const { channels, videos, refreshVideos, selChannel, setSelChannel } = useApp();
+  const { channels, videos, refreshVideos, refreshChannels, selChannel, setSelChannel } = useApp();
   const confirmDel = useConfirm();
   const [showF, setShowF] = useState(false);
   const [editVideo, setEditVideo] = useState(null);
@@ -51,6 +51,24 @@ export default function Planner() {
   const [fs, setFs] = useState("all");
   const dragItem = useRef(null);
   const [dragOver, setDragOver] = useState(null);
+  const [showNewCh, setShowNewCh] = useState(false);
+  const [newChName, setNewChName] = useState("");
+  const [newChLoading, setNewChLoading] = useState(false);
+  const toast = useToast();
+
+  const createChannel = async () => {
+    if (!newChName.trim()) return;
+    setNewChLoading(true);
+    try {
+      const ch = await channelApi.create({ name: newChName.trim() });
+      await refreshChannels();
+      setNv(p => ({ ...p, channelId: ch.id }));
+      setNewChName("");
+      setShowNewCh(false);
+      toast?.success("Canal criado!");
+    } catch (e) { toast?.error(e.message); }
+    setNewChLoading(false);
+  };
 
   const filtered = videos.filter(v => {
     const chId = v.channelId || v.channel?.id;
@@ -133,6 +151,15 @@ export default function Planner() {
             <Badge color={ch.color} /> {ch.name}
           </Btn>
         ))}
+        {channels.length === 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 10, background: "#F5920B10", border: "1px solid #F5920B20" }}>
+            <span style={{ fontSize: 12, color: "#F5920B" }}>Nenhum canal criado. Crie um para começar:</span>
+            <div style={{ display: "flex", gap: 4 }}>
+              <Input value={newChName} onChange={e => setNewChName(e.target.value)} placeholder="Nome do canal" onKeyDown={e => e.key === "Enter" && createChannel()} style={{ width: 180, padding: "6px 10px", fontSize: 12 }} />
+              <Btn onClick={createChannel} disabled={newChLoading} style={{ background: "#22C55E20", color: "#22C55E", fontSize: 11 }}>{newChLoading ? "..." : "Criar Canal"}</Btn>
+            </div>
+          </div>
+        )}
         <div style={{ flex: 1 }} />
         <Select style={{ width: 140 }} value={fs} onChange={e => setFs(e.target.value)}>
           <option value="all">Todos status</option>
@@ -146,7 +173,21 @@ export default function Planner() {
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14 }}>Novo Vídeo</div>
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
             <div><Label t="Título" /><Input placeholder="Nome..." value={nv.title} onChange={e => setNv(p => ({ ...p, title: e.target.value }))} /></div>
-            <div><Label t="Canal" /><Select value={nv.channelId} onChange={e => setNv(p => ({ ...p, channelId: Number(e.target.value) }))}><option value="">Selecione</option>{channels.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select></div>
+            <div><Label t="Canal" />
+              <div style={{ display: "flex", gap: 6 }}>
+                <Select value={nv.channelId} onChange={e => setNv(p => ({ ...p, channelId: Number(e.target.value) }))} style={{ flex: 1 }}>
+                  <option value="">Selecione</option>
+                  {channels.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </Select>
+                <Btn onClick={() => setShowNewCh(!showNewCh)} style={{ whiteSpace: "nowrap", fontSize: 11 }}>+ Canal</Btn>
+              </div>
+              {showNewCh && (
+                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                  <Input value={newChName} onChange={e => setNewChName(e.target.value)} placeholder="Nome do canal" onKeyDown={e => e.key === "Enter" && createChannel()} style={{ flex: 1 }} />
+                  <Btn onClick={createChannel} disabled={newChLoading} style={{ background: "#22C55E20", color: "#22C55E" }}>{newChLoading ? "..." : "Criar"}</Btn>
+                </div>
+              )}
+            </div>
             <div><Label t="Data" /><Input type="date" value={nv.date} onChange={e => setNv(p => ({ ...p, date: e.target.value }))} /></div>
             <div><Label t="Prioridade" /><Select value={nv.priority} onChange={e => setNv(p => ({ ...p, priority: e.target.value }))}><option value="alta">Alta</option><option value="média">Média</option><option value="baixa">Baixa</option></Select></div>
             <div><Label t="Duração" /><Input placeholder="12:00" value={nv.duration} onChange={e => setNv(p => ({ ...p, duration: e.target.value }))} /></div>

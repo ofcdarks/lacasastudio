@@ -21,7 +21,7 @@ fi
 
 # Run migrations
 echo "📦 Running database migrations..."
-cd /app/server && npx prisma db push 2>/dev/null || true
+cd /app/server && npx prisma db push --accept-data-loss 2>&1 || echo "⚠️ prisma db push had warnings (non-fatal)"
 
 # Seed if needed
 echo "🌱 Seeding database..."

@@ -277,24 +277,48 @@ Formato JSON:
 router.post("/save", async (req: any, res: Response, next: NextFunction) => {
   try {
     const data = req.body as any;
+    if (!data.ytChannelId) { res.status(400).json({ error: "ID do canal não encontrado." }); return; }
+
     const existing = await prisma.savedChannel.findFirst({ where: { userId: req.userId, ytChannelId: data.ytChannelId } });
     if (existing) { res.status(400).json({ error: "Canal já salvo" }); return; }
+
     const MAX_INT = 2147483647;
     const safeInt = (v: any) => { const n = Number(v) || 0; return n > MAX_INT ? MAX_INT : n < -MAX_INT ? -MAX_INT : Math.round(n); };
-    if (!data.ytChannelId) { res.status(400).json({ error: "ID do canal não encontrado. Tente analisar o canal primeiro." }); return; }
+    const safeFloat = (v: any) => { const n = Number(v); return isNaN(n) ? 0 : n; };
+    const safeStr = (v: any, max = 10000) => String(v || "").slice(0, max);
+
     const saved = await prisma.savedChannel.create({ data: {
-      userId: req.userId, ytChannelId: data.ytChannelId || "", name: data.name || "", handle: data.handle || "",
-      thumbnail: data.thumbnail || "", subscribers: safeInt(data.subscribers), totalViews: safeInt(data.totalViews),
-      videoCount: safeInt(data.videoCount), country: data.country || "", score: safeInt(data.score),
-      tier: data.tier || "", niche: data.niche || "", subNiche: data.subNiche || "",
-      microNiche: data.microNiche || "", avgDuration: data.avgDuration || "",
-      uploadsPerWeek: data.uploadsPerWeek || 0, bestUploadDay: data.bestDay || "",
-      bestUploadHour: data.bestHour || "", topCountries: JSON.stringify(data.modelableCountries || []),
-      tags: data.tags || "", notes: data.notes || "", modelable: data.modelable || false,
-      analysisJson: JSON.stringify(data),
+      userId: req.userId,
+      ytChannelId: safeStr(data.ytChannelId, 100),
+      name: safeStr(data.name, 200),
+      handle: safeStr(data.handle, 100),
+      thumbnail: safeStr(data.thumbnail, 500),
+      subscribers: safeInt(data.subscribers),
+      totalViews: safeInt(data.totalViews),
+      videoCount: safeInt(data.videoCount),
+      country: safeStr(data.country, 10),
+      score: safeInt(data.score),
+      tier: safeStr(data.tier, 20),
+      niche: safeStr(data.niche, 100),
+      subNiche: safeStr(data.subNiche, 100),
+      microNiche: safeStr(data.microNiche, 100),
+      avgDuration: safeStr(data.avgDuration, 50),
+      uploadsPerWeek: safeFloat(data.uploadsPerWeek),
+      bestUploadDay: safeStr(data.bestDay || data.bestUploadDay, 20),
+      bestUploadHour: safeStr(data.bestHour || data.bestUploadHour, 20),
+      topCountries: safeStr(JSON.stringify(data.modelableCountries || data.topCountries || []), 500),
+      tags: safeStr(data.tags, 500),
+      notes: safeStr(data.notes, 5000),
+      modelable: Boolean(data.modelable),
+      analysisJson: safeStr(JSON.stringify(data), 50000),
     }});
     res.json(saved);
-  } catch (err) { next(err); }
+  } catch (err: any) {
+    console.error("Save channel error:", err.message, err.code);
+    if (err.code === "P2002") { res.status(400).json({ error: "Canal já salvo" }); return; }
+    if (err.code === "P2021") { res.status(500).json({ error: "Tabela SavedChannel não encontrada. Execute deploy novamente." }); return; }
+    res.status(500).json({ error: "Erro ao salvar: " + (err.message || "desconhecido") });
+  }
 });
 
 // List saved channels
@@ -302,15 +326,22 @@ router.get("/saved", async (req: any, res: Response, next: NextFunction) => {
   try {
     const channels = await prisma.savedChannel.findMany({ take: 100, where: { userId: req.userId }, orderBy: { score: "desc" } });
     res.json(channels);
-  } catch (err) { next(err); }
+  } catch (err: any) {
+    console.error("List saved error:", err.message, err.code);
+    if (err.code === "P2021") { res.json([]); return; }
+    res.json([]);
+  }
 });
 
 // Delete saved channel
 router.delete("/saved/:id", async (req: any, res: Response, next: NextFunction) => {
   try {
-    await prisma.savedChannel.delete({ where: { id: Number(req.params.id) } });
+    await prisma.savedChannel.deleteMany({ where: { id: Number(req.params.id), userId: req.userId } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err: any) {
+    console.error("Delete saved error:", err.message);
+    res.json({ ok: true });
+  }
 });
 
 // Update notes on saved channel

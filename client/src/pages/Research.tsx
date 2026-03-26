@@ -222,11 +222,20 @@ export default function Research(){
   const[abTitles,setAbTitles]=useState("");
   const[compIds,setCompIds]=useState([]);const[compData,setCompData]=useState(null);const[compLoad,setCompLoad]=useState(false);const[abNiche,setAbNiche]=useState("");const[abResults,setAbResults]=useState(null);const[abLoad,setAbLoad]=useState(false);
 
-  useEffect(()=>{researchApi.listSaved().then(r=>setSaved(Array.isArray(r)?r:[])).catch(()=>{});},[]);
+  useEffect(()=>{researchApi.listSaved().then(r=>{console.log("Saved channels loaded:",r?.length||0);setSaved(Array.isArray(r)?r:[]);}).catch(e=>{console.error("Load saved error:",e);setSaved([]);});},[]);
 
   const search=async q=>{const s=q||query;if(!s.trim())return;setLoading(true);pg?.start("🔍 Buscando Canais",["Pesquisando","Filtrando","Pontuando"]);try{pg?.update(1);const d=await researchApi.search(s);setResults(d.channels||[]);setFc(d.filtered||0);pg?.done();}catch(e){pg?.fail(e.message);toast?.error(e.message);}setLoading(false);};
   const analyze=async id=>{setAzing(id);pg?.start("Analisando Canal",["Buscando dados do YouTube","Analisando vídeos recentes","Calculando métricas","IA analisando nicho"]);try{pg?.update(1,"Buscando dados do canal...");const r=await researchApi.analyze(id);pg?.done();setAnalysis(r);}catch(e){pg?.fail(e.message);toast?.error(e.message);}setAzing(null);};
-  const saveC=async ch=>{try{const s=await researchApi.save(ch);setSaved(p=>[...p,s]);toast?.success("Salvo!");}catch(e){toast?.error(e.message);}};
+  const saveC=async ch=>{
+    try{
+      const s=await researchApi.save(ch);
+      if(s && s.id) { setSaved(p=>[...p,s]); toast?.success("Canal salvo!"); }
+      else { toast?.error("Erro: resposta inválida do servidor"); }
+    }catch(e){
+      console.error("Save error:", e);
+      toast?.error(e.message || "Erro ao salvar canal");
+    }
+  };
   const delS=async id=>{try{await researchApi.deleteSaved(id);setSaved(p=>p.filter(s=>s.id!==id));}catch(e){toast?.error(e.message);}};
   const cp=txt=>{try{const ta=document.createElement("textarea");ta.value=txt;ta.style.cssText="position:fixed;left:-9999px";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);toast?.success("Copiado!");}catch{}};
   const loadTrend=async(p,r)=>{setTLoad(true);pg?.start("Carregando Hype",["Buscando trending","Filtrando"]);try{pg?.update(1);setTrending((await researchApi.trending({period:p||tPeriod,regionCode:r||tRegion})).videos||[]);pg?.done();}catch(e){pg?.fail(e.message);toast?.error(e.message);}setTLoad(false);};
