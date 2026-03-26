@@ -36,7 +36,7 @@ router.post("/", async (req: any, res: Response, next: NextFunction) => {
 
     // Timeout 60s
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000);
+    const timeout = setTimeout(() => controller.abort(), 90000) // 90s;
 
     try {
       if (config.provider === "anthropic") {

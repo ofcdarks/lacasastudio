@@ -178,8 +178,12 @@ export default function MyAnalytics() {
       </div>}
       {overview.daily?.length > 0 && <div style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, padding: 16 }}>
         <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>📈 Views por Dia</div>
-        <div style={{ display: "flex", gap: 2, height: 80, alignItems: "end" }}>
-          {overview.daily.map((d, i) => { const max = Math.max(...overview.daily.map(x => x.views)) || 1; return <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}><div style={{ width: "100%", height: `${(d.views / max) * 100}%`, background: `${C.green}40`, borderRadius: "3px 3px 0 0", minHeight: 2 }} /><div style={{ fontSize: 7, color: C.dim, marginTop: 2 }}>{d.date?.slice(8)}</div></div>; })}
+        <div style={{ display: "flex", gap: 2, height: 100, alignItems: "flex-end" }}>
+          {overview.daily.map((d, i) => { const max = Math.max(...overview.daily.map(x => x.views)) || 1; const pct = Math.max((d.views / max) * 100, 3); return <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end" }}><div title={`${d.views} views`} style={{ width: "100%", background: `linear-gradient(to top, ${C.green}60, ${C.green}20)`, borderRadius: "3px 3px 0 0", minHeight: 3, height: pct + "%" }} /><div style={{ fontSize: 7, color: C.dim, marginTop: 2, whiteSpace: "nowrap" }}>{d.date?.slice(8)}</div></div>; })}
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+          <span style={{ fontSize: 9, color: C.dim }}>{overview.daily[0]?.date?.slice(5)}</span>
+          <span style={{ fontSize: 9, color: C.dim }}>{overview.daily[overview.daily.length-1]?.date?.slice(5)}</span>
         </div>
       </div>}
     </div>}

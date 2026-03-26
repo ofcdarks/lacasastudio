@@ -40,7 +40,7 @@ async function fetchAI(system: string, user: string, maxTokens = 2500): Promise<
   const aiKey = await getAiKey(); const model = await getModel();
   if (!aiKey) throw new Error("Configure API Key");
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60000);
+  const timeout = setTimeout(() => controller.abort(), 90000); // 90s
   try {
     const res = await fetch("https://api.laozhang.ai/v1/chat/completions", {
       method: "POST", signal: controller.signal,
@@ -49,11 +49,20 @@ async function fetchAI(system: string, user: string, maxTokens = 2500): Promise<
         messages: [{ role: "system", content: system }, { role: "user", content: user }] })
     });
     clearTimeout(timeout);
-    if (!res.ok) throw new Error(`AI ${res.status}`);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      if (res.status === 429) throw new Error("Limite de requisições da IA atingido. Aguarde 1 minuto.");
+      if (res.status === 401) throw new Error("API Key inválida ou expirada.");
+      throw new Error(`Erro da IA (${res.status}). Tente novamente.`);
+    }
     const data = await res.json() as any;
     const raw = (data.choices?.[0]?.message?.content || "{}").trim();
     return JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
-  } catch (e: any) { clearTimeout(timeout); throw e; }
+  } catch (e: any) {
+    clearTimeout(timeout);
+    if (e.name === "AbortError") throw new Error("IA demorou mais de 90s. Tente novamente com menos dados.");
+    throw e;
+  }
 }
 
 const fmt = (n: number) => { if (n >= 1e6) return (n/1e6).toFixed(1)+"M"; if (n >= 1e3) return (n/1e3).toFixed(1)+"K"; return String(n); };
@@ -220,7 +229,8 @@ REGRAS ABSOLUTAS:
 
 ═══ MÉTRICAS CORE ═══
 Views: ${totals.views||0} | Watch Time: ${Math.round(totals.watchTime||0)} min | AVD: ${totals.avgDuration||0}s
-Retenção: ${totals.avgPct||0}% | CTR: ${totals.ctr||0}% | Satisfaction: ${totals.satisfaction||0}%
+Retenção: ${totals.avgPct||0}% | Satisfaction: ${totals.satisfaction||0}%
+NOTA: CTR de impressões (thumbnail) NÃO está disponível via YouTube Analytics API — use a taxa de engajamento (${totals.engagementRate||0}%) e views/dia (${totals.viewsPerDay||0}) como indicadores de performance.
 Likes: ${totals.likes||0} | Dislikes: ${totals.dislikes||0} | Comments: ${totals.comments||0}
 Shares: ${totals.shares||0} | Subs+: ${totals.subsGained||0} | Subs-: ${totals.subsLost||0}
 Engagement Rate: ${totals.engagementRate||0}% | Views/dia: ${totals.viewsPerDay||0}
@@ -239,13 +249,13 @@ ${searches?.length ? `═══ TERMOS DE BUSCA QUE TRAZEM VIEWERS ═══\n${
 
 ${revenue ? `═══ RECEITA ═══\nEstimada: $${revenue.estimated?.toFixed(2)} | CPM: $${revenue.cpm?.toFixed(2)} | Playbacks monetizados: ${revenue.monetizedPlaybacks}` : "Canal não monetizado ou sem dados de receita"}
 
-${videos?.length ? `═══ TOP VÍDEOS ═══\n${videos.slice(0,8).map((v:any,i:number)=>`${i+1}. "${v.title}" — ${v.views} views, ${v.avgPct||0}% ret, ${v.avgDuration||0}s AVD, ${v.likes} likes, +${v.subsGained} subs, CTR ${v.ctr||0}%`).join("\n")}` : ""}
+${videos?.length ? `═══ TOP VÍDEOS ═══\n${videos.slice(0,8).map((v:any,i:number)=>`${i+1}. "${v.title}" — ${v.views} views, ${v.avgPct||0}% ret, ${v.avgDuration||0}s AVD, ${v.likes} likes, +${v.subsGained} subs`).join("\n")}` : ""}
 
 RETORNE JSON (sem markdown, sem backticks):
 {
   "healthScore": 0-100,
   "healthLabel": "Frase curta tipo 'Canal forte com oportunidade explosiva em Shorts'",
-  "diagnosis": "Parágrafo de 4-5 frases CITANDO NÚMEROS REAIS. Ex: 'Seu CTR de X% está acima da média de nicho (3-5%), mas a retenção de Y% indica que viewers abandonam cedo. Os termos de busca mostram que Z é seu tópico mais forte...'",
+  "diagnosis": "Parágrafo de 4-5 frases CITANDO NÚMEROS REAIS. Ex: 'Sua taxa de engajamento de X% mostra audiência ativa, a retenção de Y% indica que viewers ficam até o final. Os termos de busca mostram que Z é seu tópico mais forte...' NUNCA mencione CTR=0% — essa métrica não está disponível via API.",
   
   "urgentActions": [
     {"action": "Ação ultra-específica", "why": "Explicação citando números reais do canal", "impact": "alto", "metric": "Qual métrica melhora e em quanto", "tool": "Nome exato da ferramenta no LaCasaStudio", "steps": "Passo 1 → Passo 2 → Passo 3"},
@@ -301,7 +311,7 @@ RETORNE JSON (sem markdown, sem backticks):
   
   "monetization": "Conselho de monetização baseado nos dados de receita (se disponível) ou como alcançar monetização"
 }`,
-      4096
+      3500
     );
     res.json(result);
   } catch (err: any) { console.error("algorithm error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
