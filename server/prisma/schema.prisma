@@ -608,3 +608,22 @@ model ThumbHistory {
   @@index([userId])
   @@index([userId, niche])
 }
+
+model ActionLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  videoId    String   @default("")
+  videoTitle String   @default("")
+  action     String   @default("")
+  category   String   @default("")
+  priority   String   @default("")
+  completed  Boolean  @default(false)
+  completedAt DateTime?
+  aiSuggestion String @default("")
+  userNote   String   @default("")
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, videoId])
+  @@index([videoId])
+}

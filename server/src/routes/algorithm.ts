@@ -1182,3 +1182,81 @@ router.get("/devices", async (req: any, res: Response, next: NextFunction) => {
 
 
 export default router;
+
+// ═══ Action Log / Command Center Checklist ═══
+
+// Save actions from AI analysis
+router.post("/actions", authenticate, async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { videoId, videoTitle, actions } = req.body;
+    if (!videoId || !actions?.length) { res.status(400).json({ error: "Dados insuficientes" }); return; }
+    const created = [];
+    for (const a of actions) {
+      try {
+        const log = await (prisma as any).actionLog.create({ data: {
+          userId: req.userId, videoId, videoTitle: videoTitle || "",
+          action: a.action || "", category: a.category || "geral",
+          priority: a.priority || "media", aiSuggestion: a.aiSuggestion || a.action || "",
+        }});
+        created.push(log);
+      } catch {}
+    }
+    res.json({ created: created.length, actions: created });
+  } catch (err: any) {
+    if (err.code === "P2021") res.json({ created: 0, actions: [] });
+    else next(err);
+  }
+});
+
+// Toggle action completed
+router.put("/actions/:id/toggle", authenticate, async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const log = await (prisma as any).actionLog.findFirst({ where: { id: Number(req.params.id), userId: req.userId } });
+    if (!log) { res.status(404).json({ error: "Ação não encontrada" }); return; }
+    const updated = await (prisma as any).actionLog.update({
+      where: { id: log.id },
+      data: { completed: !log.completed, completedAt: !log.completed ? new Date() : null, userNote: req.body.note || log.userNote },
+    });
+    res.json(updated);
+  } catch (err: any) {
+    if (err.code === "P2021") res.json({ ok: true });
+    else next(err);
+  }
+});
+
+// Get actions for a video
+router.get("/actions/:videoId", authenticate, async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const actions = await (prisma as any).actionLog.findMany({
+      where: { userId: req.userId, videoId: req.params.videoId },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(actions);
+  } catch (err: any) {
+    if (err.code === "P2021") res.json([]);
+    else next(err);
+  }
+});
+
+// Get all user action history
+router.get("/actions-history", authenticate, async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const actions = await (prisma as any).actionLog.findMany({
+      where: { userId: req.userId },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    // Group by video
+    const grouped = {};
+    for (const a of actions) {
+      if (!grouped[a.videoId]) grouped[a.videoId] = { videoId: a.videoId, videoTitle: a.videoTitle, actions: [], completed: 0, total: 0 };
+      grouped[a.videoId].actions.push(a);
+      grouped[a.videoId].total++;
+      if (a.completed) grouped[a.videoId].completed++;
+    }
+    res.json(Object.values(grouped));
+  } catch (err: any) {
+    if (err.code === "P2021") res.json([]);
+    else next(err);
+  }
+});
