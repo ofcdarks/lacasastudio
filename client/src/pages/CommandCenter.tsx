@@ -16,7 +16,15 @@ const api={
 };
 const fmt=n=>{if(!n)return"0";if(n>=1e6)return(n/1e6).toFixed(1)+"M";if(n>=1e3)return(n/1e3).toFixed(1)+"K";return String(n);};
 const LAYER_COLORS={testing:C.dim,core:C.blue,recent:C.purple,topic:C.orange,adjacent:C.green,viral:C.red};
-const cp=txt=>{navigator.clipboard?.writeText(txt).catch(()=>{})};
+const cp=async(txt,btnEl)=>{
+  try{
+    await navigator.clipboard.writeText(txt);
+  }catch{
+    const ta=document.createElement("textarea");ta.value=txt;ta.style.cssText="position:fixed;left:-9999px";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);
+  }
+  // Visual feedback on the button itself
+  if(btnEl){const prev=btnEl.textContent;btnEl.textContent="✅ Copiado!";btnEl.style.background="#22C55E20";btnEl.style.color="#22C55E";setTimeout(()=>{btnEl.textContent=prev;btnEl.style.background="";btnEl.style.color="";},1500);}
+};
 
 export default function CommandCenter(){
   const toast=useToast();const pg=useProgress();
@@ -225,7 +233,7 @@ export default function CommandCenter(){
               <div style={{flex:1}}>
                 <div style={{fontWeight:600,fontSize:13,textDecoration:item.done?"line-through":"none",color:item.done?C.green:C.text}}>{item.action}</div>
                 {item.timeNeeded&&<div style={{fontSize:10,color:C.dim,marginTop:2}}>⏱️ {item.timeNeeded}</div>}
-                {item.copyText&&!item.done&&<button onClick={e=>{e.stopPropagation();cp(item.copyText);toast?.success("Copiado!");}} style={{marginTop:4,padding:"3px 10px",borderRadius:5,border:`1px solid ${C.blue}30`,background:`${C.blue}08`,color:C.blue,cursor:"pointer",fontSize:9,fontWeight:600}}>📋 Copiar texto</button>}
+                {item.copyText&&!item.done&&<button onClick={e=>{e.stopPropagation();cp(item.copyText,e.currentTarget);toast?.success("Copiado!");}} style={{marginTop:4,padding:"3px 10px",borderRadius:5,border:`1px solid ${C.blue}30`,background:`${C.blue}08`,color:C.blue,cursor:"pointer",fontSize:9,fontWeight:600}}>📋 Copiar texto</button>}
               </div>
               <span style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:4,background:`${pColor}12`,color:pColor,flexShrink:0}}>{item.priority}</span>
             </div>;
@@ -246,23 +254,23 @@ export default function CommandCenter(){
             <div style={{fontSize:11,fontWeight:700,color:C.blue,marginBottom:4}}>Novo Título</div>
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
               <div style={{flex:1,padding:"10px 14px",borderRadius:8,background:"rgba(255,255,255,.04)",border:`1px solid ${C.blue}20`,fontSize:13,fontWeight:600,color:C.text}}>{aiResult.titleSuggestion}</div>
-              <button onClick={()=>{cp(aiResult.titleSuggestion);toast?.success("Título copiado!");}} style={{padding:"10px 16px",borderRadius:8,border:"none",background:`${C.blue}15`,color:C.blue,cursor:"pointer",fontSize:11,fontWeight:700,whiteSpace:"nowrap"}}>📋 Copiar</button>
+              <button onClick={e=>{cp(aiResult.titleSuggestion,e.currentTarget);toast?.success("Título copiado!");}} style={{padding:"10px 16px",borderRadius:8,border:"none",background:`${C.blue}15`,color:C.blue,cursor:"pointer",fontSize:11,fontWeight:700,whiteSpace:"nowrap"}}>📋 Copiar</button>
             </div>
           </div>}
           {aiResult.newDescription&&<div>
             <div style={{fontSize:11,fontWeight:700,color:C.green,marginBottom:4}}>Nova Descrição</div>
             <div style={{padding:"10px 14px",borderRadius:8,background:"rgba(255,255,255,.04)",border:`1px solid ${C.green}20`,fontSize:11,color:C.muted,lineHeight:1.6,whiteSpace:"pre-wrap",maxHeight:120,overflow:"auto"}}>{aiResult.newDescription}</div>
-            <button onClick={()=>{cp(aiResult.newDescription);toast?.success("Descrição copiada!");}} style={{marginTop:6,padding:"6px 14px",borderRadius:6,border:"none",background:`${C.green}15`,color:C.green,cursor:"pointer",fontSize:10,fontWeight:700}}>📋 Copiar Descrição</button>
+            <button onClick={e=>{cp(aiResult.newDescription,e.currentTarget);toast?.success("Descrição copiada!");}} style={{marginTop:6,padding:"6px 14px",borderRadius:6,border:"none",background:`${C.green}15`,color:C.green,cursor:"pointer",fontSize:10,fontWeight:700}}>📋 Copiar Descrição</button>
           </div>}
           {aiResult.newTags&&<div>
             <div style={{fontSize:11,fontWeight:700,color:C.orange,marginBottom:4}}>Tags Otimizadas</div>
             <div style={{padding:"10px 14px",borderRadius:8,background:"rgba(255,255,255,.04)",border:`1px solid ${C.orange}20`,fontSize:11,color:C.muted}}>{aiResult.newTags}</div>
-            <button onClick={()=>{cp(aiResult.newTags);toast?.success("Tags copiadas!");}} style={{marginTop:6,padding:"6px 14px",borderRadius:6,border:"none",background:`${C.orange}15`,color:C.orange,cursor:"pointer",fontSize:10,fontWeight:700}}>📋 Copiar Tags</button>
+            <button onClick={e=>{cp(aiResult.newTags,e.currentTarget);toast?.success("Tags copiadas!");}} style={{marginTop:6,padding:"6px 14px",borderRadius:6,border:"none",background:`${C.orange}15`,color:C.orange,cursor:"pointer",fontSize:10,fontWeight:700}}>📋 Copiar Tags</button>
           </div>}
           {aiResult.pinnedComment&&<div>
             <div style={{fontSize:11,fontWeight:700,color:C.purple,marginBottom:4}}>Comentário Fixado</div>
             <div style={{padding:"10px 14px",borderRadius:8,background:"rgba(255,255,255,.04)",border:`1px solid ${C.purple}20`,fontSize:12,color:C.muted,lineHeight:1.6}}>{aiResult.pinnedComment}</div>
-            <button onClick={()=>{cp(aiResult.pinnedComment);toast?.success("Comentário copiado!");}} style={{marginTop:6,padding:"6px 14px",borderRadius:6,border:"none",background:`${C.purple}15`,color:C.purple,cursor:"pointer",fontSize:10,fontWeight:700}}>📋 Copiar Comentário</button>
+            <button onClick={e=>{cp(aiResult.pinnedComment,e.currentTarget);toast?.success("Comentário copiado!");}} style={{marginTop:6,padding:"6px 14px",borderRadius:6,border:"none",background:`${C.purple}15`,color:C.purple,cursor:"pointer",fontSize:10,fontWeight:700}}>📋 Copiar Comentário</button>
           </div>}
         </div>
       </div>}
@@ -276,7 +284,7 @@ export default function CommandCenter(){
         {aiResult.titleChange&&<div style={{background:`${C.blue}06`,borderRadius:12,border:`1px solid ${C.blue}20`,padding:14}}>
           <div style={{fontWeight:700,fontSize:13,color:C.blue}}>✍️ TROCAR TÍTULO</div>
           <div style={{fontSize:13,fontWeight:600,marginTop:4}}>{aiResult.titleSuggestion}</div>
-          <button onClick={()=>{cp(aiResult.titleSuggestion);toast?.success("Copiado!");}} style={{marginTop:6,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.blue}30`,background:`${C.blue}08`,color:C.blue,cursor:"pointer",fontSize:10}}>📋 Copiar</button>
+          <button onClick={e=>{cp(aiResult.titleSuggestion,e.currentTarget);toast?.success("Copiado!");}} style={{marginTop:6,padding:"4px 10px",borderRadius:6,border:`1px solid ${C.blue}30`,background:`${C.blue}08`,color:C.blue,cursor:"pointer",fontSize:10}}>📋 Copiar</button>
         </div>}
       </div>}
 

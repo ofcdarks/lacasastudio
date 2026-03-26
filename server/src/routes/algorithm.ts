@@ -357,6 +357,14 @@ Tags: ${v.tagCount||0}
 Titulo atual: "${v.title || ""}"
 ${v.avgDuration === 0 && isRecent ? "NOTA: AVD/WatchTime ainda indisponiveis (delay 48-72h)" : ""}
 
+REGRA DE IDIOMA CRITICA:
+- Detecte o idioma do titulo do video: "${v.title || ""}"
+- Se o titulo esta em espanhol → gere titleSuggestion, newDescription, newTags, pinnedComment em ESPANHOL
+- Se em portugues → gere em PORTUGUES
+- Se em ingles → gere em INGLES
+- O idioma dos campos copiaveis DEVE ser o MESMO idioma do video original
+- Apenas o campo "diagnosis" e "action" podem ser em portugues (interface do usuario)
+
 GERE ACOES COM TEXTOS PRONTOS PARA COPIAR. JSON:
 {
   "status": "🟢 Performando bem / 🟡 Precisa ajustes / 🔴 Baixo desempenho + motivo especifico",
@@ -369,10 +377,10 @@ GERE ACOES COM TEXTOS PRONTOS PARA COPIAR. JSON:
   "thumbChange": true/false,
   "thumbReason": "Motivo baseado nos dados",
   "titleChange": true/false,
-  "titleSuggestion": "Novo titulo COMPLETO pronto para copiar e colar no YouTube Studio",
-  "newDescription": "Descricao nova COMPLETA (5-10 linhas) otimizada para SEO, pronta para copiar e colar. Inclui hashtags.",
-  "newTags": "lista,de,tags,separadas,por,virgula,prontas,para,colar,no,youtube,studio",
-  "pinnedComment": "Texto do comentario fixado que aumenta engajamento — pronto para copiar",
+  "titleSuggestion": "Novo titulo COMPLETO no MESMO IDIOMA do video original — pronto para copiar e colar no YouTube Studio",
+  "newDescription": "Descricao nova COMPLETA (5-10 linhas) no MESMO IDIOMA do video, otimizada para SEO. Inclui hashtags.",
+  "newTags": "lista,de,tags,no,mesmo,idioma,do,video,separadas,por,virgula",
+  "pinnedComment": "Texto do comentario fixado no MESMO IDIOMA do video — aumenta engajamento",
   "layerPrediction": "Previsao de quando muda de camada",
   "whatToPost": "Conteudo complementar pra postar AGORA",
   "nextCheckIn": "Quando checar novamente",
