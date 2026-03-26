@@ -61,14 +61,30 @@ export default function MyAnalytics() {
   };
 
   const loadInsights = async () => {
-    if (!overview?.totals) { toast?.error("Carregue os dados primeiro"); return; }
     setInsightsLoading(true);
-    pg?.start("🧠 IA Analisando Tudo", ["Lendo métricas reais", "Analisando fontes de tráfego", "Cruzando termos de busca", "Comparando com período anterior", "Gerando plano de guerra"]);
+    pg?.start("🧠 IA Analisando Tudo", ["Lendo métricas reais", "Carregando vídeos", "Analisando fontes de tráfego", "Cruzando termos de busca", "Gerando plano de guerra"]);
     try {
+      // Auto-load overview if not loaded yet
+      let ov = overview;
+      if (!ov?.totals) {
+        ov = await api.overview(days);
+        setOverview(ov);
+        api.status().then(s => { if (s.channels?.length) setChannels(s.channels); }).catch(() => {});
+      }
+      if (!ov?.totals) { throw new Error("Carregue os dados primeiro (Overview)"); }
+
+      // Auto-load videos if not loaded yet
+      let vids = videos;
+      if (!vids?.length) {
+        const vData = await api.videos(days);
+        vids = Array.isArray(vData.videos) ? vData.videos : [];
+        setVideos(vids);
+      }
+
       const d = await api.aiInsights({
-        totals: overview.totals, growth: overview.growth, traffic: overview.traffic,
-        devices: overview.devices, countries: overview.countries, searches: overview.searches,
-        revenue: overview.revenue, videos: videos.slice(0, 8),
+        totals: ov.totals, growth: ov.growth, traffic: ov.traffic,
+        devices: ov.devices, countries: ov.countries, searches: ov.searches,
+        revenue: ov.revenue, videos: vids.slice(0, 8),
         channelName: selChannel?.channelName, period: days
       });
       if (d.error) throw new Error(d.error);

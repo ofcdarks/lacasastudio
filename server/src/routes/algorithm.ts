@@ -368,7 +368,7 @@ REGRA DE IDIOMA CRITICA:
 GERE ACOES COM TEXTOS PRONTOS PARA COPIAR. JSON:
 {
   "status": "🟢 Performando bem / 🟡 Precisa ajustes / 🔴 Baixo desempenho + motivo especifico",
-  "diagnosis": "3-4 frases analisando dados reais. ${isChannelMonetized ? "Canal ja monetizado, focar em otimizar receita e CTR." : ""}",
+  "diagnosis": "3-4 frases analisando dados reais. ${isChannelMonetized ? "Canal ja monetizado, focar em otimizar receita e engajamento." : ""}",
   "immediateActions": [
     {"action": "Acao especifica", "priority": "urgente", "timeNeeded": "5min", "copyText": "Texto exato para copiar e colar (titulo, descricao, tag, comentario fixado)"},
     {"action": "Segunda acao", "priority": "importante", "timeNeeded": "10min", "copyText": "Texto para copiar"},
