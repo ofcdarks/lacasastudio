@@ -1,129 +1,116 @@
 import { useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
-import { C } from "./UI";
 
 interface NavItem { path: string; label: string; icon: string; }
-interface NavGroup { label: string; color: string; items: NavItem[]; }
+interface NavGroup { label: string; items: NavItem[]; }
 
-const NAV_GROUPS: NavGroup[] = [
+/*
+ * Organização cronológica do fluxo de criação:
+ * 1. Início → 2. Canais → 3. Pesquisa → 4. Criação → 5. SEO
+ * 6. Publicação → 7. Analytics → 8. Shorts → 9. Negócios → 10. Recursos
+ */
+const NAV: NavGroup[] = [
   {
-    label: "VISÃO GERAL",
-    color: "#4B8DF8",
+    label: "Início",
     items: [
-      { path: "/", label: "Dashboard", icon: "📊" },
-      { path: "/command-center", label: "Command Center", icon: "🎮" },
+      { path: "/", label: "Dashboard", icon: "⊞" },
+      { path: "/gestao-canais", label: "Gestão de Canais", icon: "◎" },
     ],
   },
   {
-    label: "MEUS CANAIS",
-    color: "#22D35E",
+    label: "Pesquisa",
     items: [
-      { path: "/gestao-canais", label: "Gestão de Canais", icon: "📺" },
-      { path: "/pipeline", label: "Pipeline", icon: "🔄" },
-      { path: "/calendario", label: "Calendário", icon: "📅" },
-      { path: "/my-analytics", label: "Meu Analytics", icon: "📈" },
+      { path: "/research", label: "Research", icon: "◉" },
+      { path: "/videos-virais", label: "Vídeos Virais", icon: "▲" },
+      { path: "/nichos-virais", label: "Nichos Virais", icon: "◆" },
+      { path: "/insights-canal", label: "Insights de Canal", icon: "◫" },
+      { path: "/compare", label: "Comparar Canais", icon: "⇄" },
+      { path: "/canais-removidos", label: "Canais Removidos", icon: "△" },
+      { path: "/daily-ideas", label: "Ideias Diárias", icon: "✦" },
     ],
   },
   {
-    label: "BIBLIOTECA",
-    color: "#A855F7",
+    label: "Produção",
     items: [
-      { path: "/prompts", label: "Prompts", icon: "✨" },
-      { path: "/referencias", label: "Referências", icon: "💜" },
-      { path: "/templates", label: "Templates", icon: "📐" },
-      { path: "/ativos", label: "Ativos", icon: "📁" },
+      { path: "/ideas", label: "Quadro de Ideias", icon: "◈" },
+      { path: "/planner", label: "Planner", icon: "▦" },
+      { path: "/roteiro", label: "Roteiro", icon: "≡" },
+      { path: "/storyboard", label: "Storyboard", icon: "▣" },
+      { path: "/editor", label: "Editor", icon: "⊟" },
+      { path: "/thumbs", label: "Thumbnails", icon: "▧" },
+      { path: "/checklist", label: "Checklist", icon: "☑" },
+      { path: "/text-tools", label: "Ferramentas de Texto", icon: "¶" },
     ],
   },
   {
-    label: "FERRAMENTAS",
-    color: "#F5A623",
+    label: "SEO & Otimização",
     items: [
-      { path: "/text-tools", label: "Ferramentas de Texto", icon: "📝" },
-      { path: "/ideas", label: "Quadro de Ideias", icon: "💡" },
-      { path: "/planner", label: "Planner", icon: "📋" },
-      { path: "/storyboard", label: "Storyboard", icon: "🎞️" },
-      { path: "/roteiro", label: "Roteiro", icon: "📝" },
-      { path: "/editor", label: "Editor", icon: "✂️" },
-      { path: "/checklist", label: "Checklist", icon: "✅" },
-      { path: "/thumbs", label: "Thumbnails", icon: "🖼️" },
+      { path: "/seo", label: "Gerador SEO", icon: "⊕" },
+      { path: "/keywords", label: "Keywords", icon: "⌗" },
+      { path: "/tag-spy", label: "Tag Spy", icon: "◉" },
+      { path: "/seo-audit", label: "SEO Audit", icon: "⊘" },
+      { path: "/hooks", label: "Hooks", icon: "↪" },
+      { path: "/preditor", label: "Viral Predict", icon: "◎" },
+      { path: "/catalog", label: "Catálogo", icon: "▤" },
+      { path: "/hype", label: "Hype Strategy", icon: "⚡" },
     ],
   },
   {
-    label: "SEO & GROWTH",
-    color: "#06B6D4",
+    label: "Pipeline & Agenda",
     items: [
-      { path: "/seo", label: "Gerador SEO", icon: "🔍" },
-      { path: "/keywords", label: "Keywords", icon: "🔑" },
-      { path: "/tag-spy", label: "Tag Spy", icon: "🕵️" },
-      { path: "/seo-audit", label: "SEO Audit", icon: "📑" },
-      { path: "/catalog", label: "Catálogo", icon: "📚" },
-      { path: "/hooks", label: "Hooks", icon: "🪝" },
-      { path: "/preditor", label: "Viral Predict", icon: "🔮" },
-      { path: "/hype", label: "Hype Strategy", icon: "📣" },
+      { path: "/pipeline", label: "Pipeline", icon: "▶" },
+      { path: "/calendario", label: "Calendário", icon: "◧" },
+      { path: "/command-center", label: "Command Center", icon: "⊡" },
+      { path: "/streak", label: "Streak", icon: "⬥" },
     ],
   },
   {
-    label: "TENDÊNCIAS",
-    color: "#F04444",
+    label: "Analytics",
     items: [
-      { path: "/videos-virais", label: "Vídeos Virais", icon: "🔥" },
-      { path: "/nichos-virais", label: "Nichos Virais", icon: "🚀" },
-      { path: "/canais-removidos", label: "Canais Removidos", icon: "⚠️" },
-      { path: "/insights-canal", label: "Insights de Canal", icon: "📊" },
-      { path: "/research", label: "Research", icon: "🔎" },
-      { path: "/compare", label: "Comparar", icon: "⚖️" },
-      { path: "/daily-ideas", label: "Ideias Diárias", icon: "✨" },
+      { path: "/my-analytics", label: "Meu Canal", icon: "◩" },
+      { path: "/analytics", label: "Analytics Geral", icon: "▥" },
+      { path: "/analyzer", label: "Analyzer", icon: "⊙" },
+      { path: "/retention", label: "Retenção", icon: "◔" },
+      { path: "/ab-testing", label: "A/B Testing", icon: "⇔" },
+      { path: "/algoritmo", label: "Algoritmo", icon: "⬡" },
     ],
   },
   {
-    label: "ANALYTICS",
-    color: "#4B8DF8",
+    label: "Shorts",
     items: [
-      { path: "/analytics", label: "Analytics", icon: "📈" },
-      { path: "/analyzer", label: "Analyzer", icon: "🔬" },
-      { path: "/retention", label: "Retenção", icon: "⏱️" },
-      { path: "/ab-testing", label: "A/B Testing", icon: "🧪" },
-      { path: "/algoritmo", label: "Algoritmo", icon: "🤖" },
+      { path: "/shorts", label: "Gerador Shorts", icon: "▮" },
+      { path: "/shorts-clip", label: "Clipper", icon: "⊟" },
+      { path: "/shorts-optimizer", label: "Otimizador", icon: "◈" },
+      { path: "/repurpose", label: "Repurpose", icon: "↻" },
+      { path: "/community", label: "Comunidade", icon: "◎" },
     ],
   },
   {
-    label: "SHORTS & MULTI",
-    color: "#EC4899",
+    label: "Negócios",
     items: [
-      { path: "/shorts", label: "Shorts", icon: "📱" },
-      { path: "/shorts-clip", label: "Clipper", icon: "✂️" },
-      { path: "/shorts-optimizer", label: "Otimizador", icon: "⚡" },
-      { path: "/repurpose", label: "Repurpose", icon: "♻️" },
-      { path: "/community", label: "Comunidade", icon: "👥" },
+      { path: "/monetizar", label: "Monetize 360", icon: "◉" },
+      { path: "/orcamento", label: "Orçamento", icon: "▧" },
+      { path: "/metas", label: "Metas", icon: "◎" },
+      { path: "/equipe", label: "Equipe", icon: "◔" },
     ],
   },
   {
-    label: "NEGÓCIOS",
-    color: "#F5A623",
+    label: "Biblioteca",
     items: [
-      { path: "/monetizar", label: "Monetize 360", icon: "💰" },
-      { path: "/orcamento", label: "Orçamento", icon: "💳" },
-      { path: "/metas", label: "Metas", icon: "🎯" },
-      { path: "/streak", label: "Streak", icon: "🔥" },
-      { path: "/equipe", label: "Equipe", icon: "👤" },
+      { path: "/prompts", label: "Prompts", icon: "✦" },
+      { path: "/referencias", label: "Referências", icon: "⊞" },
+      { path: "/templates", label: "Templates", icon: "▦" },
+      { path: "/ativos", label: "Ativos", icon: "▣" },
     ],
   },
   {
-    label: "ACADEMIA",
-    color: "#14B8A6",
+    label: "Aprender",
     items: [
-      { path: "/treinamento", label: "Treinamento", icon: "🎓" },
-      { path: "/cursos", label: "Cursos", icon: "📚" },
-      { path: "/recursos", label: "Recursos", icon: "📦" },
-    ],
-  },
-  {
-    label: "SUPORTE",
-    color: "#6366F1",
-    items: [
-      { path: "/comunidade-suporte", label: "Comunidade & Suporte", icon: "🤝" },
-      { path: "/settings", label: "Configurações", icon: "⚙️" },
+      { path: "/treinamento", label: "Treinamento", icon: "◈" },
+      { path: "/cursos", label: "Cursos", icon: "▤" },
+      { path: "/recursos", label: "Recursos", icon: "◧" },
+      { path: "/comunidade-suporte", label: "Suporte", icon: "◎" },
     ],
   },
 ];
@@ -155,12 +142,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const isActive = useCallback((path: string) => {
     if (path === "/") return location.pathname === "/";
-    return location.pathname.startsWith(path);
+    return location.pathname === path || location.pathname.startsWith(path + "/");
   }, [location.pathname]);
 
   return (
     <>
-      {/* Mobile overlay */}
       <div className={`sidebar-overlay ${isOpen ? "show" : ""}`} onClick={onClose} aria-hidden="true" />
 
       <nav
@@ -175,56 +161,63 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         }}
       >
         {/* Logo */}
-        <div style={{ padding: "18px 18px 8px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #F04444, #FF6B6B)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff" }}>
-            D
+        <div
+          onClick={() => go("/")}
+          style={{
+            padding: "20px 16px 16px", display: "flex", alignItems: "center", gap: 11,
+            flexShrink: 0, cursor: "pointer", borderBottom: "1px solid var(--border)",
+          }}
+        >
+          <div style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: "linear-gradient(135deg, #F04444, #FF6B6B)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 16, fontWeight: 800, color: "#fff",
+            boxShadow: "0 2px 8px rgba(240,68,68,0.3)",
+          }}>
+            L
           </div>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)" }}>LaCasaStudio</div>
-            <div style={{ fontSize: 10, color: "var(--dim)" }}>v2.5 • YouTube OS</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.02em" }}>LaCasaStudio</div>
+            <div style={{ fontSize: 10, color: "var(--dim)", letterSpacing: "0.02em" }}>YouTube OS</div>
           </div>
         </div>
 
-        {/* Plan badge */}
-        <div style={{ padding: "4px 14px 12px" }}>
-          <div style={{
-            background: "linear-gradient(135deg, #4B8DF8, #6366F1)", borderRadius: 8,
-            padding: "8px 12px", display: "flex", alignItems: "center", gap: 8,
-          }}>
-            <span style={{ fontSize: 12 }}>✨</span>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>Pro</div>
-              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)" }}>Acesso completo</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Groups */}
-        <div style={{ flex: 1, padding: "0 10px 10px", overflowY: "auto" }}>
-          {NAV_GROUPS.map((group) => (
-            <div key={group.label} style={{ marginBottom: 2 }}>
+        {/* Navigation */}
+        <div style={{ flex: 1, padding: "8px 8px 8px", overflowY: "auto" }}>
+          {NAV.map((group) => (
+            <div key={group.label} style={{ marginBottom: 6 }}>
+              {/* Group header */}
               <button
                 onClick={() => toggleGroup(group.label)}
                 aria-expanded={!collapsed[group.label]}
-                aria-controls={`nav-group-${group.label}`}
                 style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: 8,
-                  padding: "7px 8px", border: "none", background: "transparent",
-                  color: group.color, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
-                  textTransform: "uppercase", cursor: "pointer", borderRadius: 6,
+                  width: "100%", display: "flex", alignItems: "center",
+                  padding: "6px 8px", border: "none", background: "transparent",
+                  cursor: "pointer", borderRadius: 6,
                 }}
               >
-                <span style={{ flex: 1, textAlign: "left" }}>{group.label}</span>
-                <span style={{ fontSize: 8, color: "var(--dim)", transform: collapsed[group.label] ? "rotate(-90deg)" : "rotate(0)", transition: "0.15s" }}>▼</span>
+                <span style={{
+                  flex: 1, textAlign: "left",
+                  fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                  textTransform: "uppercase", color: "var(--dim)",
+                }}>
+                  {group.label}
+                </span>
+                <span style={{
+                  fontSize: 8, color: "var(--dim)", opacity: 0.5,
+                  transform: collapsed[group.label] ? "rotate(-90deg)" : "rotate(0)",
+                  transition: "transform 0.2s",
+                }}>▼</span>
               </button>
 
+              {/* Group items */}
               <div
-                id={`nav-group-${group.label}`}
                 role="list"
                 style={{
                   overflow: "hidden",
-                  maxHeight: collapsed[group.label] ? 0 : `${group.items.length * 33}px`,
-                  transition: "max-height 0.25s ease",
+                  maxHeight: collapsed[group.label] ? 0 : `${group.items.length * 36}px`,
+                  transition: "max-height 0.2s ease",
                 }}
               >
                 {group.items.map((item) => {
@@ -236,16 +229,26 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       onClick={() => go(item.path)}
                       aria-current={active ? "page" : undefined}
                       style={{
-                        width: "100%", display: "flex", alignItems: "center", gap: 8,
-                        padding: "6px 8px 6px 12px", border: "none", borderRadius: 6,
-                        background: active ? `${group.color}14` : "transparent",
+                        width: "100%", display: "flex", alignItems: "center", gap: 10,
+                        padding: "8px 10px", border: "none", borderRadius: 8,
+                        background: active ? "rgba(255,255,255,0.06)" : "transparent",
                         color: active ? "var(--text)" : "var(--muted)",
-                        fontSize: 12, fontWeight: active ? 600 : 500,
-                        cursor: "pointer", transition: "all 0.15s",
-                        borderLeft: active ? `2px solid ${group.color}` : "2px solid transparent",
+                        fontSize: 13, fontWeight: active ? 600 : 400,
+                        cursor: "pointer", transition: "all 0.12s",
+                        letterSpacing: "-0.01em",
                       }}
+                      onMouseEnter={(e) => { if (!active) (e.currentTarget.style.background = "rgba(255,255,255,0.03)"); }}
+                      onMouseLeave={(e) => { if (!active) (e.currentTarget.style.background = "transparent"); }}
                     >
-                      <span style={{ fontSize: 13, width: 20, textAlign: "center" }}>{item.icon}</span>
+                      <span style={{
+                        width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 12, color: active ? "#fff" : "var(--dim)",
+                        background: active ? "rgba(240,68,68,0.15)" : "transparent",
+                        borderRadius: 6, flexShrink: 0,
+                        transition: "all 0.12s",
+                      }}>
+                        {item.icon}
+                      </span>
                       <span>{item.label}</span>
                     </button>
                   );
@@ -256,27 +259,32 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", gap: 8 }}>
-          <button
-            onClick={toggle}
-            aria-label={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
-            style={{
-              flex: 1, padding: "6px", borderRadius: 6, border: "1px solid var(--border)",
-              background: "var(--bg-hover)", color: "var(--muted)", cursor: "pointer",
-              fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            }}
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
+        <div style={{
+          padding: "10px 12px", borderTop: "1px solid var(--border)",
+          flexShrink: 0, display: "flex", gap: 6,
+        }}>
           <button
             onClick={() => go("/settings")}
             style={{
-              flex: 1, padding: "6px", borderRadius: 6, border: "1px solid var(--border)",
-              background: "var(--bg-hover)", color: "var(--muted)", cursor: "pointer",
-              fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              flex: 1, padding: "8px", borderRadius: 8,
+              border: "1px solid var(--border)", background: "transparent",
+              color: "var(--muted)", cursor: "pointer",
+              fontSize: 11, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
             }}
           >
-            ⚙️
+            ⚙ Configurações
+          </button>
+          <button
+            onClick={toggle}
+            aria-label={theme === "dark" ? "Tema claro" : "Tema escuro"}
+            style={{
+              width: 36, height: 36, borderRadius: 8,
+              border: "1px solid var(--border)", background: "transparent",
+              color: "var(--muted)", cursor: "pointer", fontSize: 14,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            {theme === "dark" ? "☀" : "☾"}
           </button>
         </div>
       </nav>
