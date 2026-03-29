@@ -58,17 +58,12 @@ const MultiLang = lazy(() => import("./pages/MultiLang"));
 const PrePublish = lazy(() => import("./pages/PrePublish"));
 const GestaoCanais = lazy(() => import("./pages/GestaoCanais"));
 const CanalDetalhe = lazy(() => import("./pages/CanalDetalhe"));
-const Prompts = lazy(() => import("./pages/Prompts"));
 const Referencias = lazy(() => import("./pages/Referencias"));
 const TextTools = lazy(() => import("./pages/TextTools"));
 const VideosVirais = lazy(() => import("./pages/VideosVirais"));
 const NichosVirais = lazy(() => import("./pages/NichosVirais"));
 const CanaisRemovidos = lazy(() => import("./pages/CanaisRemovidos"));
 const InsightsCanal = lazy(() => import("./pages/InsightsCanal"));
-const Treinamento = lazy(() => import("./pages/Treinamento"));
-const Cursos = lazy(() => import("./pages/Cursos"));
-const Recursos = lazy(() => import("./pages/Recursos"));
-const ComunidadeSuporte = lazy(() => import("./pages/ComunidadeSuporte"));
 
 function Layout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -197,17 +192,12 @@ export default function App() {
       <Route path="/calendario" element={<Layout><Calendario /></Layout>} />
       <Route path="/gestao-canais" element={<Layout><GestaoCanais /></Layout>} />
       <Route path="/canal/:id" element={<Layout><CanalDetalhe /></Layout>} />
-      <Route path="/prompts" element={<Layout><Prompts /></Layout>} />
       <Route path="/referencias" element={<Layout><Referencias /></Layout>} />
       <Route path="/text-tools" element={<Layout><TextTools /></Layout>} />
       <Route path="/videos-virais" element={<Layout><VideosVirais /></Layout>} />
       <Route path="/nichos-virais" element={<Layout><NichosVirais /></Layout>} />
       <Route path="/canais-removidos" element={<Layout><CanaisRemovidos /></Layout>} />
       <Route path="/insights-canal" element={<Layout><InsightsCanal /></Layout>} />
-      <Route path="/treinamento" element={<Layout><Treinamento /></Layout>} />
-      <Route path="/cursos" element={<Layout><Cursos /></Layout>} />
-      <Route path="/recursos" element={<Layout><Recursos /></Layout>} />
-      <Route path="/comunidade-suporte" element={<Layout><ComunidadeSuporte /></Layout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

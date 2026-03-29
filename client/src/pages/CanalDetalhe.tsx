@@ -144,18 +144,7 @@ export default function CanalDetalhe() {
       </div>
 
       {/* Quick Links Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
-        <Card style={{ padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${C.blue}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>💬</div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13, color: C.text }}>Prompts do Canal</div>
-              <div style={{ fontSize: 11, color: C.dim }}>0 prompts salvos</div>
-            </div>
-          </div>
-          <Btn onClick={() => nav("/prompts")} style={{ background: `${C.blue}12`, color: C.blue, padding: "7px 14px", borderRadius: 8, fontWeight: 600, fontSize: 11, border: `1px solid ${C.blue}25` }}>✏️ Gerenciar</Btn>
-        </Card>
-
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, marginBottom: 24 }}>
         <Card style={{ padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ width: 40, height: 40, borderRadius: 10, background: `${C.red}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🔖</div>
@@ -165,17 +154,6 @@ export default function CanalDetalhe() {
             </div>
           </div>
           <Btn onClick={() => nav("/referencias")} style={{ background: `${C.red}12`, color: C.red, padding: "7px 14px", borderRadius: 8, fontWeight: 600, fontSize: 11, border: `1px solid ${C.red}25` }}>✏️ Gerenciar</Btn>
-        </Card>
-
-        <Card style={{ padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${C.purple}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🎤</div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13, color: C.text }}>Narrador</div>
-              <div style={{ fontSize: 11, color: C.dim }}>Não configurado</div>
-            </div>
-          </div>
-          <Btn onClick={() => nav("/settings")} style={{ background: `${C.purple}12`, color: C.purple, padding: "7px 14px", borderRadius: 8, fontWeight: 600, fontSize: 11, border: `1px solid ${C.purple}25` }}>⚙️ Configurar</Btn>
         </Card>
       </div>
 

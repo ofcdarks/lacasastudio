@@ -98,19 +98,9 @@ const NAV: NavGroup[] = [
   {
     label: "Biblioteca",
     items: [
-      { path: "/prompts", label: "Prompts", icon: "✦" },
       { path: "/referencias", label: "Referências", icon: "⊞" },
       { path: "/templates", label: "Templates", icon: "▦" },
       { path: "/ativos", label: "Ativos", icon: "▣" },
-    ],
-  },
-  {
-    label: "Aprender",
-    items: [
-      { path: "/treinamento", label: "Treinamento", icon: "◈" },
-      { path: "/cursos", label: "Cursos", icon: "▤" },
-      { path: "/recursos", label: "Recursos", icon: "◧" },
-      { path: "/comunidade-suporte", label: "Suporte", icon: "◎" },
     ],
   },
 ];
