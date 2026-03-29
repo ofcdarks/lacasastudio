@@ -28,6 +28,7 @@ export default function GestaoCanais() {
       setChannels((p) => [...p, ch]);
       setShowCreate(false);
       setForm({ name: "", color: "#EF4444", icon: "📺", subs: "" });
+      nav(`/canal/${ch.id}`);
     } catch (e) { alert(e.message); }
     finally { setSaving(false); }
   };
@@ -82,7 +83,7 @@ export default function GestaoCanais() {
           {channels.map((ch) => {
             const vids = channelVideos(ch.id);
             return (
-              <Card key={ch.id} hov style={{ cursor: "pointer" }} onClick={() => nav(`/pipeline?channel=${ch.id}`)}>
+              <Card key={ch.id} hov style={{ cursor: "pointer" }} onClick={() => nav(`/canal/${ch.id}`)}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                   <div style={{ width: 44, height: 44, borderRadius: 12, background: `${ch.color || C.red}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{ch.icon || "📺"}</div>
                   <div style={{ flex: 1 }}>

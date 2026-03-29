@@ -57,6 +57,7 @@ const Editor = lazy(() => import("./pages/Editor"));
 const MultiLang = lazy(() => import("./pages/MultiLang"));
 const PrePublish = lazy(() => import("./pages/PrePublish"));
 const GestaoCanais = lazy(() => import("./pages/GestaoCanais"));
+const CanalDetalhe = lazy(() => import("./pages/CanalDetalhe"));
 const Prompts = lazy(() => import("./pages/Prompts"));
 const Referencias = lazy(() => import("./pages/Referencias"));
 const GeradorAudio = lazy(() => import("./pages/GeradorAudio"));
@@ -196,6 +197,7 @@ export default function App() {
       <Route path="/editor" element={<Layout><Editor /></Layout>} />
       <Route path="/calendario" element={<Layout><Calendario /></Layout>} />
       <Route path="/gestao-canais" element={<Layout><GestaoCanais /></Layout>} />
+      <Route path="/canal/:id" element={<Layout><CanalDetalhe /></Layout>} />
       <Route path="/prompts" element={<Layout><Prompts /></Layout>} />
       <Route path="/referencias" element={<Layout><Referencias /></Layout>} />
       <Route path="/gerador-audio" element={<Layout><GeradorAudio /></Layout>} />
