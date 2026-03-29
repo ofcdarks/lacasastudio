@@ -39,7 +39,6 @@ const NAV_GROUPS: NavGroup[] = [
     label: "FERRAMENTAS",
     color: "#F5A623",
     items: [
-      { path: "/gerador-audio", label: "Gerador de Áudio", icon: "🎤" },
       { path: "/text-tools", label: "Ferramentas de Texto", icon: "📝" },
       { path: "/ideas", label: "Quadro de Ideias", icon: "💡" },
       { path: "/planner", label: "Planner", icon: "📋" },

@@ -175,7 +175,7 @@ export default function CanalDetalhe() {
               <div style={{ fontSize: 11, color: C.dim }}>Não configurado</div>
             </div>
           </div>
-          <Btn onClick={() => nav("/gerador-audio")} style={{ background: `${C.purple}12`, color: C.purple, padding: "7px 14px", borderRadius: 8, fontWeight: 600, fontSize: 11, border: `1px solid ${C.purple}25` }}>⚙️ Configurar</Btn>
+          <Btn onClick={() => nav("/settings")} style={{ background: `${C.purple}12`, color: C.purple, padding: "7px 14px", borderRadius: 8, fontWeight: 600, fontSize: 11, border: `1px solid ${C.purple}25` }}>⚙️ Configurar</Btn>
         </Card>
       </div>
 

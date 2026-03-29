@@ -110,6 +110,66 @@ router.post("/analyze", async (req: any, res: Response, next: NextFunction) => {
   } catch (err: any) { console.error("youtube error:", err.message); if (err.message?.includes("API Key") || err.message?.includes("Limite") || err.message?.includes("Configure") || err.message?.includes("Tente")) { res.status(400).json({ error: err.message }); return; } res.status(500).json({ error: err.message || "Erro interno. Tente novamente." }); }
 });
 
+// Search viral videos with filters
+router.post("/search-viral", async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const key = await getYtKey();
+    if (!key) { res.status(400).json({ error: "Configure sua YouTube API Key nas Configurações" }); return; }
+
+    const { query, minDuration, minViews, publishedAfter, publishedBefore, datePreset } = req.body as any;
+    if (!query) { res.status(400).json({ error: "Query obrigatória" }); return; }
+
+    // Build publishedAfter from datePreset
+    let afterDate = publishedAfter || "";
+    if (!afterDate && datePreset) {
+      const now = Date.now();
+      const day = 86400000;
+      if (datePreset === "Última semana") afterDate = new Date(now - 7 * day).toISOString();
+      else if (datePreset === "Último mês") afterDate = new Date(now - 30 * day).toISOString();
+      else if (datePreset === "Últimos 3 meses") afterDate = new Date(now - 90 * day).toISOString();
+      else if (datePreset === "Último ano") afterDate = new Date(now - 365 * day).toISOString();
+    }
+
+    let url = `${YT_API}/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=50&order=viewCount&key=${key}`;
+    if (afterDate) url += `&publishedAfter=${new Date(afterDate).toISOString()}`;
+    if (publishedBefore) url += `&publishedBefore=${new Date(publishedBefore).toISOString()}`;
+    if (minDuration && minDuration > 240) url += `&videoDuration=long`;
+    else if (minDuration && minDuration > 60) url += `&videoDuration=medium`;
+
+    const searchResp = await fetch(url);
+    if (!searchResp.ok) { const e = await searchResp.text(); res.status(searchResp.status).json({ error: `YouTube API: ${e}` }); return; }
+    const searchData = await searchResp.json() as any;
+
+    const videoIds = (searchData.items || []).map((i: any) => i.id?.videoId).filter(Boolean).join(",");
+    if (!videoIds) { res.json({ videos: [] }); return; }
+
+    const vResp = await fetch(`${YT_API}/videos?part=snippet,statistics,contentDetails&id=${videoIds}&key=${key}`);
+    const vData = await vResp.json() as any;
+
+    let videos = (vData.items || []).map((v: any) => {
+      const dur = v.contentDetails?.duration || "PT0S";
+      const m = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      const secs = (Number(m?.[1]||0)*3600) + (Number(m?.[2]||0)*60) + Number(m?.[3]||0);
+      return {
+        videoId: v.id, title: v.snippet?.title, channelTitle: v.snippet?.channelTitle,
+        channelId: v.snippet?.channelId,
+        thumbnail: v.snippet?.thumbnails?.medium?.url || "",
+        viewCount: Number(v.statistics?.viewCount || 0),
+        likeCount: Number(v.statistics?.likeCount || 0),
+        commentCount: Number(v.statistics?.commentCount || 0),
+        publishedAt: v.snippet?.publishedAt, durationSecs: secs,
+      };
+    });
+
+    // Apply client-side filters
+    if (minDuration) videos = videos.filter((v: any) => v.durationSecs >= Number(minDuration));
+    if (minViews) videos = videos.filter((v: any) => v.viewCount >= Number(minViews));
+
+    videos.sort((a: any, b: any) => b.viewCount - a.viewCount);
+    res.json({ videos: videos.slice(0, 50) });
+  } catch (err: any) { console.error("youtube search-viral error:", err.message); res.status(500).json({ error: err.message || "Erro interno" }); }
+});
+
 export default router;
 
 // YouTube Analytics OAuth foundation (requires Google Cloud Console setup)

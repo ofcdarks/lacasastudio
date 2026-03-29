@@ -17,11 +17,33 @@ export default function InsightsCanal() {
     if (!url.trim()) return;
     setLoading(true); setError(""); setResult(null);
     try {
+      // 1. Get channel info
       const handle = url.replace(/.*\/(c\/|channel\/|@)?/, "").replace(/\?.*/, "").trim();
       const channelData = await youtubeApi.channel(handle);
-      const videos = await youtubeApi.videos(channelData.id, videoCount);
-      const analyzed = await youtubeApi.analyze({ channelId: channelData.id, videos, orderBy });
-      setResult({ channel: channelData, videos, analysis: analyzed });
+      if (!channelData || !channelData.id) throw new Error("Canal não encontrado");
+
+      // 2. Get videos
+      const max = Math.min(videoCount, 50); // YouTube API max per request
+      const videos = await youtubeApi.videos(channelData.id, max);
+
+      // Sort videos
+      const sorted = [...(videos || [])];
+      if (orderBy === "popular") sorted.sort((a, b) => (b.stats?.views || 0) - (a.stats?.views || 0));
+
+      // 3. Analyze via AI — use correct payload format
+      let analysis = null;
+      try {
+        analysis = await youtubeApi.analyze({
+          channelName: channelData.title,
+          stats: channelData.stats,
+          recentVideos: sorted.slice(0, 15),
+        });
+      } catch (e) {
+        // AI analysis is optional — show videos even if AI fails
+        analysis = { error: "Análise IA indisponível. Configure a API Key de IA nas Configurações." };
+      }
+
+      setResult({ channel: channelData, videos: sorted, analysis });
     } catch (e) { setError(e.message || "Erro ao analisar canal"); }
     finally { setLoading(false); }
   };
@@ -37,9 +59,7 @@ export default function InsightsCanal() {
       </div>
 
       <Card color={C.orange} style={{ padding: 14, marginBottom: 20 }}>
-        <div style={{ fontSize: 12, color: C.orange }}>
-          ⚠️ Esta funcionalidade utiliza a API do YouTube. Certifique-se de ter uma API Key configurada.
-        </div>
+        <div style={{ fontSize: 12, color: C.orange }}>⚠️ Esta funcionalidade utiliza a API do YouTube. Certifique-se de ter uma API Key configurada.</div>
       </Card>
 
       <Card style={{ padding: 24, marginBottom: 20 }}>
@@ -51,8 +71,8 @@ export default function InsightsCanal() {
         <div style={{ marginBottom: 18 }}>
           <label style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 10, display: "block" }}>Quantidade de Vídeos</label>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-            {[50, 100, 200, 300].map((n) => (
-              <button key={n} onClick={() => setVideoCount(n)} style={{ padding: "16px 8px", borderRadius: 12, border: `2px solid ${videoCount === n ? C.cyan : C.border}`, background: videoCount === n ? `${C.cyan}08` : C.bg, cursor: "pointer", textAlign: "center", transition: "all 0.2s" }}>
+            {[10, 25, 50, 100].map((n) => (
+              <button key={n} onClick={() => setVideoCount(n)} style={{ padding: "16px 8px", borderRadius: 12, border: `2px solid ${videoCount === n ? C.cyan : C.border}`, background: videoCount === n ? `${C.cyan}08` : C.bg, cursor: "pointer", textAlign: "center" }}>
                 <div style={{ fontSize: 24, fontWeight: 800, color: C.text }}>{n}</div>
                 <div style={{ fontSize: 11, color: C.dim }}>vídeos</div>
               </button>
@@ -63,18 +83,16 @@ export default function InsightsCanal() {
         <div style={{ marginBottom: 22 }}>
           <label style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 10, display: "block" }}>Ordenar Por</label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <button onClick={() => setOrderBy("recent")} style={{ padding: "14px", borderRadius: 12, border: `2px solid ${orderBy === "recent" ? C.cyan : C.border}`, background: orderBy === "recent" ? `${C.cyan}08` : C.bg, cursor: "pointer", textAlign: "left" }}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: C.text }}>Mais Recentes</div>
-              <div style={{ fontSize: 11, color: C.dim }}>Últimos postados</div>
-            </button>
-            <button onClick={() => setOrderBy("popular")} style={{ padding: "14px", borderRadius: 12, border: `2px solid ${orderBy === "popular" ? C.cyan : C.border}`, background: orderBy === "popular" ? `${C.cyan}08` : C.bg, cursor: "pointer", textAlign: "left" }}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: C.text }}>Mais Populares</div>
-              <div style={{ fontSize: 11, color: C.dim }}>Maior número de views</div>
-            </button>
+            {[{ k: "recent", l: "Mais Recentes", d: "Últimos postados" }, { k: "popular", l: "Mais Populares", d: "Maior número de views" }].map((o) => (
+              <button key={o.k} onClick={() => setOrderBy(o.k)} style={{ padding: "14px", borderRadius: 12, border: `2px solid ${orderBy === o.k ? C.cyan : C.border}`, background: orderBy === o.k ? `${C.cyan}08` : C.bg, cursor: "pointer", textAlign: "left" }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: C.text }}>{o.l}</div>
+                <div style={{ fontSize: 11, color: C.dim }}>{o.d}</div>
+              </button>
+            ))}
           </div>
         </div>
 
-        <Btn onClick={analyze} disabled={loading || !url.trim()} style={{ width: "100%", padding: "16px", borderRadius: 12, background: loading ? C.dim : "linear-gradient(135deg, #A855F7, #6366F1)", color: "#fff", fontWeight: 700, fontSize: 15, textAlign: "center", opacity: loading ? 0.6 : 1 }}>
+        <Btn onClick={analyze} disabled={loading || !url.trim()} style={{ width: "100%", padding: "16px", borderRadius: 12, background: loading ? C.dim : "linear-gradient(135deg, #A855F7, #6366F1)", color: "#fff", fontWeight: 700, fontSize: 15, textAlign: "center", opacity: loading || !url.trim() ? 0.5 : 1 }}>
           {loading ? "⏳ Analisando..." : "✨ Iniciar Análise"}
         </Btn>
       </Card>
@@ -93,49 +111,60 @@ export default function InsightsCanal() {
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-              <div style={{ textAlign: "center", padding: 12, background: `${C.blue}08`, borderRadius: 10 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: C.blue }}>{fmt(result.channel.stats?.subscribers)}</div>
-                <div style={{ fontSize: 10, color: C.dim }}>Inscritos</div>
-              </div>
-              <div style={{ textAlign: "center", padding: 12, background: `${C.green}08`, borderRadius: 10 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: C.green }}>{fmt(result.channel.stats?.views)}</div>
-                <div style={{ fontSize: 10, color: C.dim }}>Views Totais</div>
-              </div>
-              <div style={{ textAlign: "center", padding: 12, background: `${C.purple}08`, borderRadius: 10 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: C.purple }}>{result.channel.stats?.videos}</div>
-                <div style={{ fontSize: 10, color: C.dim }}>Vídeos</div>
-              </div>
-              <div style={{ textAlign: "center", padding: 12, background: `${C.orange}08`, borderRadius: 10 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: C.orange }}>{result.videos?.length || 0}</div>
-                <div style={{ fontSize: 10, color: C.dim }}>Analisados</div>
-              </div>
+              <div style={{ textAlign: "center", padding: 12, background: `${C.blue}08`, borderRadius: 10 }}><div style={{ fontSize: 22, fontWeight: 800, color: C.blue }}>{fmt(result.channel.stats?.subscribers)}</div><div style={{ fontSize: 10, color: C.dim }}>Inscritos</div></div>
+              <div style={{ textAlign: "center", padding: 12, background: `${C.green}08`, borderRadius: 10 }}><div style={{ fontSize: 22, fontWeight: 800, color: C.green }}>{fmt(result.channel.stats?.views)}</div><div style={{ fontSize: 10, color: C.dim }}>Views Totais</div></div>
+              <div style={{ textAlign: "center", padding: 12, background: `${C.purple}08`, borderRadius: 10 }}><div style={{ fontSize: 22, fontWeight: 800, color: C.purple }}>{result.channel.stats?.videos}</div><div style={{ fontSize: 10, color: C.dim }}>Vídeos</div></div>
+              <div style={{ textAlign: "center", padding: 12, background: `${C.orange}08`, borderRadius: 10 }}><div style={{ fontSize: 22, fontWeight: 800, color: C.orange }}>{result.videos?.length || 0}</div><div style={{ fontSize: 10, color: C.dim }}>Analisados</div></div>
             </div>
           </Card>
 
-          {/* Analysis results */}
-          {result.analysis && (
-            <Card style={{ padding: 20 }}>
+          {/* AI Analysis */}
+          {result.analysis && !result.analysis.error && (
+            <Card style={{ padding: 20, marginBottom: 16 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 14 }}>📊 Análise Inteligente</div>
-              <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
-                {typeof result.analysis === "string" ? result.analysis : JSON.stringify(result.analysis, null, 2)}
-              </div>
+              {result.analysis.summary && <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 14 }}>{result.analysis.summary}</p>}
+              {result.analysis.strengths && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.green, marginBottom: 6 }}>💪 Pontos Fortes:</div>
+                  {result.analysis.strengths.filter(Boolean).map((s, i) => <div key={i} style={{ fontSize: 12, color: C.muted, padding: "2px 0" }}>• {s}</div>)}
+                </div>
+              )}
+              {result.analysis.improvements && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.orange, marginBottom: 6 }}>📈 Melhorias:</div>
+                  {result.analysis.improvements.filter(Boolean).map((s, i) => <div key={i} style={{ fontSize: 12, color: C.muted, padding: "2px 0" }}>• {s}</div>)}
+                </div>
+              )}
+              {result.analysis.nextVideoIdeas && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.blue, marginBottom: 6 }}>💡 Ideias para Próximos Vídeos:</div>
+                  {result.analysis.nextVideoIdeas.filter(Boolean).map((s, i) => <div key={i} style={{ fontSize: 12, color: C.muted, padding: "2px 0" }}>• {s}</div>)}
+                </div>
+              )}
+              {result.analysis.growthScore && (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: `${C.purple}08`, borderRadius: 10 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: C.purple }}>Growth Score:</span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: C.text }}>{result.analysis.growthScore}/100</span>
+                </div>
+              )}
             </Card>
           )}
+          {result.analysis?.error && <Card color={C.orange} style={{ padding: 14, marginBottom: 16 }}><span style={{ fontSize: 12, color: C.orange }}>ℹ️ {result.analysis.error}</span></Card>}
 
           {/* Videos grid */}
           {result.videos?.length > 0 && (
-            <div style={{ marginTop: 20 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 14 }}>🎬 Vídeos Analisados ({result.videos.length})</div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 14 }}>🎬 Vídeos ({result.videos.length})</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
-                {result.videos.slice(0, 20).map((v, i) => (
-                  <Card key={i} hov style={{ padding: 0, overflow: "hidden", cursor: "pointer" }} onClick={() => window.open(`https://youtube.com/watch?v=${v.videoId || v.id}`, "_blank")}>
+                {result.videos.slice(0, 30).map((v, i) => (
+                  <Card key={i} hov style={{ padding: 0, overflow: "hidden", cursor: "pointer" }} onClick={() => window.open(`https://youtube.com/watch?v=${v.id}`, "_blank")}>
                     {v.thumbnail && <img src={v.thumbnail} alt="" style={{ width: "100%", height: 150, objectFit: "cover" }} />}
                     <div style={{ padding: 12 }}>
                       <div style={{ fontWeight: 600, fontSize: 12, color: C.text, marginBottom: 6, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.title}</div>
                       <div style={{ display: "flex", gap: 10, fontSize: 10, color: C.dim }}>
-                        <span>👁️ {fmt(v.viewCount || v.views)}</span>
-                        <span>👍 {fmt(v.likeCount || v.likes)}</span>
-                        <span>💬 {fmt(v.commentCount || v.comments)}</span>
+                        <span>👁️ {fmt(v.stats?.views)}</span>
+                        <span>👍 {fmt(v.stats?.likes)}</span>
+                        <span>💬 {fmt(v.stats?.comments)}</span>
                       </div>
                     </div>
                   </Card>

@@ -60,7 +60,6 @@ const GestaoCanais = lazy(() => import("./pages/GestaoCanais"));
 const CanalDetalhe = lazy(() => import("./pages/CanalDetalhe"));
 const Prompts = lazy(() => import("./pages/Prompts"));
 const Referencias = lazy(() => import("./pages/Referencias"));
-const GeradorAudio = lazy(() => import("./pages/GeradorAudio"));
 const TextTools = lazy(() => import("./pages/TextTools"));
 const VideosVirais = lazy(() => import("./pages/VideosVirais"));
 const NichosVirais = lazy(() => import("./pages/NichosVirais"));
@@ -200,7 +199,6 @@ export default function App() {
       <Route path="/canal/:id" element={<Layout><CanalDetalhe /></Layout>} />
       <Route path="/prompts" element={<Layout><Prompts /></Layout>} />
       <Route path="/referencias" element={<Layout><Referencias /></Layout>} />
-      <Route path="/gerador-audio" element={<Layout><GeradorAudio /></Layout>} />
       <Route path="/text-tools" element={<Layout><TextTools /></Layout>} />
       <Route path="/videos-virais" element={<Layout><VideosVirais /></Layout>} />
       <Route path="/nichos-virais" element={<Layout><NichosVirais /></Layout>} />
