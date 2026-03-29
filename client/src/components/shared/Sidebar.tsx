@@ -1,39 +1,58 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { C } from "./UI";
 
 interface NavItem { path: string; label: string; icon: string; }
-
-interface NavGroup { label: string; icon: string; items: NavItem[]; }
+interface NavGroup { label: string; color: string; items: NavItem[]; }
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    label: "Principal",
-    icon: "🏠",
+    label: "VISÃO GERAL",
+    color: "#4B8DF8",
     items: [
       { path: "/", label: "Dashboard", icon: "📊" },
       { path: "/command-center", label: "Command Center", icon: "🎮" },
     ],
   },
   {
-    label: "Produção",
-    icon: "🎬",
+    label: "MEUS CANAIS",
+    color: "#22D35E",
     items: [
-      { path: "/planner", label: "Planner", icon: "📋" },
+      { path: "/gestao-canais", label: "Gestão de Canais", icon: "📺" },
       { path: "/pipeline", label: "Pipeline", icon: "🔄" },
+      { path: "/calendario", label: "Calendário", icon: "📅" },
+      { path: "/my-analytics", label: "Meu Analytics", icon: "📈" },
+    ],
+  },
+  {
+    label: "BIBLIOTECA",
+    color: "#A855F7",
+    items: [
+      { path: "/prompts", label: "Prompts", icon: "✨" },
+      { path: "/referencias", label: "Referências", icon: "💜" },
+      { path: "/templates", label: "Templates", icon: "📐" },
+      { path: "/ativos", label: "Ativos", icon: "📁" },
+    ],
+  },
+  {
+    label: "FERRAMENTAS",
+    color: "#F5A623",
+    items: [
+      { path: "/gerador-audio", label: "Gerador de Áudio", icon: "🎤" },
+      { path: "/text-tools", label: "Ferramentas de Texto", icon: "📝" },
+      { path: "/ideas", label: "Quadro de Ideias", icon: "💡" },
+      { path: "/planner", label: "Planner", icon: "📋" },
       { path: "/storyboard", label: "Storyboard", icon: "🎞️" },
       { path: "/roteiro", label: "Roteiro", icon: "📝" },
       { path: "/editor", label: "Editor", icon: "✂️" },
       { path: "/checklist", label: "Checklist", icon: "✅" },
       { path: "/thumbs", label: "Thumbnails", icon: "🖼️" },
-      { path: "/calendario", label: "Calendário", icon: "📅" },
-      { path: "/streak", label: "Streak", icon: "🔥" },
     ],
   },
   {
-    label: "SEO & Growth",
-    icon: "🚀",
+    label: "SEO & GROWTH",
+    color: "#06B6D4",
     items: [
       { path: "/seo", label: "Gerador SEO", icon: "🔍" },
       { path: "/keywords", label: "Keywords", icon: "🔑" },
@@ -46,11 +65,23 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Analytics",
-    icon: "📈",
+    label: "TENDÊNCIAS",
+    color: "#F04444",
+    items: [
+      { path: "/videos-virais", label: "Vídeos Virais", icon: "🔥" },
+      { path: "/nichos-virais", label: "Nichos Virais", icon: "🚀" },
+      { path: "/canais-removidos", label: "Canais Removidos", icon: "⚠️" },
+      { path: "/insights-canal", label: "Insights de Canal", icon: "📊" },
+      { path: "/research", label: "Research", icon: "🔎" },
+      { path: "/compare", label: "Comparar", icon: "⚖️" },
+      { path: "/daily-ideas", label: "Ideias Diárias", icon: "✨" },
+    ],
+  },
+  {
+    label: "ANALYTICS",
+    color: "#4B8DF8",
     items: [
       { path: "/analytics", label: "Analytics", icon: "📈" },
-      { path: "/my-analytics", label: "Meus Canais", icon: "📺" },
       { path: "/analyzer", label: "Analyzer", icon: "🔬" },
       { path: "/retention", label: "Retenção", icon: "⏱️" },
       { path: "/ab-testing", label: "A/B Testing", icon: "🧪" },
@@ -58,18 +89,8 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Pesquisa",
-    icon: "🔎",
-    items: [
-      { path: "/research", label: "Research", icon: "🔎" },
-      { path: "/compare", label: "Comparar", icon: "⚖️" },
-      { path: "/ideas", label: "Ideias", icon: "💡" },
-      { path: "/daily-ideas", label: "Ideias Diárias", icon: "✨" },
-    ],
-  },
-  {
-    label: "Shorts & Multi",
-    icon: "📱",
+    label: "SHORTS & MULTI",
+    color: "#EC4899",
     items: [
       { path: "/shorts", label: "Shorts", icon: "📱" },
       { path: "/shorts-clip", label: "Clipper", icon: "✂️" },
@@ -79,21 +100,30 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Negócios",
-    icon: "💰",
+    label: "NEGÓCIOS",
+    color: "#F5A623",
     items: [
       { path: "/monetizar", label: "Monetize 360", icon: "💰" },
       { path: "/orcamento", label: "Orçamento", icon: "💳" },
       { path: "/metas", label: "Metas", icon: "🎯" },
+      { path: "/streak", label: "Streak", icon: "🔥" },
+      { path: "/equipe", label: "Equipe", icon: "👤" },
     ],
   },
   {
-    label: "Workspace",
-    icon: "🗂️",
+    label: "ACADEMIA",
+    color: "#14B8A6",
     items: [
-      { path: "/ativos", label: "Ativos", icon: "📁" },
-      { path: "/templates", label: "Templates", icon: "📐" },
-      { path: "/equipe", label: "Equipe", icon: "👤" },
+      { path: "/treinamento", label: "Treinamento", icon: "🎓" },
+      { path: "/cursos", label: "Cursos", icon: "📚" },
+      { path: "/recursos", label: "Recursos", icon: "📦" },
+    ],
+  },
+  {
+    label: "SUPORTE",
+    color: "#6366F1",
+    items: [
+      { path: "/comunidade-suporte", label: "Comunidade & Suporte", icon: "🤝" },
       { path: "/settings", label: "Configurações", icon: "⚙️" },
     ],
   },
@@ -146,9 +176,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         }}
       >
         {/* Logo */}
-        <div style={{ padding: "18px 18px 12px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #F04444, #FF6B6B)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
-            🏠
+        <div style={{ padding: "18px 18px 8px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #F04444, #FF6B6B)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff" }}>
+            D
           </div>
           <div>
             <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)" }}>LaCasaStudio</div>
@@ -156,10 +186,24 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
         </div>
 
+        {/* Plan badge */}
+        <div style={{ padding: "4px 14px 12px" }}>
+          <div style={{
+            background: "linear-gradient(135deg, #4B8DF8, #6366F1)", borderRadius: 8,
+            padding: "8px 12px", display: "flex", alignItems: "center", gap: 8,
+          }}>
+            <span style={{ fontSize: 12 }}>✨</span>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>Pro</div>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)" }}>Acesso completo</div>
+            </div>
+          </div>
+        </div>
+
         {/* Groups */}
-        <div style={{ flex: 1, padding: "4px 10px", overflowY: "auto" }}>
+        <div style={{ flex: 1, padding: "0 10px 10px", overflowY: "auto" }}>
           {NAV_GROUPS.map((group) => (
-            <div key={group.label} style={{ marginBottom: 4 }}>
+            <div key={group.label} style={{ marginBottom: 2 }}>
               <button
                 onClick={() => toggleGroup(group.label)}
                 aria-expanded={!collapsed[group.label]}
@@ -167,13 +211,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 style={{
                   width: "100%", display: "flex", alignItems: "center", gap: 8,
                   padding: "7px 8px", border: "none", background: "transparent",
-                  color: "var(--dim)", fontSize: 10, fontWeight: 700, letterSpacing: "0.05em",
+                  color: group.color, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
                   textTransform: "uppercase", cursor: "pointer", borderRadius: 6,
                 }}
               >
-                <span style={{ fontSize: 11 }}>{group.icon}</span>
                 <span style={{ flex: 1, textAlign: "left" }}>{group.label}</span>
-                <span style={{ fontSize: 8, transform: collapsed[group.label] ? "rotate(-90deg)" : "rotate(0)", transition: "0.15s" }}>▼</span>
+                <span style={{ fontSize: 8, color: "var(--dim)", transform: collapsed[group.label] ? "rotate(-90deg)" : "rotate(0)", transition: "0.15s" }}>▼</span>
               </button>
 
               <div
@@ -181,7 +224,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 role="list"
                 style={{
                   overflow: "hidden",
-                  maxHeight: collapsed[group.label] ? 0 : `${group.items.length * 34}px`,
+                  maxHeight: collapsed[group.label] ? 0 : `${group.items.length * 33}px`,
                   transition: "max-height 0.25s ease",
                 }}
               >
@@ -195,12 +238,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       aria-current={active ? "page" : undefined}
                       style={{
                         width: "100%", display: "flex", alignItems: "center", gap: 8,
-                        padding: "6px 8px 6px 24px", border: "none", borderRadius: 6,
-                        background: active ? "var(--red)" + "14" : "transparent",
+                        padding: "6px 8px 6px 12px", border: "none", borderRadius: 6,
+                        background: active ? `${group.color}14` : "transparent",
                         color: active ? "var(--text)" : "var(--muted)",
                         fontSize: 12, fontWeight: active ? 600 : 500,
                         cursor: "pointer", transition: "all 0.15s",
-                        borderLeft: active ? `2px solid var(--red)` : "2px solid transparent",
+                        borderLeft: active ? `2px solid ${group.color}` : "2px solid transparent",
                       }}
                     >
                       <span style={{ fontSize: 13, width: 20, textAlign: "center" }}>{item.icon}</span>
@@ -214,7 +257,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: "10px 14px", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", gap: 8 }}>
+        <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", gap: 8 }}>
           <button
             onClick={toggle}
             aria-label={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
@@ -224,7 +267,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
             }}
           >
-            {theme === "dark" ? "☀️ Claro" : "🌙 Escuro"}
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+          <button
+            onClick={() => go("/settings")}
+            style={{
+              flex: 1, padding: "6px", borderRadius: 6, border: "1px solid var(--border)",
+              background: "var(--bg-hover)", color: "var(--muted)", cursor: "pointer",
+              fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            }}
+          >
+            ⚙️
           </button>
         </div>
       </nav>

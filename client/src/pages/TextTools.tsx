@@ -1,0 +1,194 @@
+// @ts-nocheck
+import { useState, useMemo } from "react";
+import { C, Card, Btn } from "../components/shared/UI";
+
+const TABS = ["Editor de Texto", "Gerador de SRT", "Divisor de Texto"];
+
+function TextEditor() {
+  const [text, setText] = useState("");
+  const chars = text.length;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const paragraphs = text.trim() ? text.split(/\n\s*\n/).filter(Boolean).length : 0;
+  const wpm = { normal: 155, slow: 130, fast: 185 };
+  const time = (r) => { const s = Math.ceil((words / r) * 60); const m = Math.floor(s / 60); return m > 0 ? `${m}m ${s % 60}s` : `${s}s`; };
+
+  const downloadSRT = () => {
+    if (!text.trim()) return;
+    const lines = text.split("\n").filter(Boolean);
+    let srt = ""; let i = 1; let t = 0;
+    for (const line of lines) {
+      const dur = Math.ceil((line.split(/\s+/).length / wpm.normal) * 60);
+      const fmtT = (s) => { const h = String(Math.floor(s / 3600)).padStart(2, "0"); const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0"); const sec = String(s % 60).padStart(2, "0"); return `${h}:${m}:${sec},000`; };
+      srt += `${i}\n${fmtT(t)} --> ${fmtT(t + dur)}\n${line}\n\n`;
+      t += dur; i++;
+    }
+    const blob = new Blob([srt], { type: "text/srt" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "legenda.srt"; a.click();
+  };
+
+  const downloadTXT = () => {
+    if (!text.trim()) return;
+    const blob = new Blob([text], { type: "text/plain" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "texto.txt"; a.click();
+  };
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 20 }}>
+        <Card color={C.blue} style={{ padding: 16 }}><div style={{ fontSize: 10, fontWeight: 700, color: C.dim, textTransform: "uppercase", marginBottom: 4 }}>Caracteres</div><div style={{ fontSize: 28, fontWeight: 800, color: C.blue }}>{chars}</div></Card>
+        <Card color={C.purple} style={{ padding: 16 }}><div style={{ fontSize: 10, fontWeight: 700, color: C.dim, textTransform: "uppercase", marginBottom: 4 }}>Palavras</div><div style={{ fontSize: 28, fontWeight: 800, color: C.purple }}>{words}</div></Card>
+        <Card color={C.red} style={{ padding: 16 }}><div style={{ fontSize: 10, fontWeight: 700, color: C.dim, textTransform: "uppercase", marginBottom: 4 }}>Parágrafos</div><div style={{ fontSize: 28, fontWeight: 800, color: C.red }}>{paragraphs}</div></Card>
+      </div>
+
+      <Card style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <span style={{ fontSize: 14 }}>✨</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>Tempo de Narração (padrão)</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+          <Card color={C.green} style={{ padding: 14 }}><div style={{ fontSize: 11, fontWeight: 600, color: C.green }}>Normal</div><div style={{ fontSize: 24, fontWeight: 800, color: C.text }}>{time(wpm.normal)}</div><div style={{ fontSize: 10, color: C.dim }}>{wpm.normal} palavras/min</div></Card>
+          <Card color={C.orange} style={{ padding: 14 }}><div style={{ fontSize: 11, fontWeight: 600, color: C.orange }}>Lento/Pausado</div><div style={{ fontSize: 24, fontWeight: 800, color: C.text }}>{time(wpm.slow)}</div><div style={{ fontSize: 10, color: C.dim }}>{wpm.slow} palavras/min</div></Card>
+          <Card color={C.cyan} style={{ padding: 14 }}><div style={{ fontSize: 11, fontWeight: 600, color: C.cyan }}>Rápido/Dinâmico</div><div style={{ fontSize: 24, fontWeight: 800, color: C.text }}>{time(wpm.fast)}</div><div style={{ fontSize: 10, color: C.dim }}>{wpm.fast} palavras/min</div></Card>
+        </div>
+      </Card>
+
+      <Card>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>Área de Texto</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn onClick={downloadSRT} style={{ background: C.red, color: "#fff", padding: "8px 16px", borderRadius: 8, fontWeight: 600, fontSize: 11 }}>⬇️ Baixar SRT</Btn>
+            <Btn onClick={downloadTXT} style={{ background: `${C.dim}20`, color: C.muted, padding: "8px 16px", borderRadius: 8, fontWeight: 600, fontSize: 11, border: `1px solid ${C.border}` }}>📄 Baixar TXT</Btn>
+          </div>
+        </div>
+        <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Digite ou cole seu texto aqui..." rows={16} style={{ width: "100%", padding: 16, borderRadius: 12, border: `1px solid ${C.border}`, background: C.bg, color: C.text, fontSize: 14, lineHeight: 1.8, outline: "none", resize: "vertical" }} />
+      </Card>
+
+      <Card color={C.blue} style={{ marginTop: 20, padding: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.blue, marginBottom: 8 }}>ℹ️ Dicas de Uso</div>
+        <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.8 }}>
+          • Cada parágrafo (separado por linha em branco) vira uma legenda com tempo calculado automaticamente<br/>
+          • Baixe o texto puro sem formatação adicional<br/>
+          • Calculado com base em velocidades padrão de fala (155 palavras/min para normal)<br/>
+          • Separe com linha dupla (Enter duas vezes) para melhor organização no SRT
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function SRTGenerator() {
+  const [text, setText] = useState("");
+  const [maxChars, setMaxChars] = useState(42);
+  const [wpm, setWpm] = useState(155);
+  const [preview, setPreview] = useState("");
+
+  const generate = () => {
+    if (!text.trim()) return;
+    const lines = text.split("\n").filter(Boolean);
+    let srt = ""; let i = 1; let t = 0;
+    for (const line of lines) {
+      const chunks = [];
+      let current = "";
+      for (const word of line.split(/\s+/)) {
+        if ((current + " " + word).trim().length > maxChars && current) { chunks.push(current.trim()); current = word; }
+        else current = (current + " " + word).trim();
+      }
+      if (current) chunks.push(current);
+      for (const chunk of chunks) {
+        const dur = Math.max(1, Math.ceil((chunk.split(/\s+/).length / wpm) * 60));
+        const fmtT = (s) => { const h = String(Math.floor(s / 3600)).padStart(2, "0"); const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0"); const sec = String(Math.floor(s % 60)).padStart(2, "0"); const ms = String(Math.floor((s % 1) * 1000)).padStart(3, "0"); return `${h}:${m}:${sec},${ms}`; };
+        srt += `${i}\n${fmtT(t)} --> ${fmtT(t + dur)}\n${chunk}\n\n`;
+        t += dur; i++;
+      }
+    }
+    setPreview(srt);
+  };
+
+  const download = () => {
+    if (!preview) return;
+    const blob = new Blob([preview], { type: "text/srt" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "legenda.srt"; a.click();
+  };
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
+        <div><label style={{ fontSize: 11, fontWeight: 600, color: C.dim, display: "block", marginBottom: 6 }}>Max caracteres por linha</label><input type="number" value={maxChars} onChange={(e) => setMaxChars(+e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.bgCard, color: C.text, fontSize: 13, outline: "none" }} /></div>
+        <div><label style={{ fontSize: 11, fontWeight: 600, color: C.dim, display: "block", marginBottom: 6 }}>Palavras por minuto</label><input type="number" value={wpm} onChange={(e) => setWpm(+e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.bgCard, color: C.text, fontSize: 13, outline: "none" }} /></div>
+      </div>
+      <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Cole o texto da narração aqui..." rows={10} style={{ width: "100%", padding: 14, borderRadius: 10, border: `1px solid ${C.border}`, background: C.bgCard, color: C.text, fontSize: 13, lineHeight: 1.7, outline: "none", resize: "vertical", marginBottom: 14 }} />
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <Btn onClick={generate} style={{ background: C.blue, color: "#fff", padding: "10px 24px", borderRadius: 10, fontWeight: 700 }}>⚡ Gerar SRT</Btn>
+        {preview && <Btn onClick={download} style={{ background: `${C.green}15`, color: C.green, padding: "10px 24px", borderRadius: 10, fontWeight: 700, border: `1px solid ${C.green}30` }}>⬇️ Baixar SRT</Btn>}
+      </div>
+      {preview && <pre style={{ background: C.bg, padding: 16, borderRadius: 10, border: `1px solid ${C.border}`, color: C.muted, fontSize: 11, lineHeight: 1.8, maxHeight: 400, overflow: "auto", whiteSpace: "pre-wrap" }}>{preview}</pre>}
+    </div>
+  );
+}
+
+function TextDivider() {
+  const [text, setText] = useState("");
+  const [maxChars, setMaxChars] = useState(2000);
+  const parts = useMemo(() => {
+    if (!text.trim()) return [];
+    const result = []; let current = "";
+    for (const para of text.split("\n")) {
+      if ((current + "\n" + para).length > maxChars && current) { result.push(current.trim()); current = para; }
+      else current = (current ? current + "\n" : "") + para;
+    }
+    if (current.trim()) result.push(current.trim());
+    return result;
+  }, [text, maxChars]);
+
+  const copy = (t) => navigator.clipboard.writeText(t);
+
+  return (
+    <div>
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: C.dim, display: "block", marginBottom: 6 }}>Limite de caracteres por parte</label>
+        <input type="number" value={maxChars} onChange={(e) => setMaxChars(+e.target.value)} style={{ width: 200, padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.bgCard, color: C.text, fontSize: 13, outline: "none" }} />
+      </div>
+      <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Cole o texto longo aqui para dividir..." rows={8} style={{ width: "100%", padding: 14, borderRadius: 10, border: `1px solid ${C.border}`, background: C.bgCard, color: C.text, fontSize: 13, lineHeight: 1.7, outline: "none", resize: "vertical", marginBottom: 14 }} />
+      {parts.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{parts.length} partes geradas</div>
+          {parts.map((p, i) => (
+            <Card key={i} style={{ padding: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: C.blue }}>Parte {i + 1} • {p.length} chars</span>
+                <button onClick={() => copy(p)} style={{ background: `${C.blue}15`, color: C.blue, border: "none", padding: "4px 12px", borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>📋 Copiar</button>
+              </div>
+              <pre style={{ fontSize: 11, color: C.muted, lineHeight: 1.6, whiteSpace: "pre-wrap", maxHeight: 120, overflow: "auto" }}>{p}</pre>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function TextTools() {
+  const [tab, setTab] = useState(0);
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: `${C.blue}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📝</div>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: 0 }}>Ferramentas de Texto</h1>
+            <p style={{ fontSize: 12, color: C.dim, margin: 0 }}>Editor, gerador de legendas e divisor de texto em um só lugar</p>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 4, background: C.bgCard, borderRadius: 10, border: `1px solid ${C.border}`, padding: 4 }}>
+          {TABS.map((t, i) => (
+            <button key={t} onClick={() => setTab(i)} style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: tab === i ? `${C.blue}15` : "transparent", color: tab === i ? C.blue : C.muted, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+              {i === 0 ? "✏️" : i === 1 ? "🎬" : "✂️"} {t}
+            </button>
+          ))}
+        </div>
+      </div>
+      {tab === 0 && <TextEditor />}
+      {tab === 1 && <SRTGenerator />}
+      {tab === 2 && <TextDivider />}
+    </div>
+  );
+}
