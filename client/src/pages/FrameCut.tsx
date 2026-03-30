@@ -74,9 +74,43 @@ export default function FrameCut() {
   // Tab
   const [tab, setTab] = useState<"local" | "youtube">("local");
 
-  // Load download dir on mount
+  // Cookies
+  const [cookiesActive, setCookiesActive] = useState(false);
+  const [cookiesDate, setCookiesDate] = useState<string | null>(null);
+  const [cookiesUploading, setCookiesUploading] = useState(false);
+
+  const fetchCookiesStatus = () => {
+    fetch(`${API}/cookies-status`).then(r => safeJson(r)).then(d => {
+      setCookiesActive(!!d.active);
+      setCookiesDate(d.updatedAt || null);
+    }).catch(() => {});
+  };
+
+  const uploadCookies = async (file: File) => {
+    setCookiesUploading(true);
+    try {
+      const form = new FormData();
+      form.append("cookies", file);
+      const r = await fetch(`${API}/upload-cookies`, { method: "POST", headers: { Authorization: `Bearer ${tk()}` }, body: form });
+      const data = await safeJson(r);
+      if (data.active) { setCookiesActive(true); setCookiesDate(new Date().toISOString()); toast?.success(data.message || "Cookies enviados!"); }
+      else { toast?.error(data.error || "Erro ao enviar cookies"); }
+    } catch (e: any) { toast?.error(e.message || "Erro ao enviar"); }
+    setCookiesUploading(false);
+  };
+
+  const removeCookies = async () => {
+    try {
+      await fetch(`${API}/cookies`, { method: "DELETE", headers: hdr() });
+      setCookiesActive(false); setCookiesDate(null);
+      toast?.success("Cookies removidos");
+    } catch {}
+  };
+
+  // Load download dir + cookies status on mount
   useEffect(() => {
     fetch(`${API}/download-dir`).then(r => safeJson(r)).then(d => setDlDir(d.dir)).catch(() => {});
+    fetchCookiesStatus();
   }, []);
 
   // ─── VIDEO LOAD ───
@@ -341,6 +375,41 @@ export default function FrameCut() {
           <p style={{ textAlign: "center", color: "#505068", fontSize: "0.82rem" }}>Clique na área acima ou arraste um vídeo</p>
         ) : (
           <div>
+            {/* Cookies Banner */}
+            <div style={{ marginBottom: 18, padding: "14px 16px", borderRadius: 10, border: `1px solid ${cookiesActive ? "#1a4a3a" : "#3a2a10"}`, background: cookiesActive ? "rgba(46,196,182,0.06)" : "rgba(244,162,97,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: "1.1rem" }}>{cookiesActive ? "🟢" : "🟡"}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: "0.82rem", color: cookiesActive ? "#2ec4b6" : "#f4a261" }}>
+                      {cookiesActive ? "Cookies ativos" : "Sem cookies (pode bloquear)"}
+                    </div>
+                    <div style={{ fontSize: "0.7rem", color: "#505068", marginTop: 2 }}>
+                      {cookiesActive && cookiesDate
+                        ? `Enviado em ${new Date(cookiesDate).toLocaleDateString("pt-BR")} às ${new Date(cookiesDate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                        : "Envie cookies.txt do YouTube para evitar bloqueio anti-bot"
+                      }
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  <label style={{ ...s.btn2, padding: "6px 12px", fontSize: "0.72rem", cursor: cookiesUploading ? "wait" : "pointer", opacity: cookiesUploading ? 0.5 : 1 }}>
+                    {cookiesUploading ? "⏳" : "📤"} {cookiesActive ? "Atualizar" : "Enviar"}
+                    <input type="file" accept=".txt" style={{ display: "none" }} disabled={cookiesUploading}
+                      onChange={e => { if (e.target.files?.[0]) uploadCookies(e.target.files[0]); e.target.value = ""; }} />
+                  </label>
+                  {cookiesActive && (
+                    <button onClick={removeCookies} style={{ ...s.btn2, padding: "6px 10px", fontSize: "0.72rem", color: "#e63946" }}>✕</button>
+                  )}
+                </div>
+              </div>
+              {!cookiesActive && (
+                <div style={{ marginTop: 10, padding: "10px 12px", background: "#101016", borderRadius: 8, fontSize: "0.72rem", color: "#8a8aa0", lineHeight: 1.6 }}>
+                  <strong style={{ color: "#f4a261" }}>Como obter:</strong> Instale a extensão <strong>"Get cookies.txt LOCALLY"</strong> no Chrome, acesse youtube.com logado, clique na extensão e exporte. Depois envie o arquivo aqui.
+                </div>
+              )}
+            </div>
+
             {/* Step 1: URL */}
             <div style={{ marginBottom: 18 }}>
               <Label t="1. Cole a URL do vídeo" />

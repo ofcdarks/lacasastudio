@@ -5,6 +5,7 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 import crypto from "crypto";
+import multer from "multer";
 
 const router = Router();
 
@@ -13,9 +14,22 @@ const genId = () => crypto.randomBytes(4).toString("hex");
 // ─── State ───
 const jobs: Record<string, any> = {};
 let downloadDir = process.env.FRAMECUT_DIR || path.join(os.homedir(), "Downloads");
+let cookiesFile = process.env.FRAMECUT_COOKIES || "";
 
 // Ensure dir exists
 try { if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir, { recursive: true }); } catch {}
+
+// Auto-detect cookies file in common locations
+if (!cookiesFile) {
+  const candidates = [
+    path.join(os.homedir(), "cookies.txt"),
+    path.join(os.homedir(), "Downloads", "cookies.txt"),
+    "/app/data/cookies.txt",
+  ];
+  for (const c of candidates) {
+    try { if (fs.existsSync(c)) { cookiesFile = c; break; } } catch {}
+  }
+}
 
 // ─── Helpers ───
 function getDownloadDir() { return downloadDir; }
@@ -66,7 +80,31 @@ function readSubFile(filepath: string) {
   return lines;
 }
 
-function spawnJob(id: string, cmd: string, args: string[], cwd: string) {
+// ─── Download strategies (tried in order on bot-block) ───
+const STRATEGIES = [
+  { name: "web_creator", extArgs: "youtube:player_client=web_creator" },
+  { name: "ios", extArgs: "youtube:player_client=ios" },
+  { name: "tv_embedded", extArgs: "youtube:player_client=tv_embedded" },
+  { name: "mweb", extArgs: "youtube:player_client=mweb" },
+];
+
+function buildBaseArgs(): string[] {
+  const args = [
+    "--newline", "--no-colors", "--ignore-errors", "--no-warnings",
+    "--retries", "10", "--fragment-retries", "10", "--extractor-retries", "5",
+    "--socket-timeout", "30", "--concurrent-fragments", "4",
+    "--geo-bypass", "--geo-bypass-country", "BR",
+    "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "--add-header", "Accept-Language:pt-BR,pt;q=0.9,en;q=0.8",
+  ];
+  // Add cookies if available
+  if (cookiesFile && fs.existsSync(cookiesFile)) {
+    args.push("--cookies", cookiesFile);
+  }
+  return args;
+}
+
+function spawnJob(id: string, cmd: string, args: string[], cwd: string, retryCtx?: { strategyIndex: number; baseArgs: string[]; formatArgs: string[]; url: string }) {
   const job = jobs[id];
   job.status = "running";
   let sawBotBlock = false;
@@ -84,7 +122,6 @@ function spawnJob(id: string, cmd: string, args: string[], cwd: string) {
     const lower = line.toLowerCase();
     if (
       lower.includes("sign in to confirm you’re not a bot") ||
-      lower.includes("sign in to confirm you're not a bot") ||
       lower.includes("use --cookies-from-browser or --cookies")
     ) {
       sawBotBlock = true;
@@ -106,11 +143,33 @@ function spawnJob(id: string, cmd: string, args: string[], cwd: string) {
       if (job.expectedFile && fs.existsSync(job.expectedFile)) {
         job.status = "done"; job.progress = 100; job.filepath = job.expectedFile;
         job.output.push(`\n[FrameCut] ⚠️ Processo reportou erro, mas arquivo encontrado.`);
+      } else if (sawBotBlock && retryCtx && retryCtx.strategyIndex < STRATEGIES.length - 1) {
+        // ─── Auto-retry with next strategy ───
+        const nextIdx = retryCtx.strategyIndex + 1;
+        const next = STRATEGIES[nextIdx];
+        job.output.push(`\n[FrameCut] ⚠️ Bot detectado. Tentando estratégia: ${next.name}...`);
+        job.progress = 0;
+
+        const retryArgs = [
+          ...retryCtx.baseArgs,
+          "--extractor-args", next.extArgs,
+          ...retryCtx.formatArgs,
+          retryCtx.url,
+        ];
+        job.output.push(`[FrameCut] > yt-dlp (${next.name})\n`);
+        spawnJob(id, "yt-dlp", retryArgs, cwd, { ...retryCtx, strategyIndex: nextIdx });
+        return; // don’t finalize yet
       } else {
         job.status = "error";
         if (sawBotBlock) {
-          job.output.push(`\n[FrameCut] ⚠️ YouTube bloqueou a requisição (anti-bot). Tentamos modo resiliente sem cookies, mas este vídeo exigiu autenticação.`);
-          job.output.push(`[FrameCut] Dica: tente novamente em alguns minutos ou com outro vídeo/qualidade.`);
+          const hasCookies = cookiesFile && fs.existsSync(cookiesFile);
+          job.output.push(`\n[FrameCut] ⚠️ YouTube bloqueou todas as estratégias de download.`);
+          if (!hasCookies) {
+            job.output.push(`[FrameCut] 💡 Solução: exporte seus cookies do YouTube no navegador (extensão "Get cookies.txt LOCALLY") e salve como cookies.txt em ${path.join(os.homedir(), "cookies.txt")} ou /app/data/cookies.txt`);
+            job.output.push(`[FrameCut] Ou use o endpoint POST /api/framecut/set-cookies para definir o caminho.`);
+          } else {
+            job.output.push(`[FrameCut] 💡 Cookies encontrados em ${cookiesFile}, mas podem estar expirados. Re-exporte do navegador.`);
+          }
         }
         job.output.push(`\n[FrameCut] ❌ Erro (código ${code})`);
       }
@@ -188,22 +247,9 @@ router.post("/download", (req: Request, res: Response) => {
   const id = genId();
   jobs[id] = { status: "starting", output: [`[FrameCut] Pasta: ${dlDir}`, `[FrameCut] Baixando...`], progress: 0, filepath: null, findExts: null, expectedFile: null };
 
-  const args: string[] = [
-    "--newline",
-    "--no-colors",
-    "--ignore-errors",
-    "--no-warnings",
-    "--retries", "10",
-    "--fragment-retries", "10",
-    "--extractor-retries", "5",
-    "--socket-timeout", "20",
-    "--concurrent-fragments", "4",
-    "--geo-bypass",
-    "--geo-bypass-country", "BR",
-    "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "--add-header", "Accept-Language:pt-BR,pt;q=0.9,en;q=0.8",
-    "--extractor-args", "youtube:player_client=android,web;skip=dash,hls"
-  ];
+  const baseArgs = buildBaseArgs();
+  const strategy = STRATEGIES[0];
+  const formatArgs: string[] = [];
 
   if (type === "video") {
     const fmtMap: Record<string, string> = {
@@ -212,20 +258,20 @@ router.post("/download", (req: Request, res: Response) => {
       "720": "bestvideo[height<=720]+bestaudio/best",
       "480": "bestvideo[height<=480]+bestaudio/best"
     };
-    args.push("-f", fmtMap[quality] || fmtMap["1080"], "--merge-output-format", "mp4", "-o", path.join(dlDir, "%(title)s.%(ext)s"));
+    formatArgs.push("-f", fmtMap[quality] || fmtMap["1080"], "--merge-output-format", "mp4", "-o", path.join(dlDir, "%(title)s.%(ext)s"));
     jobs[id].findExts = [".mp4",".webm",".mkv"];
   } else if (type === "subs") {
-    args.push("--write-auto-sub", "--sub-lang", "pt,en,es", "--skip-download", "-o", path.join(dlDir, "%(title)s.%(ext)s"));
+    formatArgs.push("--write-auto-sub", "--sub-lang", "pt,en,es", "--skip-download", "-o", path.join(dlDir, "%(title)s.%(ext)s"));
     jobs[id].findExts = [".srt",".vtt",".ass"];
   } else if (type === "thumb") {
-    args.push("--write-thumbnail", "--skip-download", "--convert-thumbnails", "jpg", "-o", path.join(dlDir, "%(title)s.%(ext)s"));
+    formatArgs.push("--write-thumbnail", "--skip-download", "--convert-thumbnails", "jpg", "-o", path.join(dlDir, "%(title)s.%(ext)s"));
     jobs[id].findExts = [".jpg",".png",".webp"];
   }
 
-  args.push(url);
-  jobs[id].output.push(`[FrameCut] > yt-dlp ${args.join(" ")}\n`);
+  const args = [...baseArgs, "--extractor-args", strategy.extArgs, ...formatArgs, url];
+  jobs[id].output.push(`[FrameCut] > yt-dlp (${strategy.name})${cookiesFile ? " +cookies" : ""}\n`);
 
-  spawnJob(id, "yt-dlp", args, dlDir);
+  spawnJob(id, "yt-dlp", args, dlDir, { strategyIndex: 0, baseArgs, formatArgs, url });
   res.json({ job_id: id });
 });
 
@@ -285,6 +331,69 @@ router.get("/serve-video", (req: Request, res: Response) => {
 router.post("/set-dir", (req: Request, res: Response) => {
   if (req.body.dir) downloadDir = req.body.dir;
   res.json({ dir: downloadDir });
+});
+
+// Set cookies file path
+router.post("/set-cookies", (req: Request, res: Response) => {
+  const { path: p } = req.body;
+  if (!p) return res.status(400).json({ error: "Caminho vazio" });
+  if (!fs.existsSync(p)) return res.status(400).json({ error: "Arquivo não encontrado" });
+  cookiesFile = p;
+  res.json({ cookies: cookiesFile, active: true, message: "Cookies configurados com sucesso" });
+});
+
+// Upload cookies.txt file
+const cookiesDir = process.env.NODE_ENV === "production" ? "/app/data" : path.join(os.homedir());
+const cookiesUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      if (!fs.existsSync(cookiesDir)) fs.mkdirSync(cookiesDir, { recursive: true });
+      cb(null, cookiesDir);
+    },
+    filename: (_req, _file, cb) => cb(null, "cookies.txt"),
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  fileFilter: (_req, file, cb) => {
+    if (file.originalname.endsWith(".txt") || file.mimetype === "text/plain") cb(null, true);
+    else cb(new Error("Apenas arquivos .txt são aceitos"));
+  },
+});
+
+router.post("/upload-cookies", cookiesUpload.single("cookies"), (req: Request, res: Response) => {
+  if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });
+  const filePath = path.join(cookiesDir, "cookies.txt");
+  // Validate it looks like a Netscape cookies file
+  try {
+    const content = fs.readFileSync(filePath, "utf-8");
+    const lines = content.split("\n").filter(l => l.trim() && !l.startsWith("#"));
+    if (lines.length < 1) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ error: "Arquivo vazio ou inválido" });
+    }
+  } catch {
+    return res.status(400).json({ error: "Erro ao ler arquivo" });
+  }
+  cookiesFile = filePath;
+  res.json({ active: true, path: cookiesFile, message: "Cookies enviados com sucesso!" });
+});
+
+// Remove cookies
+router.delete("/cookies", (_req: Request, res: Response) => {
+  if (cookiesFile && fs.existsSync(cookiesFile)) {
+    try { fs.unlinkSync(cookiesFile); } catch {}
+  }
+  cookiesFile = "";
+  res.json({ active: false, path: null, message: "Cookies removidos" });
+});
+
+// Get cookies status
+router.get("/cookies-status", (_req: Request, res: Response) => {
+  const active = !!(cookiesFile && fs.existsSync(cookiesFile));
+  let updatedAt: string | null = null;
+  if (active) {
+    try { updatedAt = fs.statSync(cookiesFile).mtime.toISOString(); } catch {}
+  }
+  res.json({ path: cookiesFile || null, active, updatedAt });
 });
 
 export default router;
