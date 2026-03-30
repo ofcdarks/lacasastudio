@@ -38,6 +38,7 @@ import researchRoutes from "./routes/research";
 import chatRoutes from "./routes/chat";
 import competitiveRoutes from "./routes/competitive";
 import algorithmRoutes from "./routes/algorithm";
+import framecutRoutes from "./routes/framecut";
 
 const app = express();
 const PORT = Number(env.PORT) || 3000;
@@ -130,6 +131,7 @@ app.use("/api/research", researchRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/competitive", competitiveRoutes);
 app.use("/api/algorithm", algorithmRoutes);
+app.use("/api/framecut", framecutRoutes);
 
 // Health check with expanded metrics
 app.get("/api/health", (_: Request, res: Response) => {
