@@ -155,36 +155,36 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div
           onClick={() => go("/")}
           style={{
-            padding: "20px 16px 16px", display: "flex", alignItems: "center", gap: 11,
+            padding: "18px 18px 16px", display: "flex", alignItems: "center", gap: 12,
             flexShrink: 0, cursor: "pointer", borderBottom: "1px solid var(--border)",
           }}
         >
           <div style={{
-            width: 34, height: 34, borderRadius: 10,
+            width: 36, height: 36, borderRadius: 10,
             background: "linear-gradient(135deg, #F04444, #FF6B6B)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 16, fontWeight: 800, color: "#fff",
-            boxShadow: "0 2px 8px rgba(240,68,68,0.3)",
+            boxShadow: "0 2px 12px rgba(240,68,68,0.25)",
           }}>
             L
           </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.02em" }}>LaCasaStudio</div>
-            <div style={{ fontSize: 10, color: "var(--dim)", letterSpacing: "0.02em" }}>YouTube OS</div>
+            <div style={{ fontSize: 10, color: "var(--dim)", letterSpacing: "0.04em", fontWeight: 500 }}>YouTube Production OS</div>
           </div>
         </div>
 
         {/* Navigation */}
-        <div style={{ flex: 1, padding: "8px 8px 8px", overflowY: "auto" }}>
+        <div style={{ flex: 1, padding: "10px 10px 10px", overflowY: "auto" }}>
           {NAV.map((group) => (
-            <div key={group.label} style={{ marginBottom: 6 }}>
+            <div key={group.label} style={{ marginBottom: 4 }}>
               {/* Group header */}
               <button
                 onClick={() => toggleGroup(group.label)}
                 aria-expanded={!collapsed[group.label]}
                 style={{
                   width: "100%", display: "flex", alignItems: "center",
-                  padding: "6px 8px", border: "none", background: "transparent",
+                  padding: "8px 8px 4px", border: "none", background: "transparent",
                   cursor: "pointer", borderRadius: 6,
                 }}
               >
@@ -208,7 +208,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 style={{
                   overflow: "hidden",
                   maxHeight: collapsed[group.label] ? 0 : `${group.items.length * 36}px`,
-                  transition: "max-height 0.2s ease",
+                  transition: "max-height 0.25s ease",
                 }}
               >
                 {group.items.map((item) => {
@@ -221,26 +221,34 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       aria-current={active ? "page" : undefined}
                       style={{
                         width: "100%", display: "flex", alignItems: "center", gap: 10,
-                        padding: "8px 10px", border: "none", borderRadius: 8,
-                        background: active ? "rgba(255,255,255,0.06)" : "transparent",
+                        padding: "7px 10px", border: "none", borderRadius: 8,
+                        background: active ? "rgba(240,68,68,0.08)" : "transparent",
                         color: active ? "var(--text)" : "var(--muted)",
                         fontSize: 13, fontWeight: active ? 600 : 400,
                         cursor: "pointer", transition: "all 0.12s",
-                        letterSpacing: "-0.01em",
+                        letterSpacing: "-0.01em", position: "relative",
                       }}
-                      onMouseEnter={(e) => { if (!active) (e.currentTarget.style.background = "rgba(255,255,255,0.03)"); }}
-                      onMouseLeave={(e) => { if (!active) (e.currentTarget.style.background = "transparent"); }}
+                      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                     >
+                      {/* Active indicator bar */}
+                      {active && (
+                        <div style={{
+                          position: "absolute", left: 0, top: "20%", bottom: "20%", width: 3,
+                          borderRadius: "0 3px 3px 0",
+                          background: "linear-gradient(180deg, #F04444, #FF6B6B)",
+                        }} />
+                      )}
                       <span style={{
-                        width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 12, color: active ? "#fff" : "var(--dim)",
-                        background: active ? "rgba(240,68,68,0.15)" : "transparent",
+                        width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 12, color: active ? "#F04444" : "var(--dim)",
+                        background: active ? "rgba(240,68,68,0.10)" : "transparent",
                         borderRadius: 6, flexShrink: 0,
                         transition: "all 0.12s",
                       }}>
                         {item.icon}
                       </span>
-                      <span>{item.label}</span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>
                     </button>
                   );
                 })}
@@ -251,17 +259,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Footer */}
         <div style={{
-          padding: "10px 12px", borderTop: "1px solid var(--border)",
-          flexShrink: 0, display: "flex", gap: 6,
+          padding: "12px 14px", borderTop: "1px solid var(--border)",
+          flexShrink: 0, display: "flex", gap: 8,
         }}>
           <button
             onClick={() => go("/settings")}
             style={{
-              flex: 1, padding: "8px", borderRadius: 8,
+              flex: 1, padding: "9px 12px", borderRadius: 8,
               border: "1px solid var(--border)", background: "transparent",
               color: "var(--muted)", cursor: "pointer",
-              fontSize: 11, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              fontSize: 12, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              transition: "all 0.15s",
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "var(--border-h)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border)"; }}
           >
             ⚙ Configurações
           </button>
@@ -269,11 +280,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             onClick={toggle}
             aria-label={theme === "dark" ? "Tema claro" : "Tema escuro"}
             style={{
-              width: 36, height: 36, borderRadius: 8,
+              width: 38, height: 38, borderRadius: 8,
               border: "1px solid var(--border)", background: "transparent",
-              color: "var(--muted)", cursor: "pointer", fontSize: 14,
+              color: "var(--muted)", cursor: "pointer", fontSize: 15,
               display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.15s",
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             {theme === "dark" ? "☀" : "☾"}
           </button>

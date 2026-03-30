@@ -108,8 +108,8 @@ function Layout({ children }: { children: ReactNode }) {
         <div
           className="page-padding"
           style={{
-            padding: "28px 36px", flex: 1,
-            background: `radial-gradient(ellipse at 20% 0%, rgba(240,68,68,0.02) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(75,141,248,0.015) 0%, transparent 50%)`,
+            padding: "28px 32px", flex: 1,
+            background: `radial-gradient(ellipse at 20% 0%, rgba(240,68,68,0.018) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(75,141,248,0.012) 0%, transparent 50%)`,
           }}
         >
           <ProgressProvider>
