@@ -6,6 +6,10 @@ import { useToast } from "../components/shared/Toast";
 const API = "/api/framecut";
 const tk = () => localStorage.getItem("lc_token") || "";
 const hdr = () => ({ "Content-Type": "application/json", Authorization: `Bearer ${tk()}` });
+const safeJson = async (r: Response) => {
+  const text = await r.text();
+  try { return JSON.parse(text); } catch { throw new Error(text.slice(0, 100)); }
+};
 
 const fmtTime = (s: number) => {
   if (!s || isNaN(s)) return "00:00";
@@ -72,7 +76,7 @@ export default function FrameCut() {
 
   // Load download dir on mount
   useEffect(() => {
-    fetch(`${API}/download-dir`).then(r => r.json()).then(d => setDlDir(d.dir)).catch(() => {});
+    fetch(`${API}/download-dir`).then(r => safeJson(r)).then(d => setDlDir(d.dir)).catch(() => {});
   }, []);
 
   // ─── VIDEO LOAD ───
@@ -96,9 +100,9 @@ export default function FrameCut() {
       setVideoLoaded(true);
       setVideoPath(p);
       // Auto-find subtitles
-      fetch(`${API}/find-subs?path=${encodeURIComponent(p)}`).then(r => r.json()).then(d => {
+      fetch(`${API}/find-subs?path=${encodeURIComponent(p)}`).then(r => safeJson(r)).then(d => {
         if (d.subs?.length) {
-          fetch(`${API}/read-sub?path=${encodeURIComponent(d.subs[0].path)}`).then(r => r.json()).then(s => {
+          fetch(`${API}/read-sub?path=${encodeURIComponent(d.subs[0].path)}`).then(r => safeJson(r)).then(s => {
             if (s.lines?.length) { setTransLines(s.lines); toast?.success(`${s.lines.length} linhas de legenda carregadas`); }
           });
         }
@@ -121,7 +125,7 @@ export default function FrameCut() {
     if (!m) { toast?.error("URL inválida"); return; }
     try {
       const r = await fetch(`${API}/analyze`, { method: "POST", headers: hdr(), body: JSON.stringify({ url: ytUrl }) });
-      const data = await r.json();
+      const data = await safeJson(r);
       setYtInfo({ ...data, id: m[1] });
       toast?.success("Vídeo analisado!");
     } catch { setYtInfo({ id: m[1], title: m[1] }); }
@@ -135,7 +139,7 @@ export default function FrameCut() {
     setConsoleProg(0);
     try {
       const r = await fetch(`${API}/download`, { method: "POST", headers: hdr(), body: JSON.stringify({ url: ytUrl, quality: ytQuality, type, dir: dlDir }) });
-      const data = await r.json();
+      const data = await safeJson(r);
       if (data.job_id) pollJob(data.job_id, type);
     } catch (e: any) { setConsoleLines(p => [...p, `❌ ${e.message}`]); setDownloading(false); }
   };
@@ -145,7 +149,7 @@ export default function FrameCut() {
     const iv = setInterval(async () => {
       try {
         const r = await fetch(`${API}/job/${jobId}`);
-        const data = await r.json();
+        const data = await safeJson(r);
         const newLines = data.output.slice(lastLen);
         lastLen = data.output.length;
         if (newLines.length) setConsoleLines(p => [...p, ...newLines]);
@@ -216,7 +220,7 @@ export default function FrameCut() {
     setWhisperLoading(true); setShowWhisperConsole(true); setWhisperLines([]);
     try {
       const r = await fetch(`${API}/transcribe`, { method: "POST", headers: hdr(), body: JSON.stringify({ videoPath: vp, language: transLang }) });
-      const data = await r.json();
+      const data = await safeJson(r);
       if (data.error) { setWhisperLines([`❌ ${data.error}`]); setWhisperLoading(false); return; }
       if (data.job_id) pollWhisper(data.job_id);
     } catch (e: any) { setWhisperLines([`❌ ${e.message}`]); setWhisperLoading(false); }
@@ -227,14 +231,14 @@ export default function FrameCut() {
     const iv = setInterval(async () => {
       try {
         const r = await fetch(`${API}/job/${jobId}`);
-        const data = await r.json();
+        const data = await safeJson(r);
         const nl = data.output.slice(lastLen); lastLen = data.output.length;
         if (nl.length) setWhisperLines(p => [...p, ...nl]);
         if (data.status === "done" || data.status === "error") {
           clearInterval(iv); setWhisperLoading(false);
           if (data.filepath) {
             const sr = await fetch(`${API}/read-sub?path=${encodeURIComponent(data.filepath)}`);
-            const sd = await sr.json();
+            const sd = await safeJson(sr);
             if (sd.lines?.length) { setTransLines(sd.lines); toast?.success(`Transcrição: ${sd.lines.length} linhas!`); }
           }
         }

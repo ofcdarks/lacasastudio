@@ -12,7 +12,10 @@ const genId = () => crypto.randomBytes(4).toString("hex");
 
 // ─── State ───
 const jobs: Record<string, any> = {};
-let downloadDir = path.join(os.homedir(), "Downloads");
+let downloadDir = process.env.FRAMECUT_DIR || path.join(os.homedir(), "Downloads");
+
+// Ensure dir exists
+try { if (!fs.existsSync(downloadDir)) fs.mkdirSync(downloadDir, { recursive: true }); } catch {}
 
 // ─── Helpers ───
 function getDownloadDir() { return downloadDir; }
@@ -131,27 +134,33 @@ router.get("/download-dir", (_req: Request, res: Response) => {
   res.json({ dir: downloadDir });
 });
 
-// Analyze YouTube URL
+// Analyze YouTube URL — instant (no yt-dlp, just extract ID)
 router.post("/analyze", async (req: Request, res: Response) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: "URL vazia" });
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (!m) return res.status(400).json({ error: "URL inválida" });
+  const id = m[1];
+  // Return immediately with thumbnail — no yt-dlp needed
+  res.json({ title: id, id, thumbnail: `https://img.youtube.com/vi/${id}/hqdefault.jpg`, duration: 0, uploader: "" });
+
+  // Optionally try to get more info in background (won't block response)
   try {
-    const proc = spawn("yt-dlp", ["--dump-json", "--no-download", url], {
+    const proc = spawn("yt-dlp", ["--dump-json", "--no-download", "--socket-timeout", "10", url], {
       env: { ...process.env, PYTHONIOENCODING: "utf-8" },
     });
     let out = "";
     proc.stdout?.on("data", (d: Buffer) => { out += d.toString("utf-8"); });
+    const timeout = setTimeout(() => { try { proc.kill(); } catch {} }, 15000);
     proc.on("close", () => {
+      clearTimeout(timeout);
       try {
         const data = JSON.parse(out);
-        res.json({
-          title: data.title || "", duration: data.duration || 0,
-          thumbnail: data.thumbnail || "", uploader: data.uploader || "",
-        });
-      } catch { res.json({ title: "", duration: 0 }); }
+        // Store in jobs for later retrieval
+        jobs[`info_${id}`] = { title: data.title, duration: data.duration, uploader: data.uploader };
+      } catch {}
     });
-    setTimeout(() => { try { proc.kill(); } catch {} }, 30000);
-  } catch (e: any) { res.json({ error: e.message }); }
+  } catch {}
 });
 
 // Start download

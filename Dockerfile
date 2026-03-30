@@ -29,7 +29,8 @@ RUN npx tsc
 
 FROM node:20-slim AS production
 WORKDIR /app
-RUN apt-get update -y && apt-get install -y openssl sqlite3 wget && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl sqlite3 wget python3 python3-pip ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN pip3 install --break-system-packages yt-dlp
 RUN groupadd -r appgroup && useradd -r -g appgroup -m appuser
 
 COPY --from=server-deps /app/server/node_modules ./server/node_modules
@@ -39,9 +40,9 @@ COPY --from=client-build /app/client/dist ./server/public
 COPY scripts/entrypoint.sh /app/entrypoint.sh
 COPY scripts/backup.sh /app/backup.sh
 
-RUN mkdir -p /app/data /app/backups /app/server/uploads \
+RUN mkdir -p /app/data /app/backups /app/server/uploads /home/appuser/Downloads \
     && chmod +x /app/entrypoint.sh /app/backup.sh \
-    && chown -R appuser:appgroup /app
+    && chown -R appuser:appgroup /app /home/appuser
 
 ENV NODE_ENV=production
 ENV PORT=3000
