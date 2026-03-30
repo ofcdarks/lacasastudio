@@ -69,22 +69,33 @@ function readSubFile(filepath: string) {
 function spawnJob(id: string, cmd: string, args: string[], cwd: string) {
   const job = jobs[id];
   job.status = "running";
+  let sawBotBlock = false;
 
   const env = { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" };
   const proc = spawn(cmd, args, { cwd, env, shell: process.platform === "win32" });
 
-  proc.stdout?.on("data", (chunk: Buffer) => {
-    for (const line of chunk.toString("utf-8").split("\n")) {
-      if (!line.trim()) continue;
-      job.output.push(line);
-      const m = line.match(/\[download\]\s+([\d.]+)%/);
-      if (m) job.progress = parseFloat(m[1]);
+  const handleLine = (line: string) => {
+    if (!line.trim()) return;
+    job.output.push(line);
+
+    const m = line.match(/\[download\]\s+([\d.]+)%/);
+    if (m) job.progress = parseFloat(m[1]);
+
+    const lower = line.toLowerCase();
+    if (
+      lower.includes("sign in to confirm you’re not a bot") ||
+      lower.includes("sign in to confirm you're not a bot") ||
+      lower.includes("use --cookies-from-browser or --cookies")
+    ) {
+      sawBotBlock = true;
     }
+  };
+
+  proc.stdout?.on("data", (chunk: Buffer) => {
+    for (const line of chunk.toString("utf-8").split("\n")) handleLine(line);
   });
   proc.stderr?.on("data", (chunk: Buffer) => {
-    for (const line of chunk.toString("utf-8").split("\n")) {
-      if (line.trim()) job.output.push(line);
-    }
+    for (const line of chunk.toString("utf-8").split("\n")) handleLine(line);
   });
   proc.on("close", (code) => {
     if (code === 0) {
@@ -97,6 +108,10 @@ function spawnJob(id: string, cmd: string, args: string[], cwd: string) {
         job.output.push(`\n[FrameCut] ⚠️ Processo reportou erro, mas arquivo encontrado.`);
       } else {
         job.status = "error";
+        if (sawBotBlock) {
+          job.output.push(`\n[FrameCut] ⚠️ YouTube bloqueou a requisição (anti-bot). Tentamos modo resiliente sem cookies, mas este vídeo exigiu autenticação.`);
+          job.output.push(`[FrameCut] Dica: tente novamente em alguns minutos ou com outro vídeo/qualidade.`);
+        }
         job.output.push(`\n[FrameCut] ❌ Erro (código ${code})`);
       }
     }
@@ -173,9 +188,30 @@ router.post("/download", (req: Request, res: Response) => {
   const id = genId();
   jobs[id] = { status: "starting", output: [`[FrameCut] Pasta: ${dlDir}`, `[FrameCut] Baixando...`], progress: 0, filepath: null, findExts: null, expectedFile: null };
 
-  const args: string[] = ["--newline", "--no-colors"];
+  const args: string[] = [
+    "--newline",
+    "--no-colors",
+    "--ignore-errors",
+    "--no-warnings",
+    "--retries", "10",
+    "--fragment-retries", "10",
+    "--extractor-retries", "5",
+    "--socket-timeout", "20",
+    "--concurrent-fragments", "4",
+    "--geo-bypass",
+    "--geo-bypass-country", "BR",
+    "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "--add-header", "Accept-Language:pt-BR,pt;q=0.9,en;q=0.8",
+    "--extractor-args", "youtube:player_client=android,web;skip=dash,hls"
+  ];
+
   if (type === "video") {
-    const fmtMap: Record<string, string> = { best: "bestvideo+bestaudio/best", "1080": "bestvideo[height<=1080]+bestaudio/best", "720": "bestvideo[height<=720]+bestaudio/best", "480": "bestvideo[height<=480]+bestaudio/best" };
+    const fmtMap: Record<string, string> = {
+      best: "bestvideo+bestaudio/best",
+      "1080": "bestvideo[height<=1080]+bestaudio/best",
+      "720": "bestvideo[height<=720]+bestaudio/best",
+      "480": "bestvideo[height<=480]+bestaudio/best"
+    };
     args.push("-f", fmtMap[quality] || fmtMap["1080"], "--merge-output-format", "mp4", "-o", path.join(dlDir, "%(title)s.%(ext)s"));
     jobs[id].findExts = [".mp4",".webm",".mkv"];
   } else if (type === "subs") {
@@ -185,6 +221,7 @@ router.post("/download", (req: Request, res: Response) => {
     args.push("--write-thumbnail", "--skip-download", "--convert-thumbnails", "jpg", "-o", path.join(dlDir, "%(title)s.%(ext)s"));
     jobs[id].findExts = [".jpg",".png",".webp"];
   }
+
   args.push(url);
   jobs[id].output.push(`[FrameCut] > yt-dlp ${args.join(" ")}\n`);
 
