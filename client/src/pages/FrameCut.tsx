@@ -80,6 +80,12 @@ export default function FrameCut() {
   const [extracting, setExtracting] = useState(false);
   const [extractProg, setExtractProg] = useState({ cur: 0, total: 0 });
 
+  // Video Analysis
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisFrames, setAnalysisFrames] = useState<{ time: number; url: string }[]>([]);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisProg, setAnalysisProg] = useState(0);
+
   // Transcription
   const [transLines, setTransLines] = useState<TransLine[]>([]);
   const [transLang, setTransLang] = useState("en");
@@ -297,6 +303,58 @@ export default function FrameCut() {
     setExtracting(false);
     toast?.success(`${newFrames.length} frames extraídos!`);
     if (wasPlaying) v.play();
+  };
+
+  // ─── VIDEO ANALYSIS ───
+  const analyzeVideo = async () => {
+    if (!videoPath) { toast?.error("Carregue um vídeo primeiro"); return; }
+    setAnalyzing(true); setAnalysisProg(0); setAnalysisResult(null); setAnalysisFrames([]);
+    try {
+      // Step 1: Extract 20 keyframes via server ffmpeg
+      const r = await fetch(`${API}/analyze-video`, { method: "POST", headers: hdr(), body: JSON.stringify({ videoPath, count: 20 }) });
+      const data = await safeJson(r);
+      if (!data.job_id) { toast?.error(data.error || "Erro"); setAnalyzing(false); return; }
+
+      // Step 2: Poll extraction job
+      const jobId = data.job_id;
+      await new Promise<void>((resolve) => {
+        const iv = setInterval(async () => {
+          const jr = await fetch(`${API}/analyze-result/${jobId}`);
+          const jd = await safeJson(jr);
+          setAnalysisProg(jd.progress || 0);
+          if (jd.status === "done" || jd.status === "error") {
+            clearInterval(iv);
+            if (jd.frames?.length) {
+              setAnalysisFrames(jd.frames);
+              toast?.success(`${jd.frames.length} frames extraídos`);
+
+              // Step 3: Build frame descriptions and send to AI
+              const descriptions = jd.frames.map((f: any, i: number) => {
+                const m = Math.floor(f.time / 60), s = Math.floor(f.time % 60);
+                return `Frame ${i + 1} [${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}]: Imagem extraída do vídeo neste ponto`;
+              }).join("\n");
+
+              try {
+                const aiR = await fetch("/api/ai/analyze-visual", {
+                  method: "POST", headers: hdr(),
+                  body: JSON.stringify({
+                    frameDescriptions: descriptions,
+                    videoTitle: fileName,
+                    duration: jd.duration,
+                    frameCount: jd.frames.length,
+                  }),
+                });
+                const aiD = await safeJson(aiR);
+                if (aiD.analysis) setAnalysisResult(aiD.analysis);
+                else if (aiD.error) toast?.error(aiD.error);
+              } catch { toast?.error("Erro na análise IA"); }
+            }
+            resolve();
+          }
+        }, 800);
+      });
+    } catch (e: any) { toast?.error(e.message || "Erro"); }
+    setAnalyzing(false);
   };
 
   // ─── WHISPER ───
@@ -870,6 +928,82 @@ export default function FrameCut() {
             <button onClick={startExtraction} disabled={extracting} style={{ ...s.btnRed, opacity: extracting ? 0.5 : 1 }}>
               {extracting ? `🎞️ ${extractProg.cur}/${extractProg.total}...` : "🎞️ Extrair Frames"}
             </button>
+          </Card>
+
+          {/* Video Analysis */}
+          <Card>
+            <Label t="Análise Visual" />
+            <p style={{ fontSize: "0.78rem", color: "#8a8aa0", marginBottom: 12, lineHeight: 1.5 }}>
+              Extrai frames-chave e analisa estilo, cores, edição e produção do vídeo com IA.
+            </p>
+            <button onClick={analyzeVideo} disabled={analyzing || !videoPath} style={{ ...s.btnPurple, opacity: analyzing || !videoPath ? 0.5 : 1 }}>
+              {analyzing ? `⏳ Analisando... ${analysisProg}%` : "🎬 Analisar Vídeo"}
+            </button>
+
+            {/* Storyboard grid */}
+            {analysisFrames.length > 0 && (
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#a78bfa", marginBottom: 8 }}>📸 Storyboard ({analysisFrames.length} frames)</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, borderRadius: 8, overflow: "hidden" }}>
+                  {analysisFrames.map((f, i) => (
+                    <div key={i} style={{ position: "relative" }}>
+                      <img src={f.url} alt={`Frame ${i + 1}`} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
+                      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.7)", padding: "2px 4px", fontSize: "0.6rem", color: "#fff", textAlign: "center", fontFamily: "var(--mono)" }}>
+                        {fmtTime(f.time)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* AI Analysis result */}
+            {analysisResult && (
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#2ec4b6", marginBottom: 10 }}>🤖 Análise IA</div>
+
+                {analysisResult.resumo && <p style={{ fontSize: "0.82rem", color: "#ededf0", lineHeight: 1.6, marginBottom: 12, padding: "10px 12px", background: "#0c0c10", borderRadius: 8 }}>{analysisResult.resumo}</p>}
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
+                  {analysisResult.estilo && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>ESTILO</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.estilo}</div></div>}
+                  {analysisResult.formato && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>FORMATO</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.formato}</div></div>}
+                  {analysisResult.ritmo && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>RITMO</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.ritmo}</div></div>}
+                  {analysisResult.qualidade && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>QUALIDADE</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.qualidade}/10</div></div>}
+                </div>
+
+                {analysisResult.cores && Array.isArray(analysisResult.cores) && (
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 4 }}>PALETA DE CORES</div>
+                    <div style={{ display: "flex", gap: 3, borderRadius: 8, overflow: "hidden" }}>
+                      {analysisResult.cores.map((c: string, i: number) => (
+                        <div key={i} style={{ flex: 1, height: 28, background: c }} title={c} />
+                      ))}
+                    </div>
+                    {analysisResult.paleta && <div style={{ fontSize: "0.72rem", color: "#8a8aa0", marginTop: 4 }}>{analysisResult.paleta}</div>}
+                  </div>
+                )}
+
+                {analysisResult.edicao && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8, marginBottom: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>EDIÇÃO</div><div style={{ fontSize: "0.78rem", lineHeight: 1.5 }}>{analysisResult.edicao}</div></div>}
+
+                {analysisResult.destaques && (
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: "0.68rem", color: "#22D35E", marginBottom: 4 }}>PONTOS FORTES</div>
+                    {analysisResult.destaques.map((d: string, i: number) => <div key={i} style={{ fontSize: "0.78rem", padding: "3px 0", color: "#c0c0d0" }}>✅ {d}</div>)}
+                  </div>
+                )}
+
+                {analysisResult.melhorias && (
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: "0.68rem", color: "#f4a261", marginBottom: 4 }}>SUGESTÕES</div>
+                    {analysisResult.melhorias.map((m: string, i: number) => <div key={i} style={{ fontSize: "0.78rem", padding: "3px 0", color: "#c0c0d0" }}>💡 {m}</div>)}
+                  </div>
+                )}
+
+                <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(analysisResult, null, 2)); toast?.success("Análise copiada!"); }} style={{ ...s.btn2, width: "100%", justifyContent: "center", marginTop: 6 }}>
+                  📋 Copiar Análise
+                </button>
+              </div>
+            )}
           </Card>
 
           {/* Transcription */}

@@ -336,6 +336,61 @@ router.post("/stream", async (req: any, res: Response, next: NextFunction) => {
   }
 });
 
+// Analyze video visually from extracted frames description
+router.post("/analyze-visual", async (req: any, res: Response, next: NextFunction) => {
+  const { frameDescriptions, videoTitle, duration, frameCount } = req.body;
+  if (!frameDescriptions) return res.status(400).json({ error: "Descrição dos frames obrigatória" });
+
+  try {
+    const config = await resolveAIConfig(req.userId);
+    if (!config.apiKey) return res.status(400).json({ error: "Configure sua API Key nas Configurações" });
+
+    const prompt = `Analise este vídeo do YouTube com base nos ${frameCount || 20} frames extraídos uniformemente.
+
+TÍTULO: ${videoTitle || "Desconhecido"}
+DURAÇÃO: ${duration ? Math.floor(duration / 60) + "min" : "Desconhecido"}
+
+FRAMES EXTRAÍDOS (timestamps e descrições visuais):
+${frameDescriptions}
+
+Responda em JSON com esta estrutura exata:
+{
+  "estilo": "Descrição do estilo visual geral (ex: animação 2D, live-action, motion graphics, faceless, etc)",
+  "formato": "Formato do vídeo (ex: narração com imagens, talking head, gameplay, tutorial, etc)",
+  "edicao": "Técnicas de edição observadas (cortes, transições, efeitos, ritmo)",
+  "cores": ["#cor1", "#cor2", "#cor3", "#cor4", "#cor5"],
+  "paleta": "Descrição da paleta de cores dominante",
+  "ritmo": "Lento / Médio / Rápido — e por quê",
+  "textos": "Presença de textos/legendas/lower thirds na tela",
+  "musica": "Sugestão de estilo musical baseado no visual",
+  "audiencia": "Público-alvo provável",
+  "qualidade": "Nota de 1-10 da qualidade de produção",
+  "destaques": ["Ponto forte 1", "Ponto forte 2", "Ponto forte 3"],
+  "melhorias": ["Sugestão 1", "Sugestão 2", "Sugestão 3"],
+  "nichoSimilar": "Nichos/canais com estilo similar",
+  "resumo": "Resumo de 2-3 frases sobre o estilo de produção"
+}`;
+
+    const result = await callAIWithConfig(config, VIRAL_SYSTEM, prompt);
+
+    // Try to parse JSON from response
+    let analysis;
+    try {
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : { resumo: result };
+    } catch {
+      analysis = { resumo: result };
+    }
+
+    res.json({ analysis });
+  } catch (err: any) {
+    if (err.message?.includes("API Key") || err.message?.includes("Configure") || err.message?.includes("créditos") || err.message?.includes("limite")) {
+      return res.status(400).json({ error: err.message });
+    }
+    res.status(500).json({ error: "Erro na análise visual" });
+  }
+});
+
 export default router;
 
 // Remove background from uploaded image using canvas (simple but effective)

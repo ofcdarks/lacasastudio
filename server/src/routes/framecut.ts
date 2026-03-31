@@ -439,6 +439,98 @@ router.get("/list-frames", (req: Request, res: Response) => {
   } catch { res.json({ frames: [] }); }
 });
 
+// Analyze video — extract keyframes at uniform intervals for visual analysis
+router.post("/analyze-video", (req: Request, res: Response) => {
+  const { videoPath, count = 20 } = req.body;
+  if (!videoPath || !fs.existsSync(videoPath)) return res.status(400).json({ error: "Vídeo não encontrado" });
+  if (count < 1 || count > 50) return res.status(400).json({ error: "Count deve ser entre 1 e 50" });
+
+  const id = genId();
+  const dir = path.dirname(videoPath);
+  const base = path.basename(videoPath, path.extname(videoPath));
+  const outDir = path.join(dir, base + "_analysis");
+  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+
+  jobs[id] = { status: "starting", output: [`[FrameCut] 🎬 Analisando vídeo...`], progress: 0, filepath: null };
+
+  // Step 1: Get video duration via ffprobe
+  const probe = spawn("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", videoPath], { shell: process.platform === "win32" });
+  let durationStr = "";
+  probe.stdout?.on("data", (d: Buffer) => { durationStr += d.toString().trim(); });
+  probe.on("close", () => {
+    const duration = parseFloat(durationStr) || 0;
+    if (duration <= 0) {
+      jobs[id].status = "error";
+      jobs[id].output.push("[FrameCut] ❌ Não foi possível obter a duração do vídeo");
+      return;
+    }
+
+    // Step 2: Generate uniform timestamps (skip first/last 2%)
+    const start = duration * 0.02;
+    const end = duration * 0.98;
+    const interval = (end - start) / (count - 1);
+    const times: number[] = [];
+    for (let i = 0; i < count; i++) times.push(Math.round((start + i * interval) * 100) / 100);
+
+    jobs[id].output.push(`[FrameCut] Duração: ${Math.floor(duration / 60)}m${Math.floor(duration % 60)}s — Extraindo ${count} frames...`);
+    jobs[id].status = "running";
+
+    // Step 3: Extract frames sequentially
+    const frames: { time: number; path: string; url: string }[] = [];
+    let completed = 0;
+
+    const extractNext = (idx: number) => {
+      if (idx >= times.length) {
+        jobs[id].status = "done";
+        jobs[id].progress = 100;
+        jobs[id].filepath = outDir;
+        jobs[id].output.push(`\n[FrameCut] ✅ ${frames.length} frames extraídos`);
+        // Store frames list in job for retrieval
+        (jobs[id] as any).frames = frames;
+        (jobs[id] as any).duration = duration;
+        return;
+      }
+      const t = times[idx];
+      const ts = `${String(Math.floor(t / 60)).padStart(2, "0")}m${String(Math.floor(t % 60)).padStart(2, "0")}s`;
+      const outFile = path.join(outDir, `key_${String(idx + 1).padStart(2, "0")}_${ts}.jpg`);
+      const args = ["-ss", String(t), "-i", videoPath, "-frames:v", "1", "-q:v", "2", "-y", outFile];
+      const proc = spawn("ffmpeg", args, { env: process.env, shell: process.platform === "win32" });
+      proc.on("close", (code) => {
+        completed++;
+        jobs[id].progress = Math.round((completed / times.length) * 100);
+        if (code === 0 && fs.existsSync(outFile)) {
+          frames.push({
+            time: t,
+            path: outFile,
+            url: `/api/framecut/serve-frame?path=${encodeURIComponent(outFile)}`
+          });
+        }
+        extractNext(idx + 1);
+      });
+      proc.on("error", () => { completed++; extractNext(idx + 1); });
+    };
+    extractNext(0);
+  });
+  probe.on("error", () => {
+    jobs[id].status = "error";
+    jobs[id].output.push("[FrameCut] ❌ ffprobe não encontrado");
+  });
+
+  res.json({ job_id: id });
+});
+
+// Get analysis frames result
+router.get("/analyze-result/:id", (req: Request, res: Response) => {
+  const job = jobs[req.params.id];
+  if (!job) return res.status(404).json({ error: "Job não encontrado" });
+  res.json({
+    status: job.status,
+    progress: job.progress || 0,
+    frames: (job as any).frames || [],
+    duration: (job as any).duration || 0,
+  });
+});
+
 // Find subtitle files near a video
 router.get("/find-subs", (req: Request, res: Response) => {
   const videoPath = req.query.path as string;
