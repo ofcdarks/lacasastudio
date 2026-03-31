@@ -4,7 +4,7 @@ export const C = {
   bg: "#08090E", bgCard: "#0F1017", bgCardElevated: "#13141D", bgSidebar: "#0B0C13",
   bgHover: "rgba(255,255,255,0.025)", bgGlass: "rgba(255,255,255,0.015)",
   border: "rgba(255,255,255,0.055)", borderH: "rgba(255,255,255,0.10)", borderAccent: "rgba(255,255,255,0.08)",
-  text: "#E8E6F0", muted: "rgba(255,255,255,0.55)", dim: "rgba(255,255,255,0.30)",
+  text: "#EEEDF5", muted: "rgba(255,255,255,0.65)", dim: "rgba(255,255,255,0.40)",
   red: "#F04444", green: "#22D35E", blue: "#4B8DF8", purple: "#A855F7",
   orange: "#F5A623", pink: "#EC4899", cyan: "#06B6D4", teal: "#14B8A6",
 };
