@@ -70,8 +70,8 @@ export default function Dashboard(){
 
     <div style={{marginBottom:24,display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
       <div>
-        <div style={{fontSize:28,fontWeight:900,letterSpacing:"-0.04em",lineHeight:1.1}}>LaCasaStudio</div>
-        <div style={{fontSize:13,color:C.dim,marginTop:6}}>YouTube Production OS — V2.4</div>
+        <div style={{fontSize:26,fontWeight:900,letterSpacing:"-0.04em",lineHeight:1.1}}>LaCasaStudio</div>
+        <div style={{fontSize:13,color:C.dim,marginTop:6}}>YouTube Production OS — V2.5</div>
       </div>
       <div style={{display:"flex",gap:6}}>
         <Btn onClick={()=>nav("/pipeline")} vr="primary">Criar Canal</Btn>

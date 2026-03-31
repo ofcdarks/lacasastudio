@@ -338,19 +338,19 @@ export default function Settings() {
           </Card>
 
           {/* YouTube API — ADMIN ONLY */}
-          <Card color={C.red}>
+          <Card color={C.blue}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <SecTitle t="API YouTube Data v3" />
-              <span style={{ fontSize: 9, fontWeight: 700, color: C.red, background: `${C.red}15`, padding: "2px 8px", borderRadius: 4 }}>ADMIN</span>
+              <span style={{ fontSize: 9, fontWeight: 700, color: C.blue, background: `${C.blue}15`, padding: "2px 8px", borderRadius: 4 }}>ADMIN</span>
             </div>
             <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 14 }}>
-              Puxa dados reais dos canais. Crie em <span style={{ color: C.red, fontWeight: 600 }}>console.cloud.google.com</span>
+              Puxa dados reais dos canais. Crie em <span style={{ color: C.blue, fontWeight: 600 }}>console.cloud.google.com</span>
             </p>
             <Label t="YouTube API Key" />
             <Input type="password" placeholder="AIza..." value={ytKey}
               onChange={e => setYtKey(e.target.value)}
               style={{ fontFamily: "var(--mono)", marginBottom: 12 }} />
-            <Btn onClick={saveAdmin} disabled={loading} style={{ width: "100%", justifyContent: "center" }}>
+            <Btn onClick={saveAdmin} disabled={loading} vr="ghost" style={{ width: "100%", justifyContent: "center" }}>
               {saved ? "✓ Salvo!" : "Salvar"}
             </Btn>
           </Card>
@@ -359,7 +359,7 @@ export default function Settings() {
           <Card color="#EC4899">
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <SecTitle t="ImageFX — Geração de Assets" />
-              <span style={{ fontSize: 9, fontWeight: 700, color: C.red, background: `${C.red}15`, padding: "2px 8px", borderRadius: 4 }}>ADMIN</span>
+              <span style={{ fontSize: 9, fontWeight: 700, color: "#EC4899", background: "rgba(236,72,153,0.15)", padding: "2px 8px", borderRadius: 4 }}>ADMIN</span>
             </div>
             <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 14 }}>
               Gera imagens com <span style={{ color: "#EC4899", fontWeight: 600 }}>Google Imagen 3.5</span> (grátis).
@@ -393,7 +393,7 @@ export default function Settings() {
                 </div>
               ))}
             </div>
-            <Btn onClick={saveAdmin} disabled={loading} style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
+            <Btn onClick={saveAdmin} disabled={loading} vr="ghost" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
               {saved ? "✓ Salvo!" : "Salvar Modelo"}
             </Btn>
           </Card>
