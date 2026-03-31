@@ -87,6 +87,8 @@ export default function FrameCut() {
   const [analysisProg, setAnalysisProg] = useState(0);
   const [showDnaModal, setShowDnaModal] = useState(false);
   const [dnaTab, setDnaTab] = useState<"storyboard" | "dna" | "roteiro" | "nichos" | "modelagem">("dna");
+  const [savedDnas, setSavedDnas] = useState<any[]>([]);
+  const [savingDna, setSavingDna] = useState(false);
 
   // Transcription
   const [transLines, setTransLines] = useState<TransLine[]>([]);
@@ -381,6 +383,66 @@ export default function FrameCut() {
     } catch (e: any) { toast?.error("Erro na análise: " + (e.message || "Erro desconhecido").slice(0, 200)); }
     setAnalyzing(false);
   };
+
+  // ─── SAVE DNA ───
+  const saveDna = async () => {
+    if (!analysisResult) return;
+    setSavingDna(true);
+    try {
+      const r = await fetch(`${API}/dna/save`, {
+        method: "POST", headers: hdr(),
+        body: JSON.stringify({
+          videoTitle: fileName,
+          videoPath,
+          nicho: analysisResult.nicho || "",
+          subnicho: analysisResult.subnicho || "",
+          micronicho: analysisResult.micronicho || "",
+          estilo: analysisResult.estilo || "",
+          qualidade: analysisResult.qualidade || 0,
+          analysisJson: JSON.stringify(analysisResult),
+          thumbnailUrl: analysisFrames[0]?.url || "",
+          duration: analysisResult.duration || 0,
+        }),
+      });
+      const data = await safeJson(r);
+      if (data.id) {
+        toast?.success("Análise DNA salva!");
+        loadSavedDnas();
+      } else {
+        toast?.error(data.error || "Erro ao salvar");
+      }
+    } catch (e: any) { toast?.error(e.message || "Erro ao salvar"); }
+    setSavingDna(false);
+  };
+
+  const loadSavedDnas = async () => {
+    try {
+      const r = await fetch(`${API}/dna/list`, { headers: hdr() });
+      const data = await safeJson(r);
+      if (Array.isArray(data)) setSavedDnas(data);
+    } catch {}
+  };
+
+  const deleteDna = async (id: number) => {
+    try {
+      await fetch(`${API}/dna/${id}`, { method: "DELETE", headers: hdr() });
+      setSavedDnas(p => p.filter(d => d.id !== id));
+      toast?.success("Análise removida");
+    } catch {}
+  };
+
+  const loadDna = (item: any) => {
+    try {
+      const analysis = JSON.parse(item.analysisJson);
+      setAnalysisResult(analysis);
+      setShowDnaModal(true);
+      setDnaTab("dna");
+      setFileName(item.videoTitle);
+    } catch { toast?.error("Erro ao carregar análise"); }
+  };
+
+  // Load saved DNAs on mount
+  useEffect(() => { loadSavedDnas(); }, []);
 
   // ─── WHISPER ───
   const startWhisper = async () => {
@@ -1010,6 +1072,36 @@ export default function FrameCut() {
               </div>
             )}
           </Card>
+
+          {/* Saved DNA Analyses */}
+          {savedDnas.length > 0 && (
+            <Card>
+              <Label t={`Análises Salvas (${savedDnas.length})`} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8, maxHeight: 300, overflowY: "auto" }}>
+                {savedDnas.map(d => (
+                  <div key={d.id} style={{ padding: "10px 12px", background: "#101016", borderRadius: 8, border: "1px solid #1e1e2a", cursor: "pointer", transition: "all .15s" }}
+                    onClick={() => loadDna(d)}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "#ededf0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {d.videoTitle || "Sem título"}
+                        </div>
+                        <div style={{ display: "flex", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
+                          {d.nicho && <span style={{ fontSize: "0.68rem", padding: "2px 6px", borderRadius: 4, background: "#e6394612", color: "#e63946" }}>{d.nicho}</span>}
+                          {d.qualidade > 0 && <span style={{ fontSize: "0.68rem", padding: "2px 6px", borderRadius: 4, background: "#22D35E12", color: "#22D35E" }}>{d.qualidade}/10</span>}
+                        </div>
+                        <div style={{ fontSize: "0.68rem", color: "#505068", marginTop: 4 }}>
+                          {new Date(d.createdAt).toLocaleDateString("pt-BR")}
+                        </div>
+                      </div>
+                      <button onClick={e => { e.stopPropagation(); deleteDna(d.id); }}
+                        style={{ background: "none", border: "none", color: "#505068", cursor: "pointer", fontSize: "0.82rem", padding: "2px 6px", flexShrink: 0 }}>✕</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -1261,6 +1353,38 @@ export default function FrameCut() {
                           </div>
                         )}
                       </div>
+
+                      {/* Copy full script structure button */}
+                      <button onClick={() => {
+                        const rot = analysisResult.roteiro;
+                        let txt = "📝 ESTRUTURA DO ROTEIRO\n\n";
+                        if (rot.estrutura) {
+                          rot.estrutura.forEach((s: any) => {
+                            txt += `[${s.timestamp || ""}] ${s.secao || s.section || ""}\n`;
+                            txt += `${s.descricao || s.description || ""}\n`;
+                            if (s.tecnica) txt += `Tecnica: ${s.tecnica}\n`;
+                            txt += "\n";
+                          });
+                        }
+                        txt += `Tom: ${rot.tom || "-"}\nPacing: ${rot.pacing || "-"}\n`;
+                        if (rot.ctaTexto) txt += `CTA: "${rot.ctaTexto}"\n`;
+                        txt += "\n🪝 HOOKS:\n";
+                        (rot.hooks || []).forEach((h: string) => { txt += `• "${h}"\n`; });
+                        txt += "\n🔄 OPEN LOOPS:\n";
+                        (rot.openLoops || []).forEach((l: string) => { txt += `• ${l}\n`; });
+                        txt += "\n💗 GATILHOS EMOCIONAIS:\n";
+                        (rot.gatilhosEmocionais || []).forEach((g: string) => { txt += `• ${g}\n`; });
+                        txt += "\n📊 RETENCAO:\n";
+                        (rot.retencaoTecnicas || []).forEach((t: string) => { txt += `• ${t}\n`; });
+                        txt += "\n✅ PONTOS FORTES:\n";
+                        (rot.pontosFortesRoteiro || []).forEach((p: string) => { txt += `• ${p}\n`; });
+                        txt += "\n💡 MELHORIAS:\n";
+                        (rot.melhorasRoteiro || []).forEach((m: string) => { txt += `• ${m}\n`; });
+                        navigator.clipboard.writeText(txt);
+                        toast?.success("Estrutura do roteiro copiada!");
+                      }} style={{ ...s.btn2, width: "100%", justifyContent: "center", marginTop: 16, background: "#a78bfa15", color: "#a78bfa", borderColor: "#a78bfa30" }}>
+                        📋 Copiar Estrutura Completa do Roteiro
+                      </button>
                     </>
                   ) : (
                     <div style={{ textAlign: "center", padding: "40px 20px", color: "#505068" }}>
@@ -1512,6 +1636,9 @@ export default function FrameCut() {
 
             {/* Modal Footer */}
             <div style={{ padding: "14px 24px", borderTop: "1px solid #252538", display: "flex", gap: 8, justifyContent: "flex-end", flexShrink: 0 }}>
+              <button onClick={saveDna} disabled={savingDna} style={{ ...s.btn2, background: "#22D35E18", color: "#22D35E", borderColor: "#22D35E40", opacity: savingDna ? 0.5 : 1 }}>
+                {savingDna ? "⏳ Salvando..." : "💾 Salvar Análise"}
+              </button>
               <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(analysisResult, null, 2)); toast?.success("DNA copiado!"); }} style={{ ...s.btn2 }}>
                 📋 Copiar JSON
               </button>

@@ -29,6 +29,7 @@ model User {
   savedChannels SavedChannel[]
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
+  videoDnas     VideoDna[]
 
   @@index([email])
 }
@@ -626,4 +627,23 @@ model ActionLog {
   @@index([userId])
   @@index([userId, videoId])
   @@index([videoId])
+}
+
+model VideoDna {
+  id            Int      @id @default(autoincrement())
+  videoTitle    String   @default("")
+  videoPath     String   @default("")
+  nicho         String   @default("")
+  subnicho      String   @default("")
+  micronicho    String   @default("")
+  estilo        String   @default("")
+  qualidade     Int      @default(0)
+  analysisJson  String   @default("")
+  thumbnailUrl  String   @default("")
+  duration      Float    @default(0)
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
 }

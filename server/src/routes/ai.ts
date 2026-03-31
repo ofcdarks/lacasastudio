@@ -387,8 +387,9 @@ ANÁLISE DE ROTEIRO (OBRIGATÓRIO se tiver transcrição):
 - Pacing do roteiro (rápido, médio, lento, variável)
 
 NICHOS RELACIONADOS PARA ATACAR:
-- Baseado no nicho identificado, sugira 5-8 subnichos/micronichos adjacentes que poderiam ser explorados
-- Para cada nicho sugerido, explique porque é uma oportunidade e como adaptar o estilo
+- Baseado no nicho identificado, sugira OBRIGATORIAMENTE pelo menos 5 subnichos/micronichos adjacentes (idealmente 6-8)
+- Para cada nicho sugerido, dê TODOS os detalhes: nome canal, país, RPM, views, títulos, estratégia, concorrência, monetização
+- NÃO retorne menos de 5 nichosRelacionados, isso é OBRIGATÓRIO
 
 Responda SEMPRE em português brasileiro. JSON:
 {

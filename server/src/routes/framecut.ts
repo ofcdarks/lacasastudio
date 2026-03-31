@@ -6,6 +6,8 @@ import fs from "fs";
 import os from "os";
 import crypto from "crypto";
 import multer from "multer";
+import prisma from "../db/prisma";
+import { authenticate } from "../middleware/auth";
 
 const router = Router();
 
@@ -756,6 +758,73 @@ router.get("/cookies-status", (_req: Request, res: Response) => {
     try { updatedAt = fs.statSync(cookiesFile).mtime.toISOString(); } catch {}
   }
   res.json({ path: cookiesFile || null, active, updatedAt });
+});
+
+// ─── SAVED DNA ANALYSES ───
+
+// Save a DNA analysis
+router.post("/dna/save", authenticate, async (req: any, res: Response) => {
+  try {
+    const { videoTitle, videoPath, nicho, subnicho, micronicho, estilo, qualidade, analysisJson, thumbnailUrl, duration } = req.body;
+    if (!analysisJson) return res.status(400).json({ error: "analysisJson obrigatório" });
+    const saved = await prisma.videoDna.create({
+      data: {
+        videoTitle: (videoTitle || "").slice(0, 500),
+        videoPath: (videoPath || "").slice(0, 1000),
+        nicho: (nicho || "").slice(0, 200),
+        subnicho: (subnicho || "").slice(0, 200),
+        micronicho: (micronicho || "").slice(0, 200),
+        estilo: (estilo || "").slice(0, 500),
+        qualidade: Number(qualidade) || 0,
+        analysisJson: typeof analysisJson === "string" ? analysisJson.slice(0, 100000) : JSON.stringify(analysisJson).slice(0, 100000),
+        thumbnailUrl: (thumbnailUrl || "").slice(0, 1000),
+        duration: Number(duration) || 0,
+        userId: req.userId,
+      },
+    });
+    res.json({ id: saved.id, message: "Análise DNA salva!" });
+  } catch (err: any) {
+    res.status(500).json({ error: "Erro ao salvar: " + (err.message || "") });
+  }
+});
+
+// List saved DNA analyses
+router.get("/dna/list", authenticate, async (req: any, res: Response) => {
+  try {
+    const items = await prisma.videoDna.findMany({
+      where: { userId: req.userId },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    res.json(items);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single DNA analysis
+router.get("/dna/:id", authenticate, async (req: any, res: Response) => {
+  try {
+    const item = await prisma.videoDna.findFirst({
+      where: { id: Number(req.params.id), userId: req.userId },
+    });
+    if (!item) return res.status(404).json({ error: "Não encontrado" });
+    res.json(item);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete DNA analysis
+router.delete("/dna/:id", authenticate, async (req: any, res: Response) => {
+  try {
+    await prisma.videoDna.deleteMany({
+      where: { id: Number(req.params.id), userId: req.userId },
+    });
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;
