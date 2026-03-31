@@ -97,8 +97,15 @@ function buildBaseArgs(): string[] {
     "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "--add-header", "Accept-Language:pt-BR,pt;q=0.9,en;q=0.8",
   ];
-  // Add cookies if available
+  // Add cookies if available — auto-fix format on read
   if (cookiesFile && fs.existsSync(cookiesFile)) {
+    try {
+      const raw = fs.readFileSync(cookiesFile, "utf-8");
+      if (!isNetscapeFormat(raw)) {
+        const converted = ensureNetscapeFormat(raw);
+        fs.writeFileSync(cookiesFile, converted, "utf-8");
+      }
+    } catch {}
     args.push("--cookies", cookiesFile);
   }
   return args;
