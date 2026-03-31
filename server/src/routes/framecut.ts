@@ -96,6 +96,7 @@ function buildBaseArgs(): string[] {
     "--geo-bypass", "--geo-bypass-country", "BR",
     "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "--add-header", "Accept-Language:pt-BR,pt;q=0.9,en;q=0.8",
+    "--js-runtimes", "node",
   ];
   // Add cookies if available — auto-fix format on read
   if (cookiesFile && fs.existsSync(cookiesFile)) {

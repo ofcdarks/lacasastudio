@@ -30,7 +30,7 @@ RUN npx tsc
 FROM node:20-slim AS production
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y openssl sqlite3 wget curl python3 python3-pip ffmpeg && rm -rf /var/lib/apt/lists/*
-RUN pip3 install --break-system-packages --upgrade yt-dlp
+RUN pip3 install --break-system-packages --upgrade "yt-dlp[default]"
 RUN groupadd -r appgroup && useradd -r -g appgroup -m appuser
 
 COPY --from=server-deps /app/server/node_modules ./server/node_modules
