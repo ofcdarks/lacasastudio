@@ -912,6 +912,56 @@ JSON (sem backticks):
     setAnalyzing(false);
   };
 
+  // Custom title generation using analyzed formula
+  const [customTitle, setCustomTitle] = useState("");
+  const [customModel, setCustomModel] = useState("gpt-4o");
+  const [customGenerating, setCustomGenerating] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState("");
+
+  const generateCustomThumb = async () => {
+    if (!customTitle.trim()) { toast?.error("Digite o título do seu vídeo"); return; }
+    if (!analysis) { toast?.error("Analise uma thumbnail primeiro"); return; }
+    setCustomGenerating(true); setCustomPrompt("");
+    pg?.start("Criando thumbnail personalizada", ["Adaptando fórmula viral ao seu título", "Gerando prompt otimizado", "Gerando imagem com ImageFX"]);
+    try {
+      const { reply } = await chatApi.send([
+        { role: "system", content: `Você é um EXPERT em criar prompts de thumbnails para YouTube usando ImageFX. Você recebe a FÓRMULA de uma thumbnail viral analisada e deve criar um prompt NOVO que:
+1. MANTÉM a mesma fórmula/layout/composição da thumbnail original
+2. ADAPTA o conteúdo visual para refletir o TÍTULO do novo vídeo
+3. NUNCA coloca texto/letras na imagem (será adicionado depois)
+4. Gera um prompt de 120+ palavras detalhado para ImageFX
+5. SEGURANÇA: Evite sangue, armas, violência, morte, explosão. Use alternativas seguras.
+6. Responda APENAS o prompt, sem JSON, sem explicação, apenas o texto do prompt para ImageFX.` },
+        { role: "user", content: `FÓRMULA DA THUMBNAIL VIRAL ANALISADA:
+Tipo: ${analysis.thumbType}
+Fórmula: ${analysis.formula}
+Composição: ${analysis.composition}
+Iluminação: ${analysis.lightingAnalysis || ""}
+Paleta: ${(analysis.colorPalette || []).join(", ")}
+
+MEU VÍDEO:
+Título: "${customTitle}"
+Formato: ${selected?.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape horizontal"}
+Nicho: ${NICHES.find(n => n.id === niche)?.l || niche}
+
+Crie um prompt de 120+ palavras para ImageFX que REPLICA A MESMA FÓRMULA da thumbnail analisada mas ADAPTADA ao conteúdo do meu título "${customTitle}". Mantenha mesma composição, iluminação e estilo mas mude personagens/cenário para refletir meu tema. Sem texto na imagem, 8K, ultra quality, ${selected?.format === "portrait" ? "9:16 portrait" : "16:9 landscape"}.` }
+      ]);
+
+      const prompt = reply.replace(/```[a-z]*\n?/g, "").replace(/```\n?/g, "").trim();
+      setCustomPrompt(prompt);
+
+      // Auto-generate image
+      const r = await aiApi.generateAsset({ prompt: sanitizePrompt(prompt) });
+      if (r.url || r.b64) {
+        const url = r.url || ("data:image/png;base64," + r.b64);
+        setModalImg(url);
+        saveToHistory({ niche, prompt: prompt.slice(0, 500), imageUrl: url.startsWith("data:") ? "" : url, title: customTitle, style: "trends-custom", score: 0 });
+        pg?.done(); toast?.success("Thumbnail gerada com seu título!");
+      } else { pg?.fail("Sem imagem"); toast?.error("ImageFX não retornou imagem"); }
+    } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
+    setCustomGenerating(false);
+  };
+
   const fmtViews = v => v >= 1000000 ? (v/1000000).toFixed(1)+"M" : v >= 1000 ? (v/1000).toFixed(0)+"K" : v;
 
   return (
@@ -1052,6 +1102,43 @@ JSON (sem backticks):
                     </div>
                   ))}
                   {analysis.ctrTips?.length > 0 && <div>{analysis.ctrTips.map((t, i) => <div key={i} style={{ fontSize: 12, color: C.muted, padding: "4px 0 4px 12px", borderLeft: `2px solid ${C.orange}30`, marginBottom: 4 }}>{t}</div>)}</div>}
+
+                  {/* ── GENERATE WITH CUSTOM TITLE ── */}
+                  <div style={{ marginTop: 8, padding: 14, borderRadius: 10, background: "linear-gradient(135deg, #0c0c10, #15102a)", border: "1px solid #a78bfa30" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#a78bfa", marginBottom: 8 }}>🎨 Modelar com Meu Título</div>
+                    <div style={{ fontSize: 11, color: C.dim, marginBottom: 10 }}>
+                      Use a fórmula desta thumbnail viral para criar uma thumb personalizada com o seu título.
+                    </div>
+                    <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} placeholder="Digite o título do seu vídeo..."
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#0c0c10", color: "#fff", fontSize: 13, outline: "none", marginBottom: 8 }}
+                      onKeyDown={e => e.key === "Enter" && generateCustomThumb()} />
+                    <button onClick={generateCustomThumb} disabled={customGenerating || !customTitle.trim()}
+                      style={{ width: "100%", padding: "10px 16px", borderRadius: 8, border: "none", background: customGenerating ? "#505068" : "linear-gradient(135deg, #a78bfa, #7c5fd6)", color: "#fff", cursor: customGenerating ? "wait" : "pointer", fontSize: 13, fontWeight: 700, opacity: !customTitle.trim() ? 0.5 : 1 }}>
+                      {customGenerating ? "⏳ Gerando thumbnail..." : "🎬 Gerar Thumbnail com Meu Título"}
+                    </button>
+                    {customPrompt && (
+                      <div style={{ marginTop: 8 }}>
+                        <div style={{ fontSize: 10, color: C.dim, marginBottom: 4 }}>Prompt gerado:</div>
+                        <div style={{ padding: 8, borderRadius: 6, background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, fontSize: 11, lineHeight: 1.6, color: C.muted, maxHeight: 100, overflowY: "auto" }}>{customPrompt}</div>
+                        <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                          <button onClick={() => { navigator.clipboard.writeText(customPrompt); toast?.success("Prompt copiado!"); }}
+                            style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, cursor: "pointer", fontSize: 10 }}>📋 Copiar</button>
+                          <button onClick={async () => {
+                            setCustomGenerating(true);
+                            pg?.start("Regenerando", ["ImageFX processando"]);
+                            try {
+                              const r = await aiApi.generateAsset({ prompt: sanitizePrompt(customPrompt) });
+                              if (r.url || r.b64) { const url = r.url || ("data:image/png;base64," + r.b64); setModalImg(url); saveToHistory({ niche, prompt: customPrompt.slice(0,500), imageUrl: url.startsWith("data:")?"":url, title: customTitle, style: "trends-custom", score: 0 }); pg?.done(); toast?.success("Nova variação gerada!"); }
+                            } catch(e) { pg?.fail(e.message); toast?.error(e.message); }
+                            setCustomGenerating(false);
+                          }} disabled={customGenerating}
+                            style={{ flex: 1, padding: "4px 10px", borderRadius: 6, border: "none", background: "#a78bfa20", color: "#a78bfa", cursor: customGenerating ? "wait" : "pointer", fontSize: 10, fontWeight: 600 }}>
+                            🔄 Gerar Nova Variação
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : null}
             </Sec>
