@@ -467,6 +467,59 @@ export default function FrameCut() {
                     </div>
                   </div>
                 )}
+
+                {/* Cookies upload card — appears after bot-block error */}
+                {showConsole && !downloading && consoleLines.some(l => l.includes("bloqueou") || l.includes("not a bot") || l.includes("anti-bot")) && (
+                  <div style={{
+                    marginTop: 12, padding: "16px 18px", borderRadius: 10,
+                    border: cookiesActive ? "1px solid #1a4a3a" : "1px solid rgba(240,68,68,0.20)",
+                    background: cookiesActive ? "rgba(46,196,182,0.06)" : "rgba(240,68,68,0.04)",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                      <span style={{ fontSize: "1.3rem" }}>{cookiesActive ? "🟢" : "🔒"}</span>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "0.88rem", color: cookiesActive ? "#2ec4b6" : "#e63946" }}>
+                          {cookiesActive ? "Cookies ativos — tente baixar novamente" : "YouTube bloqueou o download"}
+                        </div>
+                        <div style={{ fontSize: "0.75rem", color: "#8a8aa0", marginTop: 2 }}>
+                          {cookiesActive ? "Seus cookies podem estar expirados. Atualize-os abaixo." : "Envie seus cookies do YouTube para desbloquear"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {!cookiesActive && (
+                      <div style={{ padding: "12px 14px", background: "#0c0c10", borderRadius: 8, marginBottom: 14, fontSize: "0.78rem", color: "#c0c0d0", lineHeight: 1.7 }}>
+                        <div style={{ fontWeight: 700, color: "#f4a261", marginBottom: 6 }}>Como fazer em 3 passos:</div>
+                        <div>1. Instale a extensão <strong style={{ color: "#ededf0" }}>"Get cookies.txt LOCALLY"</strong> no Chrome</div>
+                        <div>2. Acesse <strong style={{ color: "#ededf0" }}>youtube.com</strong> logado na sua conta</div>
+                        <div>3. Clique na extensão → <strong style={{ color: "#ededf0" }}>Export</strong> → salve o arquivo</div>
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <label style={{
+                        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                        padding: "12px 16px", borderRadius: 8, cursor: cookiesUploading ? "wait" : "pointer",
+                        background: cookiesActive ? "linear-gradient(135deg, #2ec4b6, #1aa89e)" : "linear-gradient(135deg, #e63946, #c1292e)",
+                        color: "#fff", fontSize: "0.85rem", fontWeight: 600,
+                        opacity: cookiesUploading ? 0.5 : 1, transition: "all 0.2s",
+                      }}>
+                        {cookiesUploading ? "⏳ Enviando..." : cookiesActive ? "🔄 Atualizar cookies.txt" : "📤 Enviar cookies.txt"}
+                        <input type="file" accept=".txt" style={{ display: "none" }} disabled={cookiesUploading}
+                          onChange={e => { if (e.target.files?.[0]) uploadCookies(e.target.files[0]); e.target.value = ""; }} />
+                      </label>
+                      {cookiesActive && (
+                        <button onClick={removeCookies} style={{ ...s.btn2, padding: "12px 14px", fontSize: "0.78rem", color: "#e63946" }}>✕</button>
+                      )}
+                    </div>
+
+                    {cookiesActive && cookiesDate && (
+                      <div style={{ marginTop: 8, fontSize: "0.7rem", color: "#505068", textAlign: "center" }}>
+                        Último envio: {new Date(cookiesDate).toLocaleDateString("pt-BR")} às {new Date(cookiesDate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Step 3: Load */}
