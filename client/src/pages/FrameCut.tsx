@@ -38,15 +38,23 @@ export default function FrameCut() {
   const [fileName, setFileName] = useState("");
   const [videoPath, setVideoPath] = useState<string | null>(() => localStorage.getItem("fc_last_video") || null);
 
-  // Re-apply video src when ref changes (after videoLoaded toggle re-renders the component)
+  // Apply video src when videoLoaded becomes true (new video element is mounted)
   useEffect(() => {
-    const v = videoRef.current;
-    if (v && videoSrc && !v.src.includes("serve-video") && !v.src.startsWith("blob:")) {
-      v.crossOrigin = "anonymous";
-      v.preload = "auto";
-      v.src = videoSrc;
-      v.load();
-    }
+    if (!videoLoaded || !videoSrc) return;
+    const timer = setTimeout(() => {
+      const v = videoRef.current;
+      if (!v) return;
+      if (videoSrc.startsWith("blob:") || videoSrc.includes("serve-video")) {
+        if (!videoSrc.startsWith("blob:")) v.crossOrigin = "anonymous";
+        v.preload = "auto";
+        v.src = videoSrc;
+        v.onloadedmetadata = () => {
+          setVideoInfo({ res: `${v.videoWidth}×${v.videoHeight}`, dur: fmtTime(v.duration), fmt: "MP4", size: fmtBytes(v.duration * 200000) });
+        };
+        v.load();
+      }
+    }, 150);
+    return () => clearTimeout(timer);
   }, [videoLoaded, videoSrc]);
 
   // YouTube
@@ -146,53 +154,34 @@ export default function FrameCut() {
     // Auto-load last video from localStorage
     const lastVideo = localStorage.getItem("fc_last_video");
     if (lastVideo) {
-      // Check if file still exists on server
-      fetch(`${API}/serve-video?path=${encodeURIComponent(lastVideo)}`, { method: "HEAD" })
-        .then(r => { if (r.ok) loadVideoFromPath(lastVideo); else localStorage.removeItem("fc_last_video"); })
-        .catch(() => localStorage.removeItem("fc_last_video"));
+      loadVideoFromPath(lastVideo);
     }
   }, []);
 
   // ─── VIDEO LOAD ───
   const loadLocalVideo = (file: File) => {
-    const v = videoRef.current!;
     const src = URL.createObjectURL(file);
-    v.src = src;
-    setVideoSrc(src); // Persist src for re-render
-    v.onloadedmetadata = () => {
-      setVideoInfo({ res: `${v.videoWidth}×${v.videoHeight}`, dur: fmtTime(v.duration), fmt: file.type.split("/")[1]?.toUpperCase() || "?", size: fmtBytes(file.size) });
-      setFileName(file.name);
-      setVideoLoaded(true);
-    };
-    v.load();
+    setVideoSrc(src);
+    setFileName(file.name);
+    setVideoInfo({ res: "—", dur: "—", fmt: file.type.split("/")[1]?.toUpperCase() || "?", size: fmtBytes(file.size) });
+    setVideoLoaded(true); // Show player view — useEffect will apply src
   };
 
   const loadVideoFromPath = (p: string) => {
-    const v = videoRef.current!;
     const src = `${API}/serve-video?path=${encodeURIComponent(p)}`;
-    v.preload = "auto";
-    v.crossOrigin = "anonymous";
-    v.src = src;
-    setVideoSrc(src); // Persist src for re-render
-    v.onerror = () => {
-      toast?.error("Erro ao carregar vídeo. Tente baixar novamente.");
-    };
-    v.onloadedmetadata = () => {
-      setVideoInfo({ res: `${v.videoWidth}×${v.videoHeight}`, dur: fmtTime(v.duration), fmt: "MP4", size: fmtBytes(v.duration * 200000) });
-      setFileName(p.split(/[/\\]/).pop() || "");
-      localStorage.setItem("fc_last_video", p);
-      setVideoLoaded(true);
-      setVideoPath(p);
-      // Auto-find subtitles
-      fetch(`${API}/find-subs?path=${encodeURIComponent(p)}`).then(r => safeJson(r)).then(d => {
-        if (d.subs?.length) {
-          fetch(`${API}/read-sub?path=${encodeURIComponent(d.subs[0].path)}`).then(r => safeJson(r)).then(s => {
-            if (s.lines?.length) { setTransLines(s.lines); toast?.success(`${s.lines.length} linhas de legenda carregadas`); }
-          });
-        }
-      }).catch(() => {});
-    };
-    v.load();
+    setVideoSrc(src);
+    setFileName(p.split(/[/\\]/).pop() || "");
+    setVideoPath(p);
+    localStorage.setItem("fc_last_video", p);
+    setVideoLoaded(true); // Show player — useEffect will apply src
+    // Auto-find subtitles
+    fetch(`${API}/find-subs?path=${encodeURIComponent(p)}`).then(r => safeJson(r)).then(d => {
+      if (d.subs?.length) {
+        fetch(`${API}/read-sub?path=${encodeURIComponent(d.subs[0].path)}`).then(r => safeJson(r)).then(s => {
+          if (s.lines?.length) { setTransLines(s.lines); toast?.success(`${s.lines.length} linhas de legenda carregadas`); }
+        });
+      }
+    }).catch(() => {});
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -743,7 +732,6 @@ export default function FrameCut() {
         )}
       </div>
       <canvas ref={canvasRef} style={{ display: "none" }} />
-      <video ref={videoRef} style={{ display: "none" }} />
     </div>
   );
 
