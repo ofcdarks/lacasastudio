@@ -5,11 +5,6 @@ import { useTheme } from "../../context/ThemeContext";
 interface NavItem { path: string; label: string; icon: string; }
 interface NavGroup { label: string; items: NavItem[]; }
 
-/*
- * Organização cronológica do fluxo de criação:
- * 1. Início → 2. Canais → 3. Pesquisa → 4. Criação → 5. SEO
- * 6. Publicação → 7. Analytics → 8. Shorts → 9. Negócios → 10. Recursos
- */
 const NAV: NavGroup[] = [
   {
     label: "Início",
@@ -126,10 +121,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     });
   }, []);
 
-  const go = useCallback((path: string) => {
-    navigate(path);
-    onClose();
-  }, [navigate, onClose]);
+  const go = useCallback((path: string) => { navigate(path); onClose(); }, [navigate, onClose]);
 
   const isActive = useCallback((path: string) => {
     if (path === "/") return location.pathname === "/";
@@ -155,48 +147,48 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div
           onClick={() => go("/")}
           style={{
-            padding: "18px 18px 16px", display: "flex", alignItems: "center", gap: 12,
+            padding: "22px 20px 18px", display: "flex", alignItems: "center", gap: 14,
             flexShrink: 0, cursor: "pointer", borderBottom: "1px solid var(--border)",
           }}
         >
           <div style={{
-            width: 36, height: 36, borderRadius: 10,
+            width: 40, height: 40, borderRadius: 12,
             background: "linear-gradient(135deg, #F04444, #FF6B6B)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 16, fontWeight: 800, color: "#fff",
+            fontSize: 18, fontWeight: 800, color: "#fff",
             boxShadow: "0 2px 12px rgba(240,68,68,0.25)",
           }}>
             L
           </div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.02em" }}>LaCasaStudio</div>
-            <div style={{ fontSize: 10, color: "var(--dim)", letterSpacing: "0.04em", fontWeight: 500 }}>YouTube Production OS</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.02em" }}>LaCasaStudio</div>
+            <div style={{ fontSize: 11, color: "var(--dim)", letterSpacing: "0.04em", fontWeight: 500 }}>YouTube Production OS</div>
           </div>
         </div>
 
         {/* Navigation */}
-        <div style={{ flex: 1, padding: "10px 10px 10px", overflowY: "auto" }}>
+        <div style={{ flex: 1, padding: "12px 12px", overflowY: "auto" }}>
           {NAV.map((group) => (
-            <div key={group.label} style={{ marginBottom: 4 }}>
+            <div key={group.label} style={{ marginBottom: 6 }}>
               {/* Group header */}
               <button
                 onClick={() => toggleGroup(group.label)}
                 aria-expanded={!collapsed[group.label]}
                 style={{
                   width: "100%", display: "flex", alignItems: "center",
-                  padding: "8px 8px 4px", border: "none", background: "transparent",
-                  cursor: "pointer", borderRadius: 6,
+                  padding: "9px 10px 5px", border: "none", background: "transparent",
+                  cursor: "pointer", borderRadius: 8,
                 }}
               >
                 <span style={{
                   flex: 1, textAlign: "left",
-                  fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                  fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
                   textTransform: "uppercase", color: "var(--dim)",
                 }}>
                   {group.label}
                 </span>
                 <span style={{
-                  fontSize: 8, color: "var(--dim)", opacity: 0.5,
+                  fontSize: 9, color: "var(--dim)", opacity: 0.5,
                   transform: collapsed[group.label] ? "rotate(-90deg)" : "rotate(0)",
                   transition: "transform 0.2s",
                 }}>▼</span>
@@ -207,7 +199,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 role="list"
                 style={{
                   overflow: "hidden",
-                  maxHeight: collapsed[group.label] ? 0 : `${group.items.length * 36}px`,
+                  maxHeight: collapsed[group.label] ? 0 : `${group.items.length * 42}px`,
                   transition: "max-height 0.25s ease",
                 }}
               >
@@ -220,31 +212,29 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       onClick={() => go(item.path)}
                       aria-current={active ? "page" : undefined}
                       style={{
-                        width: "100%", display: "flex", alignItems: "center", gap: 10,
-                        padding: "7px 10px", border: "none", borderRadius: 8,
+                        width: "100%", display: "flex", alignItems: "center", gap: 12,
+                        padding: "9px 12px", border: "none", borderRadius: 10,
                         background: active ? "rgba(240,68,68,0.08)" : "transparent",
                         color: active ? "var(--text)" : "var(--muted)",
-                        fontSize: 13, fontWeight: active ? 600 : 400,
+                        fontSize: 14, fontWeight: active ? 600 : 450,
                         cursor: "pointer", transition: "all 0.12s",
                         letterSpacing: "-0.01em", position: "relative",
                       }}
-                      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.035)"; }}
                       onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                     >
-                      {/* Active indicator bar */}
                       {active && (
                         <div style={{
-                          position: "absolute", left: 0, top: "20%", bottom: "20%", width: 3,
+                          position: "absolute", left: 0, top: "18%", bottom: "18%", width: 3,
                           borderRadius: "0 3px 3px 0",
                           background: "linear-gradient(180deg, #F04444, #FF6B6B)",
                         }} />
                       )}
                       <span style={{
-                        width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 12, color: active ? "#F04444" : "var(--dim)",
+                        width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 14, color: active ? "#F04444" : "var(--dim)",
                         background: active ? "rgba(240,68,68,0.10)" : "transparent",
-                        borderRadius: 6, flexShrink: 0,
-                        transition: "all 0.12s",
+                        borderRadius: 7, flexShrink: 0, transition: "all 0.12s",
                       }}>
                         {item.icon}
                       </span>
@@ -259,20 +249,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Footer */}
         <div style={{
-          padding: "12px 14px", borderTop: "1px solid var(--border)",
+          padding: "14px 16px", borderTop: "1px solid var(--border)",
           flexShrink: 0, display: "flex", gap: 8,
         }}>
           <button
             onClick={() => go("/settings")}
             style={{
-              flex: 1, padding: "9px 12px", borderRadius: 8,
+              flex: 1, padding: "10px 14px", borderRadius: 10,
               border: "1px solid var(--border)", background: "transparent",
               color: "var(--muted)", cursor: "pointer",
-              fontSize: 12, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
               transition: "all 0.15s",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "var(--border-h)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             ⚙ Configurações
           </button>
@@ -280,9 +270,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             onClick={toggle}
             aria-label={theme === "dark" ? "Tema claro" : "Tema escuro"}
             style={{
-              width: 38, height: 38, borderRadius: 8,
+              width: 42, height: 42, borderRadius: 10,
               border: "1px solid var(--border)", background: "transparent",
-              color: "var(--muted)", cursor: "pointer", fontSize: 15,
+              color: "var(--muted)", cursor: "pointer", fontSize: 17,
               display: "flex", alignItems: "center", justifyContent: "center",
               transition: "all 0.15s",
             }}
