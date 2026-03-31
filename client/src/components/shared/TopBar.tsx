@@ -81,7 +81,7 @@ export default function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
 
         {/* Page title */}
         {pageTitle && (
-          <div style={{ fontSize: 16, fontWeight: 700, color: C.text, letterSpacing: "-0.01em", flexShrink: 0 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: C.text, letterSpacing: "-0.01em", flexShrink: 0 }}>
             {pageTitle}
           </div>
         )}
@@ -92,10 +92,10 @@ export default function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
           className="topbar-search"
           onClick={() => setShowSearch(true)}
           style={{
-            flex: 1, maxWidth: 420, height: 40, borderRadius: 12,
+            flex: 1, maxWidth: 440, height: 44, borderRadius: 12,
             background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`,
-            display: "flex", alignItems: "center", padding: "0 16px", gap: 10,
-            cursor: "pointer", color: C.dim, fontSize: 14, transition: "all 0.15s",
+            display: "flex", alignItems: "center", padding: "0 18px", gap: 10,
+            cursor: "pointer", color: C.dim, fontSize: 15, transition: "all 0.15s",
           }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.10)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)"; }}
@@ -116,14 +116,14 @@ export default function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
           <button
             onClick={() => { setShowNotifs(!showNotifs); setShowUser(false); }}
             style={{
-              width: 40, height: 40, borderRadius: 10,
+              width: 44, height: 44, borderRadius: 10,
               background: showNotifs ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)",
               border: `1px solid ${showNotifs ? C.borderH : C.border}`,
               display: "flex", alignItems: "center", justifyContent: "center",
               cursor: "pointer", position: "relative", transition: "all 0.15s",
             }}
           >
-            <span style={{ fontSize: 17 }}>🔔</span>
+            <span style={{ fontSize: 20 }}>🔔</span>
             {unread > 0 && (
               <div style={{
                 position: "absolute", top: -5, right: -5,
@@ -152,7 +152,7 @@ export default function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
             }}
           >
             <div style={{
-              width: 38, height: 38, borderRadius: 10,
+              width: 42, height: 42, borderRadius: 10,
               background: `linear-gradient(135deg, ${C.red}, ${C.orange})`,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontWeight: 700, fontSize: 14, color: "#fff",
@@ -161,8 +161,8 @@ export default function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
               {user?.avatar || user?.name?.charAt(0)?.toUpperCase() || "?"}
             </div>
             <div style={{ textAlign: "left", display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: C.text, lineHeight: 1.2 }}>{user?.name || "Usuário"}</span>
-              <span style={{ fontSize: 11, color: C.dim, lineHeight: 1.2 }}>{user?.role || "Creator"}</span>
+              <span style={{ fontSize: 15, fontWeight: 600, color: C.text, lineHeight: 1.2 }}>{user?.name || "Usuário"}</span>
+              <span style={{ fontSize: 12, color: C.dim, lineHeight: 1.2 }}>{user?.role || "Creator"}</span>
             </div>
             <span style={{ fontSize: 10, color: C.dim, marginLeft: 4, transition: "transform 0.2s", transform: showUser ? "rotate(180deg)" : "rotate(0)" }}>▼</span>
           </button>

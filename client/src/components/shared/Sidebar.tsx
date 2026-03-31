@@ -161,8 +161,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             L
           </div>
           <div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.02em" }}>LaCasaStudio</div>
-            <div style={{ fontSize: 11, color: "var(--dim)", letterSpacing: "0.04em", fontWeight: 500 }}>YouTube Production OS</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.02em" }}>LaCasaStudio</div>
+            <div style={{ fontSize: 12, color: "var(--dim)", letterSpacing: "0.04em", fontWeight: 500 }}>YouTube Production OS</div>
           </div>
         </div>
 
@@ -182,7 +182,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               >
                 <span style={{
                   flex: 1, textAlign: "left",
-                  fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+                  fontSize: 12, fontWeight: 700, letterSpacing: "0.08em",
                   textTransform: "uppercase", color: "var(--dim)",
                 }}>
                   {group.label}
@@ -199,7 +199,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 role="list"
                 style={{
                   overflow: "hidden",
-                  maxHeight: collapsed[group.label] ? 0 : `${group.items.length * 42}px`,
+                  maxHeight: collapsed[group.label] ? 0 : `${group.items.length * 46}px`,
                   transition: "max-height 0.25s ease",
                 }}
               >
@@ -213,10 +213,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       aria-current={active ? "page" : undefined}
                       style={{
                         width: "100%", display: "flex", alignItems: "center", gap: 12,
-                        padding: "9px 12px", border: "none", borderRadius: 10,
+                        padding: "10px 14px", border: "none", borderRadius: 10,
                         background: active ? "rgba(240,68,68,0.08)" : "transparent",
                         color: active ? "var(--text)" : "var(--muted)",
-                        fontSize: 14, fontWeight: active ? 600 : 450,
+                        fontSize: 15, fontWeight: active ? 600 : 450,
                         cursor: "pointer", transition: "all 0.12s",
                         letterSpacing: "-0.01em", position: "relative",
                       }}
@@ -231,8 +231,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         }} />
                       )}
                       <span style={{
-                        width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 14, color: active ? "#F04444" : "var(--dim)",
+                        width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 16, color: active ? "#F04444" : "var(--dim)",
                         background: active ? "rgba(240,68,68,0.10)" : "transparent",
                         borderRadius: 7, flexShrink: 0, transition: "all 0.12s",
                       }}>
@@ -258,7 +258,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               flex: 1, padding: "10px 14px", borderRadius: 10,
               border: "1px solid var(--border)", background: "transparent",
               color: "var(--muted)", cursor: "pointer",
-              fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+              fontSize: 14, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               transition: "all 0.15s",
             }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}

@@ -77,10 +77,10 @@ export function Btn({ children, onClick, vr = "primary", style: s = {}, disabled
   const [h, setH] = useState(false);
   const base: CSSProperties = {
     border: "none", cursor: disabled ? "not-allowed" : "pointer",
-    fontWeight: 600, fontSize: 14, borderRadius: 12,
+    fontWeight: 600, fontSize: 15, borderRadius: 12,
     display: "inline-flex", alignItems: "center", gap: 8,
     transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
-    padding: "11px 22px", letterSpacing: "0.01em",
+    padding: "12px 24px", letterSpacing: "0.01em",
     opacity: disabled ? 0.4 : 1, ...s,
   };
   const vs: Record<string, CSSProperties> = {
@@ -112,8 +112,8 @@ export function Hdr({ title, sub, action }: HdrProps) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, gap: 16, flexWrap: "wrap" }}>
       <div style={{ minWidth: 0 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: C.text, margin: 0, letterSpacing: "-0.03em", lineHeight: 1.2 }}>{title}</h1>
-        {sub && <p style={{ fontSize: 14, color: C.dim, margin: "8px 0 0", lineHeight: 1.5 }}>{sub}</p>}
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: C.text, margin: 0, letterSpacing: "-0.03em", lineHeight: 1.2 }}>{title}</h1>
+        {sub && <p style={{ fontSize: 15, color: C.dim, margin: "8px 0 0", lineHeight: 1.5 }}>{sub}</p>}
       </div>
       {action}
     </div>
@@ -122,19 +122,19 @@ export function Hdr({ title, sub, action }: HdrProps) {
 
 /* ─── Label ─── */
 export function Label({ t }: { t: string }) {
-  return <div style={{ fontSize: 12, color: C.dim, marginBottom: 7, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.06em" }}>{t}</div>;
+  return <div style={{ fontSize: 13, color: C.dim, marginBottom: 8, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.06em" }}>{t}</div>;
 }
 
 /* ─── Section Title ─── */
 export function SecTitle({ t }: { t: string }) {
-  return <div style={{ fontSize: 12, fontWeight: 700, color: C.dim, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>{t}</div>;
+  return <div style={{ fontSize: 13, fontWeight: 700, color: C.dim, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>{t}</div>;
 }
 
 /* ─── Input ─── */
 export function Input(props: any) {
   return <input {...props} style={{
     background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: 12,
-    padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", width: "100%",
+    padding: "13px 16px", color: C.text, fontSize: 15, outline: "none", width: "100%",
     transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
     ...props.style
   }}
@@ -147,7 +147,7 @@ export function Input(props: any) {
 export function Select({ children, ...props }: any) {
   return <select {...props} style={{
     background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: 12,
-    padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", width: "100%",
+    padding: "13px 16px", color: C.text, fontSize: 15, outline: "none", width: "100%",
     appearance: "none" as const, cursor: "pointer",
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23555' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E")`,
     backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center", paddingRight: 36,

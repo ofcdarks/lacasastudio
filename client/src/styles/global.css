@@ -25,8 +25,8 @@
   --teal: #14B8A6;
   --font: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
   --mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --sidebar-w: 260px;
-  --topbar-h: 60px;
+  --sidebar-w: 280px;
+  --topbar-h: 64px;
   --radius: 14px;
   --radius-sm: 10px;
   --radius-lg: 18px;
@@ -36,7 +36,7 @@
   --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
   --transition-fast: 0.12s cubic-bezier(0.4,0,0.2,1);
   /* Base font size — bigger for readability */
-  font-size: 15px;
+  font-size: 16px;
 }
 
 [data-theme="light"] {
