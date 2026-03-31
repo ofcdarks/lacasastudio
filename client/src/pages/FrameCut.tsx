@@ -747,8 +747,8 @@ export default function FrameCut() {
         {/* LEFT: Player + Gallery */}
         <div>
           {/* Player */}
-          <div style={{ background: "#101016", borderRadius: 10, overflow: "hidden", border: "1px solid #252538" }}>
-            <video ref={videoRef} controls crossOrigin="anonymous" style={{ width: "100%", maxHeight: "70vh", background: "#000", display: "block", objectFit: "contain" }} />
+          <div style={{ borderRadius: 10, overflow: "hidden" }}>
+            <video ref={videoRef} controls crossOrigin="anonymous" style={{ width: "100%", display: "block", borderRadius: 10 }} />
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
             <button style={s.btn2} onClick={captureCurrentFrame}>📸 Frame atual</button>
