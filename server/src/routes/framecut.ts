@@ -461,10 +461,7 @@ router.get("/serve-video", (req: Request, res: Response) => {
   const ctMap: Record<string, string> = { ".mp4": "video/mp4", ".webm": "video/webm", ".mkv": "video/x-matroska", ".mov": "video/quicktime" };
   const ct = ctMap[ext] || "video/mp4";
 
-  // CORS headers for all responses
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Range");
-  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
+  // CORS is handled by index.ts middleware for serve-video/serve-frame/download-file
   res.setHeader("Accept-Ranges", "bytes");
   res.setHeader("Cache-Control", "no-cache");
 

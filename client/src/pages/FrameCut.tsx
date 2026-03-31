@@ -148,7 +148,7 @@ export default function FrameCut() {
   const loadVideoFromPath = (p: string) => {
     const v = videoRef.current!;
     v.preload = "auto";
-    v.crossOrigin = "anonymous"; // Required for canvas frame capture from API-served video
+    v.crossOrigin = "anonymous"; // Needed for canvas frame capture
     v.src = `${API}/serve-video?path=${encodeURIComponent(p)}`;
     v.onerror = () => {
       toast?.error("Erro ao carregar vídeo. Tente baixar novamente.");

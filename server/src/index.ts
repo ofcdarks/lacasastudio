@@ -55,7 +55,21 @@ const corsOrigin = env.NODE_ENV === "production" && ALLOWED_ORIGINS.length > 0
   ? ALLOWED_ORIGINS
   : true; // Allow all in development only
 
-app.use(cors({ origin: corsOrigin, credentials: true }));
+// CORS — skip credentials for framecut file serving routes (video/image streaming)
+const corsMiddleware = cors({ origin: corsOrigin, credentials: true });
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path.startsWith("/api/framecut/serve-video") || req.path.startsWith("/api/framecut/serve-frame") || req.path.startsWith("/api/framecut/download-file")) {
+    // Simple CORS without credentials for media streaming
+    const origin = req.headers.origin || "*";
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Range");
+    res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+    return next();
+  }
+  return corsMiddleware(req, res, next);
+});
 
 // Security headers with CSP — skip for framecut file-serving routes
 const helmetMiddleware = helmet({
