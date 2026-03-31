@@ -111,10 +111,11 @@ function buildBaseArgs(): string[] {
   return args;
 }
 
-function spawnJob(id: string, cmd: string, args: string[], cwd: string, retryCtx?: { strategyIndex: number; baseArgs: string[]; formatArgs: string[]; url: string }) {
+function spawnJob(id: string, cmd: string, args: string[], cwd: string, retryCtx?: { strategyIndex: number; baseArgs: string[]; formatArgs: string[]; url: string; triedNoFormat?: boolean }) {
   const job = jobs[id];
   job.status = "running";
   let sawBotBlock = false;
+  let sawFormatError = false;
 
   const env = { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" };
   const proc = spawn(cmd, args, { cwd, env, shell: process.platform === "win32" });
@@ -134,7 +135,7 @@ function spawnJob(id: string, cmd: string, args: string[], cwd: string, retryCtx
       sawBotBlock = true;
     }
     if (lower.includes("requested format is not available")) {
-      sawBotBlock = true; // trigger retry with different player client
+      sawFormatError = true;
     }
   };
 
@@ -153,8 +154,29 @@ function spawnJob(id: string, cmd: string, args: string[], cwd: string, retryCtx
       if (job.expectedFile && fs.existsSync(job.expectedFile)) {
         job.status = "done"; job.progress = 100; job.filepath = job.expectedFile;
         job.output.push(`\n[FrameCut] ⚠️ Processo reportou erro, mas arquivo encontrado.`);
+      } else if (sawFormatError && retryCtx && !retryCtx.triedNoFormat) {
+        // ─── Format not available: retry without format filter (just "best") ───
+        job.output.push(`\n[FrameCut] ⚠️ Formato não disponível. Tentando sem filtro de qualidade...`);
+        job.progress = 0;
+        // Remove -f and its value from formatArgs, replace with simple "best"
+        const noFmtArgs: string[] = [];
+        let skipNext = false;
+        for (const a of retryCtx.formatArgs) {
+          if (a === "-f") { skipNext = true; continue; }
+          if (skipNext) { skipNext = false; continue; }
+          noFmtArgs.push(a);
+        }
+        const retryArgs = [
+          ...retryCtx.baseArgs,
+          "--extractor-args", STRATEGIES[0].extArgs,
+          ...noFmtArgs,
+          retryCtx.url,
+        ];
+        job.output.push(`[FrameCut] > yt-dlp (sem filtro de formato)\n`);
+        spawnJob(id, "yt-dlp", retryArgs, cwd, { ...retryCtx, strategyIndex: 0, triedNoFormat: true });
+        return;
       } else if (sawBotBlock && retryCtx && retryCtx.strategyIndex < STRATEGIES.length - 1) {
-        // ─── Auto-retry with next strategy ───
+        // ─── Bot block: retry with next player client ───
         const nextIdx = retryCtx.strategyIndex + 1;
         const next = STRATEGIES[nextIdx];
         job.output.push(`\n[FrameCut] ⚠️ Bot detectado. Tentando estratégia: ${next.name}...`);
@@ -168,7 +190,7 @@ function spawnJob(id: string, cmd: string, args: string[], cwd: string, retryCtx
         ];
         job.output.push(`[FrameCut] > yt-dlp (${next.name})\n`);
         spawnJob(id, "yt-dlp", retryArgs, cwd, { ...retryCtx, strategyIndex: nextIdx });
-        return; // don’t finalize yet
+        return;
       } else {
         job.status = "error";
         if (sawBotBlock) {
