@@ -167,7 +167,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <div style={{ flex: 1, padding: "12px 12px", overflowY: "auto" }}>
+        <div style={{ flex: 1, padding: "12px 8px 80px", overflowY: "auto" }}>
           {NAV.map((group) => (
             <div key={group.label} style={{ marginBottom: 6 }}>
               {/* Group header */}
@@ -199,7 +199,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 role="list"
                 style={{
                   overflow: "hidden",
-                  maxHeight: collapsed[group.label] ? 0 : `${group.items.length * 46}px`,
+                  maxHeight: collapsed[group.label] ? 0 : `${group.items.length * 44}px`,
                   transition: "max-height 0.25s ease",
                 }}
               >
@@ -212,11 +212,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       onClick={() => go(item.path)}
                       aria-current={active ? "page" : undefined}
                       style={{
-                        width: "100%", display: "flex", alignItems: "center", gap: 12,
-                        padding: "10px 14px", border: "none", borderRadius: 10,
+                        width: "100%", display: "flex", alignItems: "center", gap: 10,
+                        padding: "9px 12px", border: "none", borderRadius: 10,
                         background: active ? "rgba(240,68,68,0.08)" : "transparent",
                         color: active ? "var(--text)" : "var(--muted)",
-                        fontSize: 15, fontWeight: active ? 600 : 450,
+                        fontSize: 14, fontWeight: active ? 600 : 450,
                         cursor: "pointer", transition: "all 0.12s",
                         letterSpacing: "-0.01em", position: "relative",
                       }}
@@ -231,8 +231,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         }} />
                       )}
                       <span style={{
-                        width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 16, color: active ? "#F04444" : "var(--dim)",
+                        width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 14, color: active ? "#F04444" : "var(--dim)",
                         background: active ? "rgba(240,68,68,0.10)" : "transparent",
                         borderRadius: 7, flexShrink: 0, transition: "all 0.12s",
                       }}>
