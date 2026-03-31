@@ -89,6 +89,7 @@ export default function FrameCut() {
   const [dnaTab, setDnaTab] = useState<"storyboard" | "dna" | "roteiro" | "nichos" | "modelagem">("dna");
   const [savedDnas, setSavedDnas] = useState<any[]>([]);
   const [savingDna, setSavingDna] = useState(false);
+  const [showAgentPrompt, setShowAgentPrompt] = useState(false);
 
   // Transcription
   const [transLines, setTransLines] = useState<TransLine[]>([]);
@@ -1354,37 +1355,164 @@ export default function FrameCut() {
                         )}
                       </div>
 
-                      {/* Copy full script structure button */}
-                      <button onClick={() => {
+                      {/* Action buttons */}
+                      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                        <button onClick={() => {
+                          const rot = analysisResult.roteiro;
+                          let txt = "📝 ESTRUTURA DO ROTEIRO\n\n";
+                          if (rot.estrutura) rot.estrutura.forEach((sec: any) => { txt += `[${sec.timestamp || ""}] ${sec.secao || sec.section || ""}\n${sec.descricao || sec.description || ""}\n${sec.tecnica ? `Tecnica: ${sec.tecnica}\n` : ""}\n`; });
+                          txt += `Tom: ${rot.tom || "-"}\nPacing: ${rot.pacing || "-"}\n`;
+                          if (rot.ctaTexto) txt += `CTA: "${rot.ctaTexto}"\n`;
+                          [["🪝 HOOKS", rot.hooks], ["🔄 OPEN LOOPS", rot.openLoops], ["💗 GATILHOS", rot.gatilhosEmocionais], ["📊 RETENCAO", rot.retencaoTecnicas], ["✅ FORTES", rot.pontosFortesRoteiro], ["💡 MELHORIAS", rot.melhorasRoteiro]]
+                            .forEach(([label, arr]) => { if (arr?.length) { txt += `\n${label}:\n`; arr.forEach((i: string) => { txt += `• ${i}\n`; }); } });
+                          navigator.clipboard.writeText(txt);
+                          toast?.success("Estrutura do roteiro copiada!");
+                        }} style={{ ...s.btn2, flex: 1, justifyContent: "center", background: "#a78bfa15", color: "#a78bfa", borderColor: "#a78bfa30" }}>
+                          📋 Copiar Estrutura
+                        </button>
+                        <button onClick={() => setShowAgentPrompt(!showAgentPrompt)}
+                          style={{ ...s.btn2, flex: 1, justifyContent: "center", background: showAgentPrompt ? "#e6394618" : "#22D35E15", color: showAgentPrompt ? "#e63946" : "#22D35E", borderColor: showAgentPrompt ? "#e6394640" : "#22D35E40" }}>
+                          {showAgentPrompt ? "✕ Fechar Agente" : "🤖 Gerar Agente de Roteiro"}
+                        </button>
+                      </div>
+
+                      {/* ── AGENT PROMPT GENERATOR ── */}
+                      {showAgentPrompt && (() => {
                         const rot = analysisResult.roteiro;
-                        let txt = "📝 ESTRUTURA DO ROTEIRO\n\n";
-                        if (rot.estrutura) {
-                          rot.estrutura.forEach((s: any) => {
-                            txt += `[${s.timestamp || ""}] ${s.secao || s.section || ""}\n`;
-                            txt += `${s.descricao || s.description || ""}\n`;
-                            if (s.tecnica) txt += `Tecnica: ${s.tecnica}\n`;
-                            txt += "\n";
-                          });
-                        }
-                        txt += `Tom: ${rot.tom || "-"}\nPacing: ${rot.pacing || "-"}\n`;
-                        if (rot.ctaTexto) txt += `CTA: "${rot.ctaTexto}"\n`;
-                        txt += "\n🪝 HOOKS:\n";
-                        (rot.hooks || []).forEach((h: string) => { txt += `• "${h}"\n`; });
-                        txt += "\n🔄 OPEN LOOPS:\n";
-                        (rot.openLoops || []).forEach((l: string) => { txt += `• ${l}\n`; });
-                        txt += "\n💗 GATILHOS EMOCIONAIS:\n";
-                        (rot.gatilhosEmocionais || []).forEach((g: string) => { txt += `• ${g}\n`; });
-                        txt += "\n📊 RETENCAO:\n";
-                        (rot.retencaoTecnicas || []).forEach((t: string) => { txt += `• ${t}\n`; });
-                        txt += "\n✅ PONTOS FORTES:\n";
-                        (rot.pontosFortesRoteiro || []).forEach((p: string) => { txt += `• ${p}\n`; });
-                        txt += "\n💡 MELHORIAS:\n";
-                        (rot.melhorasRoteiro || []).forEach((m: string) => { txt += `• ${m}\n`; });
-                        navigator.clipboard.writeText(txt);
-                        toast?.success("Estrutura do roteiro copiada!");
-                      }} style={{ ...s.btn2, width: "100%", justifyContent: "center", marginTop: 16, background: "#a78bfa15", color: "#a78bfa", borderColor: "#a78bfa30" }}>
-                        📋 Copiar Estrutura Completa do Roteiro
-                      </button>
+                        const a = analysisResult;
+
+                        // Build the structure formula
+                        const structParts = (rot.estrutura || []).map((sec: any) => {
+                          const pct = sec.timestamp ? (() => {
+                            const m = sec.timestamp.match(/(\d+):(\d+)/);
+                            return m ? `${m[1]}:${m[2]}` : sec.timestamp;
+                          })() : "";
+                          return `- **${sec.secao || sec.section || "Seção"}** (${pct}): ${sec.descricao || sec.description || ""}${sec.tecnica ? ` → Técnica: ${sec.tecnica}` : ""}`;
+                        }).join("\n");
+
+                        const hookExamples = (rot.hooks || []).map((h: string) => `  - "${h}"`).join("\n");
+                        const loopExamples = (rot.openLoops || []).map((l: string) => `  - ${l}`).join("\n");
+                        const triggerExamples = (rot.gatilhosEmocionais || []).map((g: string) => g).join(", ");
+                        const retentionTech = (rot.retencaoTecnicas || []).map((t: string) => `  - ${t}`).join("\n");
+
+                        const agentPrompt = `Você é um roteirista profissional especializado em vídeos para YouTube no nicho de "${a.nicho || "conteúdo"}${a.subnicho ? ` > ${a.subnicho}` : ""}${a.micronicho ? ` > ${a.micronicho}` : ""}".
+
+Seu estilo é: ${rot.tom || a.estilo || "narrativo e envolvente"}.
+Pacing: ${rot.pacing || a.ritmoEdicao || "variável"}.
+
+═══ FÓRMULA DE ESTRUTURA DO ROTEIRO ═══
+
+Siga EXATAMENTE esta estrutura comprovada:
+
+${structParts || "- Hook (0:00-0:30): Abertura impactante\n- Desenvolvimento (0:30-final): Conteúdo principal\n- CTA + Fechamento: Chamada para ação"}
+
+═══ REGRAS DE HOOK (primeiros 30 segundos) ═══
+
+O hook é a parte mais importante. Use estas técnicas comprovadas:
+${hookExamples || '  - Comece com uma pergunta provocativa\n  - Use curiosity gap'}
+
+Exemplos de hooks que funcionam neste estilo:
+${hookExamples || '  - "O que aconteceria se..."'}
+
+═══ TÉCNICAS DE RETENÇÃO OBRIGATÓRIAS ═══
+
+Aplique estas técnicas ao longo de TODO o roteiro:
+${retentionTech || '  - Curiosity gaps a cada 2-3 minutos\n  - Open loops que só fecham no final'}
+
+Open loops para usar (revelações parciais que mantêm o espectador):
+${loopExamples || '  - Apresentar um mistério no início e só resolver no clímax'}
+
+═══ GATILHOS EMOCIONAIS ═══
+
+Use estes gatilhos: ${triggerExamples || "curiosidade, tensão, surpresa, empatia"}.
+Cada mudança de seção deve ter um pico emocional.
+
+═══ CTA (Call to Action) ═══
+
+${rot.ctaTexto ? `Use CTA similar a: "${rot.ctaTexto}"` : "Insira CTA natural no final, pedindo like + inscrição de forma orgânica."}
+O CTA deve ser integrado na narrativa, não parecer forçado.
+
+═══ REGRAS GERAIS ═══
+
+1. O roteiro deve ser para um vídeo de {DURACAO} minutos sobre "{TITULO}"
+2. Escreva o roteiro COMPLETO com falas prontas para narração/gravação
+3. Indique [CORTE], [B-ROLL], [TEXTO NA TELA], [TRANSIÇÃO], [SFX] entre as falas
+4. Mantenha parágrafos curtos (máx 3 linhas) para facilitar a narração
+5. A cada 2-3 minutos de roteiro, insira um micro-hook de retenção
+6. Use linguagem ${rot.tom || "envolvente e direta"} — como se estivesse conversando
+7. Adapte o pacing: ${rot.pacing || "variável, com momentos rápidos e pausas dramáticas"}
+8. SEMPRE responda em português brasileiro
+
+═══ FORMATO DE SAÍDA ═══
+
+\`\`\`
+[HOOK - 0:00 a 0:30]
+(falas do hook aqui)
+
+[SEÇÃO 1 - TÍTULO DA SEÇÃO]
+(falas + indicações de edição)
+
+[SEÇÃO 2 - TÍTULO DA SEÇÃO]
+(falas + indicações de edição)
+
+... (continuar até completar a duração)
+
+[CTA + FECHAMENTO]
+(falas de encerramento)
+\`\`\`
+
+Quando eu enviar um TÍTULO e DURAÇÃO, escreva o roteiro completo seguindo esta fórmula.`;
+
+                        return (
+                          <div style={{ marginTop: 16, background: "linear-gradient(135deg, #0c0c10, #10102a)", borderRadius: 14, border: "1px solid #a78bfa30", overflow: "hidden" }}>
+                            <div style={{ padding: "16px 18px", borderBottom: "1px solid #252538" }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <div>
+                                  <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#22D35E" }}>🤖 Agente de Roteiro</div>
+                                  <div style={{ fontSize: "0.78rem", color: "#8a8aa0", marginTop: 4 }}>
+                                    Cole este prompt em qualquer IA (ChatGPT, Claude, Gemini). Depois é só enviar o título e duração do vídeo.
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* How to use */}
+                            <div style={{ padding: "12px 18px", background: "#0c0c1050", borderBottom: "1px solid #1e1e2a" }}>
+                              <div style={{ fontSize: "0.75rem", color: "#f4a261", fontWeight: 600, marginBottom: 6 }}>COMO USAR:</div>
+                              <div style={{ fontSize: "0.82rem", color: "#c0c0d0", lineHeight: 1.7 }}>
+                                1. Copie o prompt abaixo<br/>
+                                2. Cole no ChatGPT / Claude / Gemini como mensagem de sistema ou primeira mensagem<br/>
+                                3. Envie: <strong style={{ color: "#ededf0" }}>"Título: [seu título] | Duração: [X minutos]"</strong><br/>
+                                4. A IA vai gerar o roteiro completo seguindo a fórmula deste vídeo
+                              </div>
+                            </div>
+
+                            {/* Prompt preview */}
+                            <div style={{ padding: "14px 18px", maxHeight: 300, overflowY: "auto" }}>
+                              <pre style={{ fontSize: "0.78rem", color: "#a0a0b8", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', monospace", margin: 0 }}>
+                                {agentPrompt}
+                              </pre>
+                            </div>
+
+                            {/* Actions */}
+                            <div style={{ padding: "12px 18px", borderTop: "1px solid #252538", display: "flex", gap: 8 }}>
+                              <button onClick={() => {
+                                navigator.clipboard.writeText(agentPrompt);
+                                toast?.success("Agente de roteiro copiado! Cole em qualquer IA.");
+                              }} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #22D35E, #14B8A6)", color: "#fff", cursor: "pointer", fontSize: "0.88rem", fontWeight: 700, transition: "all .2s" }}>
+                                📋 Copiar Agente Completo
+                              </button>
+                              <button onClick={() => {
+                                const quick = `Título: [COLOQUE O TÍTULO AQUI] | Duração: [X minutos]`;
+                                navigator.clipboard.writeText(agentPrompt + "\n\n---\n\n" + quick);
+                                toast?.success("Agente + template de uso copiado!");
+                              }} style={{ ...s.btn2, padding: "12px 16px", background: "#4B8DF815", color: "#4B8DF8", borderColor: "#4B8DF840" }}>
+                                📦 Copiar com Template
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </>
                   ) : (
                     <div style={{ textAlign: "center", padding: "40px 20px", color: "#505068" }}>
