@@ -737,12 +737,18 @@ export default function FrameCut() {
           {/* Transcript */}
           {transLines.length > 0 && (
             <div style={{ ...s.console, marginTop: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#101016", borderBottom: "1px solid #252538" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#101016", borderBottom: "1px solid #252538", flexWrap: "wrap", gap: 6 }}>
                 <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>📝 Transcrição ({transLines.length})</span>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button style={{ ...s.btn2, padding: "3px 10px", fontSize: "0.68rem" }} onClick={() => { navigator.clipboard.writeText(transLines.map(l => `[${fmtTime(l.time)}] ${l.text}`).join("\n")); toast?.success("Copiado!"); }}>📋</button>
-                  <button style={{ ...s.btn2, padding: "3px 10px", fontSize: "0.68rem" }} onClick={() => { const b = new Blob([transLines.map(l => `[${fmtTime(l.time)}] ${l.text}`).join("\n")], { type: "text/plain" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "transcricao.txt"; a.click(); }}>⬇</button>
-                  <button style={{ ...s.btn2, padding: "3px 10px", fontSize: "0.68rem" }} onClick={() => setTransLines([])}>✕</button>
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  <button style={{ ...s.btn2, padding: "4px 10px", fontSize: "0.72rem" }} title="Copiar com timestamps"
+                    onClick={() => { navigator.clipboard.writeText(transLines.map(l => `[${fmtTime(l.time)}] ${l.text}`).join("\n")); toast?.success("Copiado com timestamps!"); }}>📋 +T</button>
+                  <button style={{ ...s.btn2, padding: "4px 10px", fontSize: "0.72rem" }} title="Copiar só texto"
+                    onClick={() => { navigator.clipboard.writeText(transLines.map(l => l.text).join("\n")); toast?.success("Texto copiado!"); }}>📋 TXT</button>
+                  <button style={{ ...s.btn2, padding: "4px 10px", fontSize: "0.72rem" }} title="Baixar com timestamps"
+                    onClick={() => { const b = new Blob([transLines.map(l => `[${fmtTime(l.time)}] ${l.text}`).join("\n")], { type: "text/plain" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "transcricao_timestamps.txt"; a.click(); }}>⬇ +T</button>
+                  <button style={{ ...s.btn2, padding: "4px 10px", fontSize: "0.72rem" }} title="Baixar só texto"
+                    onClick={() => { const b = new Blob([transLines.map(l => l.text).join("\n")], { type: "text/plain" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "transcricao.txt"; a.click(); }}>⬇ TXT</button>
+                  <button style={{ ...s.btn2, padding: "4px 10px", fontSize: "0.72rem" }} onClick={() => setTransLines([])}>✕</button>
                 </div>
               </div>
               <div style={{ padding: 14, maxHeight: 350, overflowY: "auto", fontSize: "0.82rem", lineHeight: 1.7 }}>
