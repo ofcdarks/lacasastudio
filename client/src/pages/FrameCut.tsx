@@ -238,7 +238,9 @@ export default function FrameCut() {
           clearInterval(iv);
           setDownloading(false);
           if (data.status === "done") {
-            if (data.filepath && type === "video") setVideoPath(data.filepath);
+            if (data.filepath && type === "video") {
+              loadVideoFromPath(data.filepath); // Load video into player + save to localStorage
+            }
             // Fetch generated files for download buttons
             fetch(`${API}/job-files/${jobId}`).then(r => safeJson(r)).then(d => {
               if (d.files?.length) setJobFiles(d.files);
@@ -739,14 +741,14 @@ export default function FrameCut() {
 
   return (
     <div>
-      <Hdr title="🎬 FrameCut" sub={fileName} action={<button style={s.btn2} onClick={() => { setVideoLoaded(false); setFrames([]); setTransLines([]); setVideoPath(null); }}>← Trocar vídeo</button>} />
+      <Hdr title="🎬 FrameCut" sub={fileName} action={<button style={s.btn2} onClick={() => { setVideoLoaded(false); setVideoSrc(""); setFrames([]); setTransLines([]); setVideoPath(null); setJobFiles([]); localStorage.removeItem("fc_last_video"); }}>← Trocar vídeo</button>} />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20, alignItems: "start" }}>
         {/* LEFT: Player + Gallery */}
         <div>
           {/* Player */}
           <div style={{ background: "#101016", borderRadius: 10, overflow: "hidden", border: "1px solid #252538" }}>
-            <video ref={videoRef} controls crossOrigin="anonymous" style={{ width: "100%", maxHeight: 500, background: "#000", display: "block" }} />
+            <video ref={videoRef} controls crossOrigin="anonymous" style={{ width: "100%", maxHeight: "70vh", background: "#000", display: "block", objectFit: "contain" }} />
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
             <button style={s.btn2} onClick={captureCurrentFrame}>📸 Frame atual</button>
