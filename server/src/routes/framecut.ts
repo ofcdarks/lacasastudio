@@ -291,13 +291,16 @@ router.post("/download", (req: Request, res: Response) => {
       "720": "bestvideo[height<=720]+bestaudio/bestvideo*[height<=720]+bestaudio/best[height<=720]/best",
       "480": "bestvideo[height<=480]+bestaudio/bestvideo*[height<=480]+bestaudio/best[height<=480]/best"
     };
-    formatArgs.push("-f", fmtMap[quality] || fmtMap["1080"], "--merge-output-format", "mp4", "-o", path.join(dlDir, "%(title)s.%(ext)s"));
+    const outTpl = path.join(dlDir, "%(id)s_%(title).80B.%(ext)s");
+    formatArgs.push("-f", fmtMap[quality] || fmtMap["1080"], "--merge-output-format", "mp4", "--restrict-filenames", "-o", outTpl);
     jobs[id].findExts = [".mp4",".webm",".mkv"];
   } else if (type === "subs") {
-    formatArgs.push("--write-auto-sub", "--sub-lang", "pt,en,es", "--skip-download", "-o", path.join(dlDir, "%(title)s.%(ext)s"));
+    const outTpl = path.join(dlDir, "%(id)s_%(title).80B.%(ext)s");
+    formatArgs.push("--write-auto-sub", "--sub-lang", "pt,en,es", "--skip-download", "--restrict-filenames", "-o", outTpl);
     jobs[id].findExts = [".srt",".vtt",".ass"];
   } else if (type === "thumb") {
-    formatArgs.push("--write-thumbnail", "--skip-download", "--convert-thumbnails", "jpg", "-o", path.join(dlDir, "%(title)s.%(ext)s"));
+    const outTpl = path.join(dlDir, "%(id)s_%(title).80B.%(ext)s");
+    formatArgs.push("--write-thumbnail", "--skip-download", "--convert-thumbnails", "jpg", "--restrict-filenames", "-o", outTpl);
     jobs[id].findExts = [".jpg",".png",".webp"];
   }
 
@@ -345,18 +348,21 @@ router.get("/serve-video", (req: Request, res: Response) => {
   if (!filepath || !fs.existsSync(filepath)) return res.status(404).json({ error: "Not found" });
   const stat = fs.statSync(filepath);
   const size = stat.size;
+  const ext = path.extname(filepath).toLowerCase();
+  const ctMap: Record<string, string> = { ".mp4": "video/mp4", ".webm": "video/webm", ".mkv": "video/x-matroska", ".mov": "video/quicktime" };
+  const ct = ctMap[ext] || "video/mp4";
   const range = req.headers.range;
   if (range) {
     const m = range.match(/bytes=(\d+)-(\d*)/);
     if (m) {
       const start = parseInt(m[1]);
       const end = m[2] ? parseInt(m[2]) : size - 1;
-      res.writeHead(206, { "Content-Range": `bytes ${start}-${end}/${size}`, "Accept-Ranges": "bytes", "Content-Length": end - start + 1, "Content-Type": "video/mp4" });
+      res.writeHead(206, { "Content-Range": `bytes ${start}-${end}/${size}`, "Accept-Ranges": "bytes", "Content-Length": end - start + 1, "Content-Type": ct, "Access-Control-Allow-Origin": "*" });
       fs.createReadStream(filepath, { start, end }).pipe(res);
       return;
     }
   }
-  res.writeHead(200, { "Content-Length": size, "Content-Type": "video/mp4", "Accept-Ranges": "bytes" });
+  res.writeHead(200, { "Content-Length": size, "Content-Type": ct, "Accept-Ranges": "bytes", "Access-Control-Allow-Origin": "*" });
   fs.createReadStream(filepath).pipe(res);
 });
 
