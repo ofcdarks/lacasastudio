@@ -63,18 +63,49 @@ function readSubFile(filepath: string) {
       if (text) lines.push({ time: sec, text });
     }
   } else if (filepath.endsWith(".vtt")) {
+    // Parse VTT — handle YouTube auto-generated karaoke format
+    // YouTube VTT has 2-line cues where line 1 is previous text (repeated) and line 2 is new text
+    // We only want the NEW text from each cue, then merge into sentences
     const raw = content.split("\n"); let i = 0;
+    const segments: { time: number; text: string }[] = [];
+
     while (i < raw.length && !raw[i].includes("-->")) i++;
     while (i < raw.length) {
       if (!raw[i].includes("-->")) { i++; continue; }
-      const m = raw[i].match(/(\d{2}):(\d{2}):(\d{2})[.](\d{3})/);
-      if (!m) { i++; continue; }
-      const sec = +m[1]*3600 + +m[2]*60 + +m[3] + +m[4]/1000;
-      let txt = ""; i++;
+      const tm = raw[i].match(/(\d{2}):(\d{2}):(\d{2})[.](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[.](\d{3})/);
+      if (!tm) { i++; continue; }
+      const start = +tm[1]*3600 + +tm[2]*60 + +tm[3] + +tm[4]/1000;
+      const end = +tm[5]*3600 + +tm[6]*60 + +tm[7] + +tm[8]/1000;
+      const cueLines: string[] = []; i++;
       while (i < raw.length && raw[i].trim() && !raw[i].includes("-->")) {
-        txt += (txt ? " " : "") + raw[i].trim().replace(/<[^>]+>/g, ""); i++;
+        cueLines.push(raw[i].trim().replace(/<[^>]+>/g, "")); i++;
       }
-      if (txt) lines.push({ time: sec, text: txt });
+      // Skip micro-duration cues (0.01s = YouTube duplicate markers)
+      if ((end - start) < 0.05) continue;
+      // For YouTube karaoke: if 2+ lines, only take the LAST line (new content)
+      // For normal VTT: take all lines
+      const text = cueLines.length > 1 ? cueLines[cueLines.length - 1] : cueLines.join(" ");
+      if (text?.trim()) segments.push({ time: start, text: text.trim() });
+    }
+
+    // Merge consecutive segments into sentences (group by ~5 second windows)
+    if (segments.length > 0) {
+      let current = { time: segments[0].time, parts: [segments[0].text] };
+      for (let j = 1; j < segments.length; j++) {
+        const seg = segments[j];
+        const gap = seg.time - (current.time + current.parts.length * 0.5);
+        const merged = current.parts.join(" ");
+        // Start new line if: gap > 5s, or merged text > 120 chars, or text ends with sentence-ending punctuation
+        if (gap > 5 || merged.length > 120 || /[.!?]$/.test(merged)) {
+          lines.push({ time: current.time, text: merged });
+          current = { time: seg.time, parts: [seg.text] };
+        } else {
+          current.parts.push(seg.text);
+        }
+      }
+      // Push last group
+      const lastMerged = current.parts.join(" ");
+      if (lastMerged.trim()) lines.push({ time: current.time, text: lastMerged });
     }
   }
   return lines;
