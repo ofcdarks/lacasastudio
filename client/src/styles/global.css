@@ -112,10 +112,34 @@
 
   .btn-primary { @apply inline-flex items-center gap-2 font-semibold text-sm rounded-xl px-5 py-2.5 cursor-pointer border-none text-white; background: var(--red); transition: all var(--transition); }
   .btn-primary:hover { box-shadow: 0 4px 20px rgba(240,68,68,0.3); transform: translateY(-1px); }
-  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:active { transform: translateY(0) scale(0.97); }
 
   .btn-ghost { @apply inline-flex items-center gap-2 font-semibold text-sm rounded-xl px-5 py-2.5 cursor-pointer; background: rgba(255,255,255,0.04); color: var(--muted); border: 1px solid var(--border); transition: all var(--transition); }
   .btn-ghost:hover { border-color: var(--border-h); background: rgba(255,255,255,0.06); }
+
+  /* ─── Universal button hover/active for ALL buttons (including inline-style) ─── */
+  button:not(:disabled):hover, [role="button"]:not(:disabled):hover {
+    filter: brightness(1.15);
+    transition: all 0.15s ease;
+  }
+  button:not(:disabled):active, [role="button"]:not(:disabled):active {
+    transform: scale(0.96);
+    filter: brightness(0.92);
+    transition: all 0.08s ease;
+  }
+  /* Buttons with gradient backgrounds get a glow on hover */
+  button[style*="gradient"]:not(:disabled):hover {
+    box-shadow: 0 4px 16px rgba(167,139,250,0.25);
+  }
+  /* Copy/action feedback flash */
+  @keyframes btnFlash {
+    0% { filter: brightness(1.4); }
+    100% { filter: brightness(1); }
+  }
+  button:not(:disabled):focus-visible {
+    outline: 2px solid rgba(167,139,250,0.5);
+    outline-offset: 2px;
+  }
 
   .offline-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 9998; background: var(--orange); color: #fff; text-align: center; padding: 8px; font-size: 13px; font-weight: 600; }
 

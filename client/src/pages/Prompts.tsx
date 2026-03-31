@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect } from "react";
 import { C, Card, Btn } from "../components/shared/UI";
+import { useToast } from "../components/shared/Toast";
 
 const CATEGORIES = ["Todos", "SEO", "Roteiro", "Thumbnail", "Títulos", "Descrição", "Tags", "Shorts", "Hooks", "CTA", "Análise"];
 
@@ -18,6 +19,7 @@ const DEFAULT_PROMPTS = [
 ];
 
 export default function Prompts() {
+  const toast = useToast();
   const [prompts, setPrompts] = useState([]);
   const [filter, setFilter] = useState("Todos");
   const [search, setSearch] = useState("");
@@ -43,6 +45,7 @@ export default function Prompts() {
   const handleCopy = (content) => {
     navigator.clipboard.writeText(content);
     setCopied(content);
+    toast?.success("Prompt copiado!");
     setTimeout(() => setCopied(null), 2000);
   };
 

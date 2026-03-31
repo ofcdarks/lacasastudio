@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState, useMemo } from "react";
 import { C, Card, Btn } from "../components/shared/UI";
+import { useToast } from "../components/shared/Toast";
 
 const TABS = ["Editor de Texto", "Gerador de SRT", "Divisor de Texto"];
 
@@ -143,6 +144,7 @@ function SRTGenerator() {
 }
 
 function TextDivider() {
+  const toast = useToast();
   const [text, setText] = useState("");
   const [maxChars, setMaxChars] = useState(500);
   const [mode, setMode] = useState("partes");
@@ -170,8 +172,8 @@ function TextDivider() {
     }
   };
   const clear = () => { setText(""); setParts([]); };
-  const copy = (t) => navigator.clipboard.writeText(t);
-  const copyAll = () => navigator.clipboard.writeText(parts.join("\n\n---\n\n"));
+  const copy = (t) => { navigator.clipboard.writeText(t); toast?.success("Copiado!"); };
+  const copyAll = () => { navigator.clipboard.writeText(parts.join("\n\n---\n\n")); toast?.success("Tudo copiado!"); };
   return (
     <div>
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
