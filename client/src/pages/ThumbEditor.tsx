@@ -40,6 +40,13 @@ function sanitizePrompt(prompt: string): string {
   return clean.replace(/\s{2,}/g, " ").trim();
 }
 
+// Robust JSON parser — handles markdown, text around JSON, etc.
+function parseAIJson(text: string) {
+  let s = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "");
+  const m = s.match(/\{[\s\S]*\}/);
+  return JSON.parse(m ? m[0] : s.trim());
+}
+
 // Auto-save generated thumbnails to history
 function saveToHistory(data: { niche?: string; prompt?: string; imageUrl?: string; title?: string; style?: string; score?: number }) {
   const token = localStorage.getItem("lc_token");
@@ -428,7 +435,7 @@ GERE 3 VARIAÇÕES:
 
 RESPONDA APENAS este JSON (sem markdown, sem backticks):
 {"promptImageFX":"[prompt 1 - mínimo 80 palavras, ultra específico, SEM texto na imagem, 16:9 landscape, photoreal 8K]","promptVariation2":"[prompt 2 - mínimo 80 palavras]","promptVariation3":"[prompt 3 - mínimo 80 palavras, ousado]","textOverlay":{"title":"${title}","titleStyle":"${styleObj.l}: como posicionar o texto sobre esta imagem para máximo impacto","subtitle":"${subtitle || "sugestão de subtítulo"}","badge":"sugestão de badge contextual (ex: NOVO, TOP, VIRAL, GRÁTIS)","emoji":"1 emoji que representa o vídeo"},"tips":["dica 1 específica para ${nicheObj.l}","dica 2 sobre composição","dica 3 sobre cores/CTR"],"ctrEstimate":85}` }]);
-      const parsed = JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
+      const parsed = parseAIJson(reply);
       setOutput(parsed); pg?.done();
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setLoading(false);
@@ -643,7 +650,7 @@ Depois gere 3 PROMPTS para Google ImageFX/Imagen 3.5 que recriam variações:
 
 RESPONDA JSON (sem backticks):
 {"analysis":{"style":"descrição detalhada do estilo visual","colors":["#hex1","#hex2","#hex3","#hex4","#hex5"],"composition":"como os elementos estão posicionados, regra dos terços, ponto focal","lighting":"tipo de iluminação específica","mood":"atmosfera psicológica"},"remixPrompts":[{"name":"Variação Fiel","prompt":"prompt ImageFX 80+ palavras, 16:9, photoreal, SEM texto, descrição completa de cena, iluminação, cores, câmera, atmosfera","changes":"o que muda"},{"name":"Reinterpretação","prompt":"prompt 80+ palavras com novo ângulo","changes":"mudanças"},{"name":"Transformação Criativa","prompt":"prompt 80+ palavras completamente reimaginado","changes":"mudanças"}],"improvements":["melhoria 1 específica e acionável","melhoria 2","melhoria 3"]}` }]);
-      setOutput(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
+      setOutput(parseAIJson(reply));
       pg?.done();
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setLoading(false);
@@ -742,7 +749,7 @@ A versao melhorada DEVE ser concretamente superior: mais curta, mais curiosa, ma
 
 JSON (sem backticks):
 {"overallScore":72,"titleAnalysis":[{"title":"titulo","score":68,"strengths":["ponto forte real e especifico"],"weaknesses":["fraqueza real com dados de porque prejudica CTR"],"improvedVersion":"VERSAO MELHORADA - max 5 palavras, curiosity gap forte, emocional"}],"viralFactors":{"curiosityGap":70,"emotionalImpact":65,"clarity":85,"uniqueness":55,"clickability":68},"thumbnailTips":["dica visual 2026 especifica sobre composicao","dica sobre cores/contraste baseada em dados","dica mobile-first acionavel"],"competitorInsight":"como esta thumb se compara com top 10 do nicho em 2026","actionPlan":["acao #1 mais impactante com dados de porque funciona","acao #2","acao #3"]}` }]);
-      setOutput(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
+      setOutput(parseAIJson(reply));
       pg?.done();
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setLoading(false);
@@ -904,9 +911,9 @@ DECOMPONHA frame-a-frame: qual angulo de camera, qual lente, qual iluminacao, qu
 
 Depois gere prompts que usam as MESMAS TECNICAS CINEMATOGRAFICAS mas com cena ORIGINAL e SUPERIOR.
 
-JSON (sem backticks):
+RESPONDA SOMENTE UM OBJETO JSON VÁLIDO. Sem markdown, sem explicação, sem texto antes ou depois. APENAS o JSON:
 {"thumbType":"MONTAGEM ou CENA UNICA","formula":"Descricao da FORMULA exata: quantas layers, o que cada layer contem, como estao posicionados, qual o padrao visual que se repete. Se montagem: 'pessoa recortada centro + X atras + Y nas laterais'. Se cena unica: 'close-up macro com Z'.","whyItWorks":"Porque esta formula funciona: qual gatilho visual, qual truque psicologico, qual contraste. Minimo 3 frases.","composition":"DECOMPOSICAO DETALHADA: foreground (o que, quanto % do frame), midground, background. Ponto focal. Leading lines. Regra composicional. Depth of field.","lightingAnalysis":"Tipo de iluminacao exata, direcao, cor da luz, ratio, efeitos atmosfericos","colorPalette":["#hex1","#hex2","#hex3","#hex4","#hex5"],"promptRecreate":"PROMPT 120+ palavras para ImageFX que REPLICA A MESMA FORMULA/LAYOUT. Se o original e montagem: descreva a mesma estrutura de layers (pessoa centralizada + elementos atras + cenas laterais). Se cena unica: mesma tecnica de camera. MUDE os personagens e cenario mas MANTENHA a formula identica. Inclua: posicao de cada elemento, tamanho relativo, iluminacao, paleta hex, atmosfera, render style. ${video.format === "portrait" ? "9:16 portrait vertical" : "16:9 landscape"}, sem texto, 8K.","promptVariation":"VARIACAO RADICAL 120+ palavras. Mesma tecnica cinematografica mas genero visual completamente diferente. Se original e sci-fi, faca noir. Se e acao, faca horror. Manter o mesmo IMPACTO mas mudar tudo.","textSuggestion":"Onde posicionar texto sobre esta composicao para maximo CTR (canto, centro, tamanho, cor do texto vs fundo)","ctrTips":["dica tecnica 1 baseada na decomposicao desta thumb","dica 2 sobre o que o original faz melhor que 90% do nicho","dica 3: como SUPERAR este original"]}` }]);
-      setAnalysis(JSON.parse(reply.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()));
+      setAnalysis(parseAIJson(reply));
       pg?.done();
     } catch (e) { pg?.fail(e.message); toast?.error(e.message); }
     setAnalyzing(false);
