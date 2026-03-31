@@ -359,13 +359,47 @@ const cookiesUpload = multer({
   },
 });
 
+// Convert browser cookie string (name=value;name=value) to Netscape format
+function browserCookiesToNetscape(raw: string, domain = ".youtube.com"): string {
+  const lines = ["# Netscape HTTP Cookie File", "# Converted automatically by LaCasaStudio FrameCut", ""];
+  // Split by semicolons, handling both ";" and "; "
+  const pairs = raw.split(/;\s*/).filter(p => p.includes("="));
+  for (const pair of pairs) {
+    const eqIdx = pair.indexOf("=");
+    if (eqIdx < 1) continue;
+    const name = pair.slice(0, eqIdx).trim();
+    const value = pair.slice(eqIdx + 1).trim();
+    if (!name) continue;
+    // Determine domain based on cookie name
+    const cookieDomain = name.startsWith("__Secure-") || name.startsWith("__Host-") ? ".youtube.com" : domain;
+    const secure = name.startsWith("__Secure-") || name.startsWith("__Host-") ? "TRUE" : "FALSE";
+    lines.push(`${cookieDomain}\tTRUE\t/\t${secure}\t0\t${name}\t${value}`);
+  }
+  return lines.join("\n");
+}
+
+// Detect if text is browser format (single line with semicolons) vs Netscape format
+function isNetscapeFormat(text: string): boolean {
+  const lines = text.trim().split("\n");
+  // Netscape format has tabs and multiple lines
+  return lines.some(l => !l.startsWith("#") && l.includes("\t") && l.split("\t").length >= 6);
+}
+
+function ensureNetscapeFormat(text: string): string {
+  const trimmed = text.trim();
+  if (isNetscapeFormat(trimmed)) return trimmed;
+  // Probably browser format — convert
+  return browserCookiesToNetscape(trimmed);
+}
+
 router.post("/upload-cookies", cookiesUpload.single("cookies"), (req: Request, res: Response) => {
   if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });
   const filePath = path.join(cookiesDir, "cookies.txt");
-  // Validate it looks like a Netscape cookies file
   try {
     const content = fs.readFileSync(filePath, "utf-8");
-    const lines = content.split("\n").filter(l => l.trim() && !l.startsWith("#"));
+    const converted = ensureNetscapeFormat(content);
+    fs.writeFileSync(filePath, converted, "utf-8");
+    const lines = converted.split("\n").filter(l => l.trim() && !l.startsWith("#"));
     if (lines.length < 1) {
       fs.unlinkSync(filePath);
       return res.status(400).json({ error: "Arquivo vazio ou inválido" });
@@ -386,8 +420,9 @@ router.post("/paste-cookies", (req: Request, res: Response) => {
   const filePath = path.join(cookiesDir, "cookies.txt");
   try {
     if (!fs.existsSync(cookiesDir)) fs.mkdirSync(cookiesDir, { recursive: true });
-    fs.writeFileSync(filePath, text.trim(), "utf-8");
-    const lines = text.split("\n").filter(l => l.trim() && !l.startsWith("#"));
+    const converted = ensureNetscapeFormat(text);
+    fs.writeFileSync(filePath, converted, "utf-8");
+    const lines = converted.split("\n").filter(l => l.trim() && !l.startsWith("#"));
     if (lines.length < 1) {
       fs.unlinkSync(filePath);
       return res.status(400).json({ error: "Conteúdo inválido — nenhuma linha de cookie encontrada" });
