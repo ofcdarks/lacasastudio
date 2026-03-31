@@ -40,7 +40,7 @@ COPY --from=client-build /app/client/dist ./server/public
 COPY scripts/entrypoint.sh /app/entrypoint.sh
 COPY scripts/backup.sh /app/backup.sh
 
-RUN mkdir -p /app/data /app/backups /app/server/uploads /home/appuser/Downloads \
+RUN mkdir -p /app/data /app/data/downloads /app/backups /app/server/uploads /home/appuser/Downloads \
     && chmod +x /app/entrypoint.sh /app/backup.sh \
     && chown -R appuser:appgroup /app /home/appuser
 

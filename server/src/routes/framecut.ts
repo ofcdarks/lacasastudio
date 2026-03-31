@@ -13,7 +13,8 @@ const genId = () => crypto.randomBytes(4).toString("hex");
 
 // ─── State ───
 const jobs: Record<string, any> = {};
-let downloadDir = process.env.FRAMECUT_DIR || path.join(os.homedir(), "Downloads");
+// Use /app/data/downloads in production (persistent volume) or ~/Downloads in dev
+let downloadDir = process.env.FRAMECUT_DIR || (process.env.NODE_ENV === "production" ? "/app/data/downloads" : path.join(os.homedir(), "Downloads"));
 let cookiesFile = process.env.FRAMECUT_COOKIES || "";
 
 // Ensure dir exists
