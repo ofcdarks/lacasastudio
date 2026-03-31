@@ -100,6 +100,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 app.use(compression());
 app.use(requestId);
+// Higher limit for AI visual analysis (base64 frames)
+app.use("/api/ai/analyze-visual", express.json({ limit: "30mb" }));
 app.use(express.json({ limit: "5mb" }));
 
 // Sanitize all string inputs in request body

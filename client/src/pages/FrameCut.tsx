@@ -341,10 +341,15 @@ export default function FrameCut() {
         : "";
 
       // Step 4: Send frames + transcription to AI for deep analysis
+      // Limit to 10 frames to avoid body size issues (server picks best spread)
+      const step = Math.max(1, Math.floor(jobResult.frames.length / 10));
+      const selectedFrames = jobResult.frames.filter((_: any, i: number) => i % step === 0).slice(0, 10);
+      toast?.success(`Enviando ${selectedFrames.length} frames para análise IA...`);
+
       const aiR = await fetch("/api/ai/analyze-visual", {
         method: "POST", headers: hdr(),
         body: JSON.stringify({
-          frames: jobResult.frames.map((f: any) => ({ time: f.time, base64: f.base64 })),
+          frames: selectedFrames.map((f: any) => ({ time: f.time, base64: f.base64 })),
           videoTitle: fileName,
           duration: jobResult.duration,
           frameCount: jobResult.frames.length,
@@ -352,15 +357,24 @@ export default function FrameCut() {
         }),
       });
       setAnalysisProg(90);
+
+      if (!aiR.ok) {
+        const errText = await aiR.text();
+        toast?.error(`Erro IA (${aiR.status}): ${errText.slice(0, 150)}`);
+        setAnalysisProg(100); setAnalyzing(false); return;
+      }
+
       const aiD = await safeJson(aiR);
       if (aiD.analysis) {
         setAnalysisResult(aiD.analysis);
         toast?.success("Análise completa do DNA do vídeo!");
       } else if (aiD.error) {
         toast?.error(aiD.error);
+      } else {
+        toast?.error("Resposta da IA sem análise — verifique a configuração da API");
       }
       setAnalysisProg(100);
-    } catch (e: any) { toast?.error(e.message || "Erro"); }
+    } catch (e: any) { toast?.error("Erro na análise: " + (e.message || "Erro desconhecido").slice(0, 200)); }
     setAnalyzing(false);
   };
 

@@ -8,6 +8,7 @@ import { upload } from "../middleware/upload";
 import NotifService from "../services/notifications";
 import cache from "../services/cache";
 import { resolveAIConfig, callAIWithConfig } from "../services/ai-resolver";
+import logger from "../services/logger";
 const router = Router();
 router.use(authenticate);
 
@@ -484,7 +485,15 @@ Responda em JSON:
 
     const body: any = { model: config.model, messages, temperature: 0.7, max_tokens: 4000 };
 
+    logger.info("Calling AI for visual analysis", { provider: config.provider, model: config.model, frameCount: frames.length });
     const aiRes = await fetch(apiUrl, { method: "POST", headers, body: JSON.stringify(body) });
+
+    if (!aiRes.ok) {
+      const errText = await aiRes.text();
+      logger.error("AI API error", { status: aiRes.status, body: errText.slice(0, 500) });
+      return res.status(aiRes.status).json({ error: `Erro da API (${aiRes.status}): ${errText.slice(0, 200)}` });
+    }
+
     const aiData = await aiRes.json();
 
     let resultText = "";
@@ -496,6 +505,10 @@ Responda em JSON:
 
     if (!resultText && aiData.error) {
       return res.status(400).json({ error: aiData.error.message || "Erro na API de IA" });
+    }
+    if (!resultText) {
+      logger.warn("AI returned empty response", { aiData: JSON.stringify(aiData).slice(0, 500) });
+      return res.status(500).json({ error: "IA retornou resposta vazia. Tente outro modelo." });
     }
 
     // Parse JSON from response
