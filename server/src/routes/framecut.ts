@@ -377,6 +377,28 @@ router.post("/upload-cookies", cookiesUpload.single("cookies"), (req: Request, r
   res.json({ active: true, path: cookiesFile, message: "Cookies enviados com sucesso!" });
 });
 
+// Save cookies from pasted text
+router.post("/paste-cookies", (req: Request, res: Response) => {
+  const { text } = req.body;
+  if (!text || typeof text !== "string" || text.trim().length < 10) {
+    return res.status(400).json({ error: "Conteúdo dos cookies vazio ou muito curto" });
+  }
+  const filePath = path.join(cookiesDir, "cookies.txt");
+  try {
+    if (!fs.existsSync(cookiesDir)) fs.mkdirSync(cookiesDir, { recursive: true });
+    fs.writeFileSync(filePath, text.trim(), "utf-8");
+    const lines = text.split("\n").filter(l => l.trim() && !l.startsWith("#"));
+    if (lines.length < 1) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ error: "Conteúdo inválido — nenhuma linha de cookie encontrada" });
+    }
+  } catch {
+    return res.status(400).json({ error: "Erro ao salvar cookies" });
+  }
+  cookiesFile = filePath;
+  res.json({ active: true, path: cookiesFile, message: "Cookies salvos com sucesso!" });
+});
+
 // Remove cookies
 router.delete("/cookies", (_req: Request, res: Response) => {
   if (cookiesFile && fs.existsSync(cookiesFile)) {
