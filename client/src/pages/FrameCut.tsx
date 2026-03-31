@@ -33,9 +33,21 @@ export default function FrameCut() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [videoSrc, setVideoSrc] = useState<string>(""); // Persist video src across re-renders
   const [videoInfo, setVideoInfo] = useState({ res: "—", dur: "—", fmt: "—", size: "—" });
   const [fileName, setFileName] = useState("");
-  const [videoPath, setVideoPath] = useState<string | null>(null);
+  const [videoPath, setVideoPath] = useState<string | null>(() => localStorage.getItem("fc_last_video") || null);
+
+  // Re-apply video src when ref changes (after videoLoaded toggle re-renders the component)
+  useEffect(() => {
+    const v = videoRef.current;
+    if (v && videoSrc && !v.src.includes("serve-video") && !v.src.startsWith("blob:")) {
+      v.crossOrigin = "anonymous";
+      v.preload = "auto";
+      v.src = videoSrc;
+      v.load();
+    }
+  }, [videoLoaded, videoSrc]);
 
   // YouTube
   const [ytUrl, setYtUrl] = useState("");
@@ -127,16 +139,26 @@ export default function FrameCut() {
     } catch {}
   };
 
-  // Load download dir + cookies status on mount
+  // Load download dir + cookies status on mount + auto-load last video
   useEffect(() => {
     fetch(`${API}/download-dir`).then(r => safeJson(r)).then(d => setDlDir(d.dir)).catch(() => {});
     fetchCookiesStatus();
+    // Auto-load last video from localStorage
+    const lastVideo = localStorage.getItem("fc_last_video");
+    if (lastVideo) {
+      // Check if file still exists on server
+      fetch(`${API}/serve-video?path=${encodeURIComponent(lastVideo)}`, { method: "HEAD" })
+        .then(r => { if (r.ok) loadVideoFromPath(lastVideo); else localStorage.removeItem("fc_last_video"); })
+        .catch(() => localStorage.removeItem("fc_last_video"));
+    }
   }, []);
 
   // ─── VIDEO LOAD ───
   const loadLocalVideo = (file: File) => {
     const v = videoRef.current!;
-    v.src = URL.createObjectURL(file);
+    const src = URL.createObjectURL(file);
+    v.src = src;
+    setVideoSrc(src); // Persist src for re-render
     v.onloadedmetadata = () => {
       setVideoInfo({ res: `${v.videoWidth}×${v.videoHeight}`, dur: fmtTime(v.duration), fmt: file.type.split("/")[1]?.toUpperCase() || "?", size: fmtBytes(file.size) });
       setFileName(file.name);
@@ -147,15 +169,18 @@ export default function FrameCut() {
 
   const loadVideoFromPath = (p: string) => {
     const v = videoRef.current!;
+    const src = `${API}/serve-video?path=${encodeURIComponent(p)}`;
     v.preload = "auto";
-    v.crossOrigin = "anonymous"; // Needed for canvas frame capture
-    v.src = `${API}/serve-video?path=${encodeURIComponent(p)}`;
+    v.crossOrigin = "anonymous";
+    v.src = src;
+    setVideoSrc(src); // Persist src for re-render
     v.onerror = () => {
       toast?.error("Erro ao carregar vídeo. Tente baixar novamente.");
     };
     v.onloadedmetadata = () => {
-      setVideoInfo({ res: `${v.videoWidth}×${v.videoHeight}`, dur: fmtTime(v.duration), fmt: "MP4", size: "—" });
+      setVideoInfo({ res: `${v.videoWidth}×${v.videoHeight}`, dur: fmtTime(v.duration), fmt: "MP4", size: fmtBytes(v.duration * 200000) });
       setFileName(p.split(/[/\\]/).pop() || "");
+      localStorage.setItem("fc_last_video", p);
       setVideoLoaded(true);
       setVideoPath(p);
       // Auto-find subtitles
