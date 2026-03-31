@@ -215,10 +215,10 @@ export default function Planner() {
                 border: `2px ${isOver ? "dashed" : "solid"} ${isOver ? sv.c + "50" : C.border}`,
                 minHeight: 260, transition: "all 0.2s",
               }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 12, padding: "0 4px" }}>
-                <span style={{ fontSize: 12 }}>{sv.i}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 12, padding: "6px 8px", background: `${sv.c}08`, borderRadius: 8 }}>
+                <span style={{ fontSize: 13 }}>{sv.i}</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: sv.c }}>{sv.l}</span>
-                <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: C.dim, marginLeft: "auto" }}>{col.length}</span>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 10, fontWeight: 700, color: sv.c, marginLeft: "auto", background: `${sv.c}15`, padding: "2px 7px", borderRadius: 6 }}>{col.length}</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 7, minHeight: 40 }}>
                 {col.map(v => {
@@ -229,12 +229,13 @@ export default function Planner() {
                       onDragStart={e => onDragStart(e, v.id)}
                       onDragEnd={onDragEnd}
                       style={{
-                        background: C.bgCard, borderRadius: 10, padding: "8px 10px",
-                        borderLeft: `3px solid ${vch?.color || C.dim}`,
+                        background: C.bgCard, borderRadius: 10, padding: "10px 10px",
                         border: `1px solid ${C.border}`, borderLeftWidth: 3,
+                        borderLeftStyle: "solid",
                         borderLeftColor: vch?.color || C.dim,
-                        cursor: "grab", transition: "transform 0.15s",
+                        cursor: "grab", transition: "all 0.15s",
                         overflow: "hidden",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
                       }}
                       onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
                       onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
