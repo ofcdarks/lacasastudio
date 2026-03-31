@@ -133,6 +133,9 @@ function spawnJob(id: string, cmd: string, args: string[], cwd: string, retryCtx
     ) {
       sawBotBlock = true;
     }
+    if (lower.includes("requested format is not available")) {
+      sawBotBlock = true; // trigger retry with different player client
+    }
   };
 
   proc.stdout?.on("data", (chunk: Buffer) => {
@@ -260,10 +263,10 @@ router.post("/download", (req: Request, res: Response) => {
 
   if (type === "video") {
     const fmtMap: Record<string, string> = {
-      best: "bestvideo+bestaudio/best",
-      "1080": "bestvideo[height<=1080]+bestaudio/best",
-      "720": "bestvideo[height<=720]+bestaudio/best",
-      "480": "bestvideo[height<=480]+bestaudio/best"
+      best: "bestvideo+bestaudio/bestvideo*+bestaudio/best",
+      "1080": "bestvideo[height<=1080]+bestaudio/bestvideo*[height<=1080]+bestaudio/best[height<=1080]/best",
+      "720": "bestvideo[height<=720]+bestaudio/bestvideo*[height<=720]+bestaudio/best[height<=720]/best",
+      "480": "bestvideo[height<=480]+bestaudio/bestvideo*[height<=480]+bestaudio/best[height<=480]/best"
     };
     formatArgs.push("-f", fmtMap[quality] || fmtMap["1080"], "--merge-output-format", "mp4", "-o", path.join(dlDir, "%(title)s.%(ext)s"));
     jobs[id].findExts = [".mp4",".webm",".mkv"];
