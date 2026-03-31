@@ -57,8 +57,8 @@ const corsOrigin = env.NODE_ENV === "production" && ALLOWED_ORIGINS.length > 0
 
 app.use(cors({ origin: corsOrigin, credentials: true }));
 
-// Security headers with CSP
-app.use(helmet({
+// Security headers with CSP — skip for framecut file-serving routes
+const helmetMiddleware = helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -67,14 +67,22 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
       connectSrc: ["'self'", "https://api.laozhang.ai", "https://www.googleapis.com", "https://youtube.googleapis.com"],
-      mediaSrc: ["'self'", "blob:"],
+      mediaSrc: ["'self'", "blob:", "data:"],
       objectSrc: ["'none'"],
       frameSrc: ["'none'"],
     },
   },
+  crossOriginResourcePolicy: { policy: "cross-origin" as const },
   hsts: { maxAge: 31536000, includeSubDomains: true },
   referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-}));
+});
+// Skip helmet entirely for framecut file serving (video/image streaming)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path.startsWith("/api/framecut/serve-video") || req.path.startsWith("/api/framecut/serve-frame") || req.path.startsWith("/api/framecut/download-file")) {
+    return next();
+  }
+  return helmetMiddleware(req, res, next);
+});
 
 app.use(compression());
 app.use(requestId);
