@@ -148,10 +148,10 @@ export default function FrameCut() {
   const loadVideoFromPath = (p: string) => {
     const v = videoRef.current!;
     v.preload = "auto";
+    v.crossOrigin = "anonymous"; // Required for canvas frame capture from API-served video
     v.src = `${API}/serve-video?path=${encodeURIComponent(p)}`;
     v.onerror = () => {
-      // Fallback: try loading with token in URL
-      toast?.error("Erro ao carregar vídeo — tentando método alternativo...");
+      toast?.error("Erro ao carregar vídeo. Tente baixar novamente.");
     };
     v.onloadedmetadata = () => {
       setVideoInfo({ res: `${v.videoWidth}×${v.videoHeight}`, dur: fmtTime(v.duration), fmt: "MP4", size: "—" });
@@ -733,7 +733,7 @@ export default function FrameCut() {
         <div>
           {/* Player */}
           <div style={{ background: "#101016", borderRadius: 10, overflow: "hidden", border: "1px solid #252538" }}>
-            <video ref={videoRef} controls style={{ width: "100%", maxHeight: 500, background: "#000", display: "block" }} />
+            <video ref={videoRef} controls crossOrigin="anonymous" style={{ width: "100%", maxHeight: 500, background: "#000", display: "block" }} />
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
             <button style={s.btn2} onClick={captureCurrentFrame}>📸 Frame atual</button>
