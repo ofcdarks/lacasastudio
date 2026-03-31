@@ -85,6 +85,8 @@ export default function FrameCut() {
   const [analysisFrames, setAnalysisFrames] = useState<{ time: number; url: string }[]>([]);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [analysisProg, setAnalysisProg] = useState(0);
+  const [showDnaModal, setShowDnaModal] = useState(false);
+  const [dnaTab, setDnaTab] = useState<"storyboard" | "dna" | "roteiro" | "nichos" | "modelagem">("dna");
 
   // Transcription
   const [transLines, setTransLines] = useState<TransLine[]>([]);
@@ -367,6 +369,8 @@ export default function FrameCut() {
       const aiD = await safeJson(aiR);
       if (aiD.analysis) {
         setAnalysisResult(aiD.analysis);
+        setShowDnaModal(true);
+        setDnaTab("dna");
         toast?.success("Análise completa do DNA do vídeo!");
       } else if (aiD.error) {
         toast?.error(aiD.error);
@@ -961,111 +965,23 @@ export default function FrameCut() {
               {analyzing ? `⏳ Analisando... ${analysisProg}%` : "🎬 Analisar Vídeo"}
             </button>
 
-            {/* Storyboard grid */}
+            {/* Storyboard mini preview */}
             {analysisFrames.length > 0 && (
               <div style={{ marginTop: 14 }}>
-                <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#a78bfa", marginBottom: 8 }}>📸 Storyboard ({analysisFrames.length} frames)</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, borderRadius: 8, overflow: "hidden" }}>
-                  {analysisFrames.map((f, i) => (
-                    <div key={i} style={{ position: "relative" }}>
-                      <img src={f.url} alt={`Frame ${i + 1}`} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
-                      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.7)", padding: "2px 4px", fontSize: "0.6rem", color: "#fff", textAlign: "center", fontFamily: "var(--mono)" }}>
-                        {fmtTime(f.time)}
-                      </div>
-                    </div>
+                <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#a78bfa", marginBottom: 8 }}>📸 {analysisFrames.length} frames extraídos</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 3, borderRadius: 8, overflow: "hidden" }}>
+                  {analysisFrames.slice(0, 10).map((f, i) => (
+                    <img key={i} src={f.url} alt="" style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
                   ))}
                 </div>
               </div>
             )}
 
-            {/* AI DNA Analysis result */}
+            {/* Open DNA Modal button */}
             {analysisResult && (
-              <div style={{ marginTop: 14 }}>
-                <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#a78bfa", marginBottom: 10 }}>🧬 DNA do Vídeo</div>
-
-                {analysisResult.dnaResumo && <p style={{ fontSize: "0.82rem", color: "#ededf0", lineHeight: 1.7, marginBottom: 12, padding: "12px 14px", background: "linear-gradient(135deg, #0c0c10, #101020)", borderRadius: 10, borderLeft: "3px solid #a78bfa" }}>{analysisResult.dnaResumo}</p>}
-
-                {/* Nicho hierarchy */}
-                {(analysisResult.nicho || analysisResult.subnicho) && (
-                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 10 }}>
-                    {analysisResult.nicho && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#e6394615", color: "#e63946", fontSize: "0.78rem", fontWeight: 600 }}>🎯 {analysisResult.nicho}</span>}
-                    {analysisResult.subnicho && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#a78bfa15", color: "#a78bfa", fontSize: "0.78rem", fontWeight: 600 }}>📂 {analysisResult.subnicho}</span>}
-                    {analysisResult.micronicho && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#2ec4b615", color: "#2ec4b6", fontSize: "0.78rem", fontWeight: 600 }}>🔬 {analysisResult.micronicho}</span>}
-                  </div>
-                )}
-
-                {/* Key metrics grid */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
-                  {analysisResult.estilo && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>ESTILO</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.estilo}</div></div>}
-                  {analysisResult.formato && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>FORMATO</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.formato}</div></div>}
-                  {analysisResult.ritmoEdicao && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>RITMO EDIÇÃO</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.ritmoEdicao}</div></div>}
-                  {analysisResult.qualidade && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>QUALIDADE</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.qualidade}/10</div></div>}
-                  {analysisResult.colorGrading && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>COLOR GRADING</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.colorGrading}</div></div>}
-                  {analysisResult.iluminacao && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>ILUMINAÇÃO</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.iluminacao}</div></div>}
-                  {analysisResult.audiencia && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>AUDIÊNCIA</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.audiencia}</div></div>}
-                  {analysisResult.musicaEstilo && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>MÚSICA</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.musicaEstilo}</div></div>}
-                </div>
-
-                {/* Color palette */}
-                {analysisResult.cores && Array.isArray(analysisResult.cores) && (
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 4 }}>PALETA DE CORES</div>
-                    <div style={{ display: "flex", gap: 3, borderRadius: 8, overflow: "hidden" }}>
-                      {analysisResult.cores.map((c: string, i: number) => <div key={i} style={{ flex: 1, height: 32, background: c }} title={c} />)}
-                    </div>
-                    {analysisResult.paleta && <div style={{ fontSize: "0.72rem", color: "#8a8aa0", marginTop: 4 }}>{analysisResult.paleta}</div>}
-                  </div>
-                )}
-
-                {/* Production details */}
-                {analysisResult.cameras && Array.isArray(analysisResult.cameras) && (
-                  <div style={{ marginBottom: 8, padding: "8px 10px", background: "#101016", borderRadius: 8 }}>
-                    <div style={{ fontSize: "0.68rem", color: "#4B8DF8", marginBottom: 4 }}>🎥 CÂMERAS / MOVIMENTOS</div>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{analysisResult.cameras.map((c: string, i: number) => <span key={i} style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, background: "#4B8DF810", color: "#4B8DF8" }}>{c}</span>)}</div>
-                  </div>
-                )}
-                {analysisResult.transicoes && Array.isArray(analysisResult.transicoes) && (
-                  <div style={{ marginBottom: 8, padding: "8px 10px", background: "#101016", borderRadius: 8 }}>
-                    <div style={{ fontSize: "0.68rem", color: "#a78bfa", marginBottom: 4 }}>✨ TRANSIÇÕES</div>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{analysisResult.transicoes.map((t: string, i: number) => <span key={i} style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, background: "#a78bfa10", color: "#a78bfa" }}>{t}</span>)}</div>
-                  </div>
-                )}
-                {analysisResult.efeitosVisuais && Array.isArray(analysisResult.efeitosVisuais) && (
-                  <div style={{ marginBottom: 8, padding: "8px 10px", background: "#101016", borderRadius: 8 }}>
-                    <div style={{ fontSize: "0.68rem", color: "#f4a261", marginBottom: 4 }}>💥 EFEITOS VISUAIS</div>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{analysisResult.efeitosVisuais.map((e: string, i: number) => <span key={i} style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, background: "#f4a26110", color: "#f4a261" }}>{e}</span>)}</div>
-                  </div>
-                )}
-                {analysisResult.sfx && Array.isArray(analysisResult.sfx) && (
-                  <div style={{ marginBottom: 8, padding: "8px 10px", background: "#101016", borderRadius: 8 }}>
-                    <div style={{ fontSize: "0.68rem", color: "#EC4899", marginBottom: 4 }}>🔊 SFX VISUAIS</div>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{analysisResult.sfx.map((s: string, i: number) => <span key={i} style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, background: "#EC489910", color: "#EC4899" }}>{s}</span>)}</div>
-                  </div>
-                )}
-                {analysisResult.ferramentas && Array.isArray(analysisResult.ferramentas) && (
-                  <div style={{ marginBottom: 8, padding: "8px 10px", background: "#101016", borderRadius: 8 }}>
-                    <div style={{ fontSize: "0.68rem", color: "#22D35E", marginBottom: 4 }}>🛠 FERRAMENTAS</div>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{analysisResult.ferramentas.map((f: string, i: number) => <span key={i} style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, background: "#22D35E10", color: "#22D35E" }}>{f}</span>)}</div>
-                  </div>
-                )}
-
-                {/* Highlights & suggestions */}
-                {analysisResult.destaques && <div style={{ marginBottom: 8 }}><div style={{ fontSize: "0.68rem", color: "#22D35E", marginBottom: 4 }}>✅ PONTOS FORTES</div>{analysisResult.destaques.map((d: string, i: number) => <div key={i} style={{ fontSize: "0.78rem", padding: "3px 0", color: "#c0c0d0" }}>• {d}</div>)}</div>}
-                {analysisResult.melhorias && <div style={{ marginBottom: 8 }}><div style={{ fontSize: "0.68rem", color: "#f4a261", marginBottom: 4 }}>💡 SUGESTÕES DE MELHORIA</div>{analysisResult.melhorias.map((m: string, i: number) => <div key={i} style={{ fontSize: "0.78rem", padding: "3px 0", color: "#c0c0d0" }}>• {m}</div>)}</div>}
-                {analysisResult.canaisSimilares && <div style={{ marginBottom: 8 }}><div style={{ fontSize: "0.68rem", color: "#4B8DF8", marginBottom: 4 }}>📺 CANAIS SIMILARES</div>{analysisResult.canaisSimilares.map((c: string, i: number) => <div key={i} style={{ fontSize: "0.78rem", padding: "3px 0", color: "#c0c0d0" }}>• {c}</div>)}</div>}
-
-                {/* How to replicate */}
-                {analysisResult.comoReplicar && (
-                  <div style={{ padding: "12px 14px", background: "linear-gradient(135deg, #0c0c10, #101020)", borderRadius: 10, marginBottom: 10, borderLeft: "3px solid #22D35E" }}>
-                    <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#22D35E", marginBottom: 6 }}>🎯 COMO REPLICAR ESTE ESTILO</div>
-                    <div style={{ fontSize: "0.82rem", color: "#ededf0", lineHeight: 1.7 }}>{analysisResult.comoReplicar}</div>
-                  </div>
-                )}
-
-                <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(analysisResult, null, 2)); toast?.success("DNA copiado!"); }} style={{ ...s.btn2, width: "100%", justifyContent: "center", marginTop: 6 }}>
-                  📋 Copiar DNA Completo
-                </button>
-              </div>
+              <button onClick={() => setShowDnaModal(true)} style={{ ...s.btnPurple, marginTop: 10, background: "linear-gradient(135deg, #7c5fd6, #a78bfa)" }}>
+                🧬 Ver Análise DNA Completa
+              </button>
             )}
           </Card>
 
@@ -1096,6 +1012,435 @@ export default function FrameCut() {
           </Card>
         </div>
       </div>
+
+      {/* ══════ DNA ANALYSIS MODAL ══════ */}
+      {showDnaModal && analysisResult && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 10000, display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "40px 20px", overflowY: "auto" }}
+          onClick={() => setShowDnaModal(false)}>
+          <div style={{ background: "#12121a", borderRadius: 16, width: "100%", maxWidth: 960, border: "1px solid #252538", position: "relative", maxHeight: "calc(100vh - 80px)", display: "flex", flexDirection: "column" }}
+            onClick={e => e.stopPropagation()}>
+
+            {/* Modal Header */}
+            <div style={{ padding: "20px 24px 0", flexShrink: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                <div>
+                  <h2 style={{ fontSize: "1.3rem", fontWeight: 700, color: "#ededf0", margin: 0 }}>🧬 DNA do Video</h2>
+                  <p style={{ fontSize: "0.85rem", color: "#8a8aa0", marginTop: 4 }}>{fileName || "Video analisado"}</p>
+                </div>
+                <button onClick={() => setShowDnaModal(false)} style={{ background: "none", border: "none", color: "#8a8aa0", fontSize: "1.5rem", cursor: "pointer", padding: "4px 8px" }}>×</button>
+              </div>
+
+              {/* Nicho hierarchy badges */}
+              {(analysisResult.nicho || analysisResult.subnicho) && (
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                  {analysisResult.nicho && <span style={{ padding: "6px 14px", borderRadius: 8, background: "#e6394618", color: "#e63946", fontSize: "0.85rem", fontWeight: 600 }}>🎯 {analysisResult.nicho}</span>}
+                  {analysisResult.subnicho && <span style={{ padding: "6px 14px", borderRadius: 8, background: "#a78bfa18", color: "#a78bfa", fontSize: "0.85rem", fontWeight: 600 }}>📂 {analysisResult.subnicho}</span>}
+                  {analysisResult.micronicho && <span style={{ padding: "6px 14px", borderRadius: 8, background: "#2ec4b618", color: "#2ec4b6", fontSize: "0.85rem", fontWeight: 600 }}>🔬 {analysisResult.micronicho}</span>}
+                </div>
+              )}
+
+              {/* Tabs */}
+              <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #252538" }}>
+                {([
+                  { id: "dna" as const, label: "🧬 DNA Visual" },
+                  { id: "roteiro" as const, label: "📝 Roteiro" },
+                  { id: "nichos" as const, label: "🎯 Nichos" },
+                  { id: "storyboard" as const, label: "📸 Storyboard" },
+                  { id: "modelagem" as const, label: "🎨 Modelagem" },
+                ]).map(t => (
+                  <button key={t.id} onClick={() => setDnaTab(t.id)}
+                    style={{ padding: "10px 18px", background: "none", border: "none", borderBottom: dnaTab === t.id ? "2px solid #a78bfa" : "2px solid transparent", color: dnaTab === t.id ? "#ededf0" : "#505068", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer", transition: "all .2s" }}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: "20px 24px 24px", overflowY: "auto", flex: 1 }}>
+
+              {/* ── TAB: DNA VISUAL ── */}
+              {dnaTab === "dna" && (
+                <div>
+                  {analysisResult.dnaResumo && (
+                    <p style={{ fontSize: "0.92rem", color: "#ededf0", lineHeight: 1.8, marginBottom: 20, padding: "16px 18px", background: "linear-gradient(135deg, #0c0c10, #15152a)", borderRadius: 12, borderLeft: "3px solid #a78bfa" }}>
+                      {analysisResult.dnaResumo}
+                    </p>
+                  )}
+
+                  {/* Metrics grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 20 }}>
+                    {[
+                      ["ESTILO", analysisResult.estilo, "#a78bfa"],
+                      ["FORMATO", analysisResult.formato, "#4B8DF8"],
+                      ["RITMO EDICAO", analysisResult.ritmoEdicao, "#f4a261"],
+                      ["QUALIDADE", analysisResult.qualidade ? `${analysisResult.qualidade}/10` : null, "#22D35E"],
+                      ["COLOR GRADING", analysisResult.colorGrading, "#EC4899"],
+                      ["ILUMINACAO", analysisResult.iluminacao, "#f4a261"],
+                      ["AUDIENCIA", analysisResult.audiencia, "#4B8DF8"],
+                      ["MUSICA", analysisResult.musicaEstilo, "#a78bfa"],
+                    ].filter(([, v]) => v).map(([label, val, color]) => (
+                      <div key={label as string} style={{ padding: "12px 14px", background: "#101016", borderRadius: 10, borderTop: `2px solid ${color}` }}>
+                        <div style={{ fontSize: "0.7rem", color: "#505068", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>
+                        <div style={{ fontSize: "0.88rem", fontWeight: 600, color: "#ededf0" }}>{val}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Color palette */}
+                  {analysisResult.cores && Array.isArray(analysisResult.cores) && (
+                    <div style={{ marginBottom: 20 }}>
+                      <div style={{ fontSize: "0.78rem", color: "#505068", marginBottom: 6, fontWeight: 600 }}>PALETA DE CORES</div>
+                      <div style={{ display: "flex", gap: 4, borderRadius: 10, overflow: "hidden" }}>
+                        {analysisResult.cores.map((c: string, i: number) => (
+                          <div key={i} style={{ flex: 1, height: 44, background: c, cursor: "pointer", position: "relative" }} title={c}
+                            onClick={() => { navigator.clipboard.writeText(c); toast?.success(`${c} copiado!`); }}>
+                            <span style={{ position: "absolute", bottom: 2, left: 0, right: 0, textAlign: "center", fontSize: "0.6rem", color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>{c}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {analysisResult.paleta && <div style={{ fontSize: "0.8rem", color: "#8a8aa0", marginTop: 6 }}>{analysisResult.paleta}</div>}
+                    </div>
+                  )}
+
+                  {/* Production chips */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+                    {[
+                      ["🎥 CAMERAS / MOVIMENTOS", analysisResult.cameras, "#4B8DF8"],
+                      ["✨ TRANSICOES", analysisResult.transicoes, "#a78bfa"],
+                      ["💥 EFEITOS VISUAIS", analysisResult.efeitosVisuais, "#f4a261"],
+                      ["🔊 SFX VISUAIS", analysisResult.sfx, "#EC4899"],
+                      ["🛠 FERRAMENTAS", analysisResult.ferramentas, "#22D35E"],
+                    ].filter(([, arr]) => Array.isArray(arr) && arr.length).map(([label, arr, color]) => (
+                      <div key={label as string} style={{ padding: "12px 14px", background: "#101016", borderRadius: 10 }}>
+                        <div style={{ fontSize: "0.72rem", color: color as string, marginBottom: 8, fontWeight: 600 }}>{label}</div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {(arr as string[]).map((item, i) => (
+                            <span key={i} style={{ fontSize: "0.8rem", padding: "4px 10px", borderRadius: 6, background: `${color}12`, color: color as string }}>{item}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Highlights & Improvements side by side */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+                    {analysisResult.destaques && (
+                      <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10, borderLeft: "3px solid #22D35E" }}>
+                        <div style={{ fontSize: "0.78rem", color: "#22D35E", marginBottom: 8, fontWeight: 700 }}>✅ PONTOS FORTES</div>
+                        {analysisResult.destaques.map((d: string, i: number) => <div key={i} style={{ fontSize: "0.85rem", padding: "4px 0", color: "#c0c0d0", lineHeight: 1.6 }}>• {d}</div>)}
+                      </div>
+                    )}
+                    {analysisResult.melhorias && (
+                      <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10, borderLeft: "3px solid #f4a261" }}>
+                        <div style={{ fontSize: "0.78rem", color: "#f4a261", marginBottom: 8, fontWeight: 700 }}>💡 SUGESTOES DE MELHORIA</div>
+                        {analysisResult.melhorias.map((m: string, i: number) => <div key={i} style={{ fontSize: "0.85rem", padding: "4px 0", color: "#c0c0d0", lineHeight: 1.6 }}>• {m}</div>)}
+                      </div>
+                    )}
+                  </div>
+
+                  {analysisResult.canaisSimilares && (
+                    <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10, marginBottom: 16 }}>
+                      <div style={{ fontSize: "0.78rem", color: "#4B8DF8", marginBottom: 8, fontWeight: 700 }}>📺 CANAIS SIMILARES</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {analysisResult.canaisSimilares.map((c: string, i: number) => (
+                          <span key={i} style={{ fontSize: "0.85rem", padding: "6px 14px", borderRadius: 8, background: "#4B8DF812", color: "#4B8DF8", fontWeight: 500 }}>{c}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── TAB: ROTEIRO ── */}
+              {dnaTab === "roteiro" && (
+                <div>
+                  {analysisResult.roteiro ? (
+                    <>
+                      {/* Script structure timeline */}
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#a78bfa", marginBottom: 12 }}>📐 ESTRUTURA DO ROTEIRO</div>
+                        {analysisResult.roteiro.estrutura && Array.isArray(analysisResult.roteiro.estrutura) && (
+                          <div style={{ position: "relative", paddingLeft: 24 }}>
+                            <div style={{ position: "absolute", left: 8, top: 0, bottom: 0, width: 2, background: "linear-gradient(180deg, #a78bfa, #2ec4b6, #f4a261)" }} />
+                            {analysisResult.roteiro.estrutura.map((sec: any, i: number) => (
+                              <div key={i} style={{ position: "relative", marginBottom: 16, paddingLeft: 20 }}>
+                                <div style={{ position: "absolute", left: -20, top: 4, width: 12, height: 12, borderRadius: "50%", background: "#a78bfa", border: "2px solid #12121a" }} />
+                                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                                  <span style={{ fontSize: "0.78rem", padding: "2px 10px", borderRadius: 6, background: "#a78bfa18", color: "#a78bfa", fontWeight: 600 }}>{sec.secao || sec.section}</span>
+                                  <span style={{ fontSize: "0.75rem", color: "#505068", fontFamily: "monospace" }}>{sec.timestamp}</span>
+                                </div>
+                                <div style={{ fontSize: "0.88rem", color: "#c0c0d0", lineHeight: 1.6 }}>{sec.descricao || sec.description}</div>
+                                {sec.tecnica && <div style={{ fontSize: "0.78rem", color: "#f4a261", marginTop: 4 }}>Tecnica: {sec.tecnica}</div>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Script metrics */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+                        {analysisResult.roteiro.tom && (
+                          <div style={{ padding: "12px 14px", background: "#101016", borderRadius: 10 }}>
+                            <div style={{ fontSize: "0.7rem", color: "#505068", marginBottom: 4 }}>TOM NARRATIVO</div>
+                            <div style={{ fontSize: "0.92rem", fontWeight: 600, color: "#ededf0" }}>{analysisResult.roteiro.tom}</div>
+                          </div>
+                        )}
+                        {analysisResult.roteiro.pacing && (
+                          <div style={{ padding: "12px 14px", background: "#101016", borderRadius: 10 }}>
+                            <div style={{ fontSize: "0.7rem", color: "#505068", marginBottom: 4 }}>PACING</div>
+                            <div style={{ fontSize: "0.92rem", fontWeight: 600, color: "#ededf0" }}>{analysisResult.roteiro.pacing}</div>
+                          </div>
+                        )}
+                        {analysisResult.roteiro.ctaTexto && (
+                          <div style={{ padding: "12px 14px", background: "#101016", borderRadius: 10 }}>
+                            <div style={{ fontSize: "0.7rem", color: "#505068", marginBottom: 4 }}>CTA PRINCIPAL</div>
+                            <div style={{ fontSize: "0.88rem", fontWeight: 600, color: "#e63946" }}>"{analysisResult.roteiro.ctaTexto}"</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Hooks */}
+                      {analysisResult.roteiro.hooks && (
+                        <div style={{ marginBottom: 16, padding: "14px 16px", background: "#101016", borderRadius: 10, borderLeft: "3px solid #e63946" }}>
+                          <div style={{ fontSize: "0.78rem", color: "#e63946", marginBottom: 8, fontWeight: 700 }}>🪝 HOOKS USADOS</div>
+                          {analysisResult.roteiro.hooks.map((h: string, i: number) => (
+                            <div key={i} style={{ fontSize: "0.88rem", padding: "4px 0", color: "#ededf0", lineHeight: 1.6 }}>"{h}"</div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Open Loops */}
+                      {analysisResult.roteiro.openLoops && (
+                        <div style={{ marginBottom: 16, padding: "14px 16px", background: "#101016", borderRadius: 10, borderLeft: "3px solid #f4a261" }}>
+                          <div style={{ fontSize: "0.78rem", color: "#f4a261", marginBottom: 8, fontWeight: 700 }}>🔄 OPEN LOOPS</div>
+                          {analysisResult.roteiro.openLoops.map((l: string, i: number) => (
+                            <div key={i} style={{ fontSize: "0.88rem", padding: "4px 0", color: "#c0c0d0", lineHeight: 1.6 }}>• {l}</div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Emotional triggers & retention */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                        {analysisResult.roteiro.gatilhosEmocionais && (
+                          <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10 }}>
+                            <div style={{ fontSize: "0.78rem", color: "#EC4899", marginBottom: 8, fontWeight: 700 }}>💗 GATILHOS EMOCIONAIS</div>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                              {analysisResult.roteiro.gatilhosEmocionais.map((g: string, i: number) => (
+                                <span key={i} style={{ fontSize: "0.82rem", padding: "4px 10px", borderRadius: 6, background: "#EC489912", color: "#EC4899" }}>{g}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {analysisResult.roteiro.retencaoTecnicas && (
+                          <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10 }}>
+                            <div style={{ fontSize: "0.78rem", color: "#2ec4b6", marginBottom: 8, fontWeight: 700 }}>📊 TECNICAS DE RETENCAO</div>
+                            {analysisResult.roteiro.retencaoTecnicas.map((t: string, i: number) => (
+                              <div key={i} style={{ fontSize: "0.85rem", padding: "3px 0", color: "#c0c0d0" }}>• {t}</div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Script strengths & improvements */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                        {analysisResult.roteiro.pontosFortesRoteiro && (
+                          <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10, borderLeft: "3px solid #22D35E" }}>
+                            <div style={{ fontSize: "0.78rem", color: "#22D35E", marginBottom: 8, fontWeight: 700 }}>✅ PONTOS FORTES DO ROTEIRO</div>
+                            {analysisResult.roteiro.pontosFortesRoteiro.map((p: string, i: number) => (
+                              <div key={i} style={{ fontSize: "0.85rem", padding: "4px 0", color: "#c0c0d0", lineHeight: 1.6 }}>• {p}</div>
+                            ))}
+                          </div>
+                        )}
+                        {analysisResult.roteiro.melhorasRoteiro && (
+                          <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10, borderLeft: "3px solid #f4a261" }}>
+                            <div style={{ fontSize: "0.78rem", color: "#f4a261", marginBottom: 8, fontWeight: 700 }}>💡 MELHORIAS DO ROTEIRO</div>
+                            {analysisResult.roteiro.melhorasRoteiro.map((m: string, i: number) => (
+                              <div key={i} style={{ fontSize: "0.85rem", padding: "4px 0", color: "#c0c0d0", lineHeight: 1.6 }}>• {m}</div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "40px 20px", color: "#505068" }}>
+                      <div style={{ fontSize: "2rem", marginBottom: 12 }}>📝</div>
+                      <p style={{ fontSize: "0.92rem" }}>Analise de roteiro nao disponivel.</p>
+                      <p style={{ fontSize: "0.82rem", marginTop: 8 }}>Transcreva o video primeiro e depois analise novamente para obter a analise completa do roteiro.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── TAB: NICHOS ── */}
+              {dnaTab === "nichos" && (
+                <div>
+                  <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#e63946", marginBottom: 16 }}>🎯 NICHOS RELACIONADOS PARA ATACAR</div>
+                  {analysisResult.nichosRelacionados && Array.isArray(analysisResult.nichosRelacionados) && analysisResult.nichosRelacionados.length > 0 ? (
+                    <div style={{ display: "grid", gap: 12 }}>
+                      {analysisResult.nichosRelacionados.map((n: any, i: number) => (
+                        <div key={i} style={{ padding: "16px 18px", background: "#101016", borderRadius: 12, border: "1px solid #252538", transition: "all .2s" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                            <div style={{ fontSize: "1rem", fontWeight: 700, color: "#ededf0" }}>{n.nome}</div>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <span style={{ fontSize: "0.72rem", padding: "3px 10px", borderRadius: 6, background: n.dificuldade === "Facil" ? "#22D35E15" : n.dificuldade === "Medio" ? "#f4a26115" : "#e6394615", color: n.dificuldade === "Facil" ? "#22D35E" : n.dificuldade === "Medio" ? "#f4a261" : "#e63946", fontWeight: 600 }}>
+                                {n.dificuldade || "Medio"}
+                              </span>
+                              <span style={{ fontSize: "0.72rem", padding: "3px 10px", borderRadius: 6, background: n.potencial === "Alto" ? "#22D35E15" : "#4B8DF815", color: n.potencial === "Alto" ? "#22D35E" : "#4B8DF8", fontWeight: 600 }}>
+                                Potencial: {n.potencial || "Medio"}
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: "0.88rem", color: "#c0c0d0", lineHeight: 1.7, marginBottom: 8 }}>
+                            <strong style={{ color: "#a78bfa" }}>Por que:</strong> {n.porque}
+                          </div>
+                          <div style={{ fontSize: "0.88rem", color: "#c0c0d0", lineHeight: 1.7 }}>
+                            <strong style={{ color: "#2ec4b6" }}>Como adaptar:</strong> {n.comoAdaptar}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "40px 20px", color: "#505068" }}>
+                      <p style={{ fontSize: "0.92rem" }}>Sugestoes de nichos nao foram geradas nesta analise.</p>
+                      <p style={{ fontSize: "0.82rem", marginTop: 8 }}>Tente analisar novamente com a transcricao carregada para melhores resultados.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── TAB: STORYBOARD ── */}
+              {dnaTab === "storyboard" && (
+                <div>
+                  <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#a78bfa", marginBottom: 12 }}>📸 Storyboard Completo ({analysisFrames.length} frames)</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
+                    {analysisFrames.map((f, i) => (
+                      <div key={i} style={{ position: "relative", borderRadius: 8, overflow: "hidden", border: "1px solid #252538" }}>
+                        <img src={f.url} alt={`Frame ${i + 1}`} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
+                        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent, rgba(0,0,0,0.8))", padding: "12px 6px 4px", textAlign: "center" }}>
+                          <span style={{ fontSize: "0.72rem", color: "#fff", fontFamily: "monospace", fontWeight: 600 }}>{fmtTime(f.time)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── TAB: MODELAGEM ── */}
+              {dnaTab === "modelagem" && (
+                <div>
+                  <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#22D35E", marginBottom: 16 }}>🎨 COMO REPLICAR ESTE ESTILO</div>
+
+                  {analysisResult.comoReplicar && (
+                    <div style={{ padding: "18px 20px", background: "linear-gradient(135deg, #0c0c10, #15152a)", borderRadius: 12, marginBottom: 20, borderLeft: "3px solid #22D35E", fontSize: "0.92rem", color: "#ededf0", lineHeight: 1.8 }}>
+                      {analysisResult.comoReplicar}
+                    </div>
+                  )}
+
+                  {/* Quick recipe */}
+                  <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#a78bfa", marginBottom: 12 }}>📋 RECEITA RAPIDA</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+                    <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10 }}>
+                      <div style={{ fontSize: "0.72rem", color: "#4B8DF8", marginBottom: 8, fontWeight: 700 }}>🎥 EQUIPAMENTO</div>
+                      {analysisResult.cameras && (
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {analysisResult.cameras.map((c: string, i: number) => (
+                            <span key={i} style={{ fontSize: "0.82rem", padding: "4px 10px", borderRadius: 6, background: "#4B8DF812", color: "#4B8DF8" }}>{c}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10 }}>
+                      <div style={{ fontSize: "0.72rem", color: "#22D35E", marginBottom: 8, fontWeight: 700 }}>🛠 SOFTWARE</div>
+                      {analysisResult.ferramentas && (
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {analysisResult.ferramentas.map((f: string, i: number) => (
+                            <span key={i} style={{ fontSize: "0.82rem", padding: "4px 10px", borderRadius: 6, background: "#22D35E12", color: "#22D35E" }}>{f}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10 }}>
+                      <div style={{ fontSize: "0.72rem", color: "#a78bfa", marginBottom: 8, fontWeight: 700 }}>🎨 ESTILO VISUAL</div>
+                      <div style={{ fontSize: "0.88rem", color: "#c0c0d0" }}>{analysisResult.colorGrading || "-"}</div>
+                      <div style={{ fontSize: "0.82rem", color: "#8a8aa0", marginTop: 4 }}>{analysisResult.iluminacao || "-"}</div>
+                    </div>
+                    <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10 }}>
+                      <div style={{ fontSize: "0.72rem", color: "#EC4899", marginBottom: 8, fontWeight: 700 }}>🎵 AUDIO</div>
+                      <div style={{ fontSize: "0.88rem", color: "#c0c0d0" }}>{analysisResult.musicaEstilo || "-"}</div>
+                    </div>
+                  </div>
+
+                  {/* Color palette to use */}
+                  {analysisResult.cores && Array.isArray(analysisResult.cores) && (
+                    <div style={{ marginBottom: 20 }}>
+                      <div style={{ fontSize: "0.78rem", color: "#505068", marginBottom: 8, fontWeight: 600 }}>PALETA PARA USAR</div>
+                      <div style={{ display: "flex", gap: 10 }}>
+                        {analysisResult.cores.map((c: string, i: number) => (
+                          <div key={i} style={{ flex: 1, textAlign: "center" }}>
+                            <div style={{ height: 50, borderRadius: 10, background: c, marginBottom: 6, cursor: "pointer", border: "1px solid #252538" }}
+                              onClick={() => { navigator.clipboard.writeText(c); toast?.success(`${c} copiado!`); }} />
+                            <div style={{ fontSize: "0.78rem", color: "#8a8aa0", fontFamily: "monospace" }}>{c}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Transitions & Effects checklist */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                    {analysisResult.transicoes && (
+                      <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10 }}>
+                        <div style={{ fontSize: "0.72rem", color: "#a78bfa", marginBottom: 8, fontWeight: 700 }}>✨ TRANSICOES</div>
+                        {analysisResult.transicoes.map((t: string, i: number) => (
+                          <div key={i} style={{ fontSize: "0.85rem", padding: "3px 0", color: "#c0c0d0" }}>☐ {t}</div>
+                        ))}
+                      </div>
+                    )}
+                    {analysisResult.efeitosVisuais && (
+                      <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10 }}>
+                        <div style={{ fontSize: "0.72rem", color: "#f4a261", marginBottom: 8, fontWeight: 700 }}>💥 EFEITOS</div>
+                        {analysisResult.efeitosVisuais.map((e: string, i: number) => (
+                          <div key={i} style={{ fontSize: "0.85rem", padding: "3px 0", color: "#c0c0d0" }}>☐ {e}</div>
+                        ))}
+                      </div>
+                    )}
+                    {analysisResult.sfx && (
+                      <div style={{ padding: "14px 16px", background: "#101016", borderRadius: 10 }}>
+                        <div style={{ fontSize: "0.72rem", color: "#EC4899", marginBottom: 8, fontWeight: 700 }}>🔊 SFX</div>
+                        {analysisResult.sfx.map((s: string, i: number) => (
+                          <div key={i} style={{ fontSize: "0.85rem", padding: "3px 0", color: "#c0c0d0" }}>☐ {s}</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding: "14px 24px", borderTop: "1px solid #252538", display: "flex", gap: 8, justifyContent: "flex-end", flexShrink: 0 }}>
+              <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(analysisResult, null, 2)); toast?.success("DNA copiado!"); }} style={{ ...s.btn2 }}>
+                📋 Copiar JSON
+              </button>
+              <button onClick={() => {
+                const txt = `🧬 DNA DO VIDEO: ${fileName}\n\n` +
+                  `Nicho: ${analysisResult.nicho || "-"} > ${analysisResult.subnicho || "-"} > ${analysisResult.micronicho || "-"}\n\n` +
+                  `${analysisResult.dnaResumo || ""}\n\n` +
+                  `Estilo: ${analysisResult.estilo || "-"}\nFormato: ${analysisResult.formato || "-"}\nColor Grading: ${analysisResult.colorGrading || "-"}\nRitmo: ${analysisResult.ritmoEdicao || "-"}\nQualidade: ${analysisResult.qualidade || "-"}/10\n\n` +
+                  (analysisResult.comoReplicar ? `COMO REPLICAR:\n${analysisResult.comoReplicar}\n\n` : "") +
+                  (analysisResult.roteiro ? `ROTEIRO:\nTom: ${analysisResult.roteiro.tom || "-"}\nPacing: ${analysisResult.roteiro.pacing || "-"}\nHooks: ${(analysisResult.roteiro.hooks || []).join(", ")}\n` : "");
+                navigator.clipboard.writeText(txt); toast?.success("Resumo copiado!");
+              }} style={{ ...s.btn2, background: "#a78bfa18", color: "#a78bfa", borderColor: "#a78bfa40" }}>
+                📄 Copiar Resumo
+              </button>
+              <button onClick={() => setShowDnaModal(false)} style={{ ...s.btn2, background: "#e6394618", color: "#e63946", borderColor: "#e6394640" }}>
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lightbox */}
       {lbOpen && frames[lbIdx] && (

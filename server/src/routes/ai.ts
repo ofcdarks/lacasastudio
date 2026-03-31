@@ -365,7 +365,7 @@ router.post("/analyze-visual", async (req: any, res: Response, next: NextFunctio
 TÍTULO: ${videoTitle || "Desconhecido"}
 DURAÇÃO: ${duration ? Math.floor(duration/60) + "min " + Math.floor(duration%60) + "s" : "?"}
 
-${transcription ? "TRANSCRIÇÃO (primeiras linhas):\n" + transcription.slice(0, 3000) + "\n" : ""}
+${transcription ? "TRANSCRIÇÃO COMPLETA DO VÍDEO:\n" + transcription.slice(0, 6000) + "\n" : ""}
 
 Analise CADA frame com atenção a:
 - Movimentos de câmera (zoom, pan, tilt, tracking, estático)
@@ -377,7 +377,20 @@ Analise CADA frame com atenção a:
 - SFX visuais (flashes, shakes, zooms rápidos)
 - Composição e enquadramento
 
-Responda em JSON:
+ANÁLISE DE ROTEIRO (OBRIGATÓRIO se tiver transcrição):
+- Identifique a estrutura do roteiro (Hook, Desenvolvimento, Clímax, CTA, Outro)
+- Técnicas de retenção (open loops, curiosity gaps, pattern interrupts, cliffhangers)
+- Tom narrativo (educativo, entretenimento, storytelling, jornalístico, humorístico)
+- Gatilhos emocionais usados
+- Timestamps de cada mudança de seção
+- Frases-chave de hook e retenção
+- Pacing do roteiro (rápido, médio, lento, variável)
+
+NICHOS RELACIONADOS PARA ATACAR:
+- Baseado no nicho identificado, sugira 5-8 subnichos/micronichos adjacentes que poderiam ser explorados
+- Para cada nicho sugerido, explique porque é uma oportunidade e como adaptar o estilo
+
+Responda SEMPRE em português brasileiro. JSON:
 {
   "nicho": "Nicho principal do canal",
   "subnicho": "Subnicho específico",
@@ -403,7 +416,24 @@ Responda em JSON:
   "melhorias": ["3-5 sugestões de melhoria"],
   "canaisSimilares": ["3-5 canais com estilo parecido"],
   "dnaResumo": "Resumo completo de 3-5 frases descrevendo o DNA visual deste canal",
-  "comoReplicar": "Passo a passo de como replicar este estilo de produção"
+  "comoReplicar": "Passo a passo detalhado de como replicar este estilo de produção",
+  "roteiro": {
+    "estrutura": [
+      { "secao": "Hook", "timestamp": "00:00-00:15", "descricao": "Descrição do que acontece", "tecnica": "Técnica usada (curiosity gap, etc)" }
+    ],
+    "tom": "Tom narrativo principal",
+    "pacing": "Ritmo do roteiro",
+    "hooks": ["Frases de hook usadas no vídeo"],
+    "openLoops": ["Open loops identificados"],
+    "gatilhosEmocionais": ["Gatilhos emocionais usados"],
+    "retencaoTecnicas": ["Técnicas de retenção identificadas com timestamps"],
+    "ctaTexto": "Texto do CTA principal",
+    "pontosFortesRoteiro": ["3-5 pontos fortes do roteiro"],
+    "melhorasRoteiro": ["3-5 sugestões de melhoria do roteiro"]
+  },
+  "nichosRelacionados": [
+    { "nome": "Nome do nicho", "porque": "Por que é oportunidade", "comoAdaptar": "Como adaptar o estilo atual para este nicho", "dificuldade": "Fácil/Médio/Difícil", "potencial": "Alto/Médio/Baixo" }
+  ]
 }` }
       ];
 
@@ -434,38 +464,14 @@ FRAMES: ${frameCount || frames.length} frames uniformes extraídos
 TIMELINE DOS FRAMES:
 ${frameTimeline}
 
-${transcription ? "TRANSCRIÇÃO:\n" + transcription.slice(0, 4000) + "\n" : ""}
+${transcription ? "TRANSCRIÇÃO COMPLETA:\n" + transcription.slice(0, 6000) + "\n" : ""}
 
-Baseado no título, duração, quantidade de cortes (${frames.length} frames = ~${frames.length} cenas) e transcrição, identifique o DNA completo do vídeo.
+Baseado no título, duração, quantidade de cortes e transcrição, identifique o DNA completo do vídeo.
+Inclua análise detalhada do ROTEIRO (estrutura, hooks, técnicas de retenção, gatilhos emocionais).
+Sugira NICHOS RELACIONADOS para atacar baseado no nicho identificado.
+Responda SEMPRE em português brasileiro.
 
-Responda em JSON:
-{
-  "nicho": "Nicho principal",
-  "subnicho": "Subnicho",
-  "micronicho": "Micronicho",
-  "estilo": "Estilo visual provável",
-  "formato": "Formato do vídeo",
-  "cameras": ["Movimentos de câmera prováveis"],
-  "transicoes": ["Transições prováveis"],
-  "efeitosVisuais": ["Efeitos prováveis"],
-  "sfx": ["SFX visuais prováveis"],
-  "musicaEstilo": "Estilo musical provável",
-  "textosNaTela": "Uso de textos na tela",
-  "colorGrading": "Color grading provável",
-  "cores": ["#hex1", "#hex2", "#hex3", "#hex4", "#hex5"],
-  "paleta": "Paleta provável",
-  "iluminacao": "Iluminação",
-  "ritmoEdicao": "Ritmo de edição",
-  "estrutura": ["Partes do vídeo"],
-  "audiencia": "Público-alvo",
-  "qualidade": 7,
-  "ferramentas": ["Ferramentas prováveis"],
-  "destaques": ["Pontos fortes"],
-  "melhorias": ["Sugestões"],
-  "canaisSimilares": ["Canais similares"],
-  "dnaResumo": "DNA completo em 3-5 frases",
-  "comoReplicar": "Como replicar este estilo"
-}`;
+Responda em JSON com a mesma estrutura incluindo campos "roteiro" e "nichosRelacionados".`;
 
       messages = [
         { role: "system", content: VIRAL_SYSTEM },
@@ -483,7 +489,7 @@ Responda em JSON:
       headers["Authorization"] = `Bearer ${config.apiKey}`;
     }
 
-    const body: any = { model: config.model, messages, temperature: 0.7, max_tokens: 4000 };
+    const body: any = { model: config.model, messages, temperature: 0.7, max_tokens: 8000 };
 
     logger.info("Calling AI for visual analysis", { provider: config.provider, model: config.model, frameCount: frames.length });
     const aiRes = await fetch(apiUrl, { method: "POST", headers, body: JSON.stringify(body) });
