@@ -74,6 +74,9 @@ export default function FrameCut() {
   // Tab
   const [tab, setTab] = useState<"local" | "youtube">("local");
 
+  // Job files (for download buttons after completion)
+  const [jobFiles, setJobFiles] = useState<{ name: string; path: string; type: string; size: number }[]>([]);
+
   // Cookies
   const [cookiesActive, setCookiesActive] = useState(false);
   const [cookiesDate, setCookiesDate] = useState<string | null>(null);
@@ -195,6 +198,13 @@ export default function FrameCut() {
     } catch (e: any) { setConsoleLines(p => [...p, `❌ ${e.message}`]); setDownloading(false); }
   };
 
+  const triggerBrowserDownload = (serverPath: string, filename: string) => {
+    const a = document.createElement("a");
+    a.href = `${API}/download-file?path=${encodeURIComponent(serverPath)}`;
+    a.download = filename;
+    a.click();
+  };
+
   const pollJob = (jobId: string, type: string) => {
     let lastLen = 0;
     const iv = setInterval(async () => {
@@ -208,8 +218,12 @@ export default function FrameCut() {
         if (data.status === "done" || data.status === "error") {
           clearInterval(iv);
           setDownloading(false);
-          if (data.status === "done" && data.filepath && type === "video") {
-            setVideoPath(data.filepath);
+          if (data.status === "done") {
+            if (data.filepath && type === "video") setVideoPath(data.filepath);
+            // Fetch generated files for download buttons
+            fetch(`${API}/job-files/${jobId}`).then(r => safeJson(r)).then(d => {
+              if (d.files?.length) setJobFiles(d.files);
+            }).catch(() => {});
             toast?.success("Download concluído!");
           }
         }
@@ -530,6 +544,51 @@ export default function FrameCut() {
                         <div key={i} style={{ color: l.includes("❌") ? "#e63946" : l.includes("✅") ? "#2ec4b6" : l.includes("[FrameCut]") ? "#a78bfa" : l.includes("WARNING") ? "#f4a261" : "#2ec4b6" }}>{l}</div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Download files to user's computer */}
+                {!downloading && jobFiles.length > 0 && (
+                  <div style={{ marginTop: 12, padding: "14px 16px", borderRadius: 10, border: "1px solid #1a4a3a", background: "rgba(46,196,182,0.06)" }}>
+                    <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#2ec4b6", marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span>💾</span> Salvar no seu computador
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {jobFiles.map((f, i) => {
+                        const icon = f.type === "video" ? "🎬" : f.type === "thumb" ? "🖼️" : f.type === "subs" ? "📝" : "📄";
+                        const sizeStr = f.size > 1048576 ? (f.size / 1048576).toFixed(1) + " MB" : (f.size / 1024).toFixed(0) + " KB";
+                        return (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "#0c0c10", borderRadius: 8 }}>
+                            <span style={{ fontSize: "1rem" }}>{icon}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#ededf0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</div>
+                              <div style={{ fontSize: "0.68rem", color: "#505068" }}>{sizeStr}</div>
+                            </div>
+                            <button
+                              onClick={() => triggerBrowserDownload(f.path, f.name)}
+                              style={{
+                                padding: "6px 14px", borderRadius: 6, border: "none", cursor: "pointer",
+                                background: f.type === "video" ? "linear-gradient(135deg, #e63946, #c1292e)" : "#1e1e2a",
+                                color: f.type === "video" ? "#fff" : "#8a8aa0",
+                                fontSize: "0.75rem", fontWeight: 600, flexShrink: 0,
+                              }}
+                            >
+                              ⬇ Salvar
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <button
+                      onClick={() => jobFiles.forEach((f, i) => setTimeout(() => triggerBrowserDownload(f.path, f.name), i * 300))}
+                      style={{
+                        width: "100%", marginTop: 10, padding: "10px 16px", borderRadius: 8, border: "none", cursor: "pointer",
+                        background: "linear-gradient(135deg, #2ec4b6, #1aa89e)", color: "#fff",
+                        fontSize: "0.82rem", fontWeight: 600,
+                      }}
+                    >
+                      ⬇ Salvar Todos ({jobFiles.length} arquivos)
+                    </button>
                   </div>
                 )}
 
