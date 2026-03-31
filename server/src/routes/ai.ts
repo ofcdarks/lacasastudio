@@ -336,50 +336,175 @@ router.post("/stream", async (req: any, res: Response, next: NextFunction) => {
   }
 });
 
-// Analyze video visually from extracted frames description
+// Deep video DNA analysis — frames base64 + transcription + visual analysis
 router.post("/analyze-visual", async (req: any, res: Response, next: NextFunction) => {
-  const { frameDescriptions, videoTitle, duration, frameCount } = req.body;
-  if (!frameDescriptions) return res.status(400).json({ error: "Descrição dos frames obrigatória" });
+  const { frames, videoTitle, duration, frameCount, transcription } = req.body;
+  if (!frames || !Array.isArray(frames) || frames.length === 0) return res.status(400).json({ error: "Frames obrigatórios" });
 
   try {
     const config = await resolveAIConfig(req.userId);
     if (!config.apiKey) return res.status(400).json({ error: "Configure sua API Key nas Configurações" });
 
-    const prompt = `Analise este vídeo do YouTube com base nos ${frameCount || 20} frames extraídos uniformemente.
+    // Build frame timeline description
+    const frameTimeline = frames.map((f: any, i: number) => {
+      const m = Math.floor(f.time / 60), s = Math.floor(f.time % 60);
+      return `[${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}] Frame ${i+1}/${frames.length}`;
+    }).join("\n");
+
+    // Build messages array — use vision API if provider supports it
+    const isVisionCapable = config.provider === "openai" || config.provider === "google" || config.provider === "laozhang";
+
+    let messages: any[];
+
+    if (isVisionCapable && frames[0].base64) {
+      // Vision mode — send actual images
+      const imageContent: any[] = [
+        { type: "text", text: `Analise PROFUNDAMENTE este vídeo do YouTube. Você está vendo ${frames.length} frames extraídos uniformemente do vídeo inteiro.
 
 TÍTULO: ${videoTitle || "Desconhecido"}
-DURAÇÃO: ${duration ? Math.floor(duration / 60) + "min" : "Desconhecido"}
+DURAÇÃO: ${duration ? Math.floor(duration/60) + "min " + Math.floor(duration%60) + "s" : "?"}
 
-FRAMES EXTRAÍDOS (timestamps e descrições visuais):
-${frameDescriptions}
+${transcription ? "TRANSCRIÇÃO (primeiras linhas):\n" + transcription.slice(0, 3000) + "\n" : ""}
 
-Responda em JSON com esta estrutura exata:
+Analise CADA frame com atenção a:
+- Movimentos de câmera (zoom, pan, tilt, tracking, estático)
+- Transições entre cenas (corte seco, fade, dissolve, wipe, zoom transition)
+- Efeitos visuais (motion graphics, partículas, glitch, chromatic aberration)
+- Textos na tela (lower thirds, títulos, subtítulos, callouts)
+- Estilo de iluminação e cor grading
+- Tipo de conteúdo visual (animação, live-action, screencast, stock footage)
+- SFX visuais (flashes, shakes, zooms rápidos)
+- Composição e enquadramento
+
+Responda em JSON:
 {
-  "estilo": "Descrição do estilo visual geral (ex: animação 2D, live-action, motion graphics, faceless, etc)",
-  "formato": "Formato do vídeo (ex: narração com imagens, talking head, gameplay, tutorial, etc)",
-  "edicao": "Técnicas de edição observadas (cortes, transições, efeitos, ritmo)",
-  "cores": ["#cor1", "#cor2", "#cor3", "#cor4", "#cor5"],
-  "paleta": "Descrição da paleta de cores dominante",
-  "ritmo": "Lento / Médio / Rápido — e por quê",
-  "textos": "Presença de textos/legendas/lower thirds na tela",
-  "musica": "Sugestão de estilo musical baseado no visual",
-  "audiencia": "Público-alvo provável",
-  "qualidade": "Nota de 1-10 da qualidade de produção",
-  "destaques": ["Ponto forte 1", "Ponto forte 2", "Ponto forte 3"],
-  "melhorias": ["Sugestão 1", "Sugestão 2", "Sugestão 3"],
-  "nichoSimilar": "Nichos/canais com estilo similar",
-  "resumo": "Resumo de 2-3 frases sobre o estilo de produção"
+  "nicho": "Nicho principal do canal",
+  "subnicho": "Subnicho específico",
+  "micronicho": "Micronicho (se identificável)",
+  "estilo": "Estilo visual detalhado",
+  "formato": "Formato do vídeo",
+  "cameras": ["Lista de movimentos de câmera identificados"],
+  "transicoes": ["Lista de tipos de transição usados"],
+  "efeitosVisuais": ["Efeitos visuais observados"],
+  "sfx": ["Sound effects visuais identificados (flashes, shakes, zooms)"],
+  "musicaEstilo": "Estilo provável da música de fundo baseado no ritmo visual",
+  "textosNaTela": "Descrição dos textos/gráficos sobrepostos",
+  "colorGrading": "Estilo de color grading (cinematográfico, vibrante, dessaturado, etc)",
+  "cores": ["#hex1", "#hex2", "#hex3", "#hex4", "#hex5"],
+  "paleta": "Nome/descrição da paleta",
+  "iluminacao": "Estilo de iluminação",
+  "ritmoEdicao": "Lento/Médio/Rápido + cortes por minuto estimado",
+  "estrutura": ["Intro", "Hook", "Desenvolvimento", "CTA", "Outro"],
+  "audiencia": "Público-alvo",
+  "qualidade": 8,
+  "ferramentas": ["Softwares provavelmente usados (After Effects, Premiere, DaVinci, etc)"],
+  "destaques": ["3-5 pontos fortes da produção"],
+  "melhorias": ["3-5 sugestões de melhoria"],
+  "canaisSimilares": ["3-5 canais com estilo parecido"],
+  "dnaResumo": "Resumo completo de 3-5 frases descrevendo o DNA visual deste canal",
+  "comoReplicar": "Passo a passo de como replicar este estilo de produção"
+}` }
+      ];
+
+      // Add frame images (max 10 to stay within token limits)
+      const step = Math.max(1, Math.floor(frames.length / 10));
+      for (let i = 0; i < frames.length; i += step) {
+        const f = frames[i];
+        if (f.base64) {
+          imageContent.push({
+            type: "image_url",
+            image_url: { url: `data:image/jpeg;base64,${f.base64}`, detail: "low" }
+          });
+        }
+      }
+
+      messages = [
+        { role: "system", content: VIRAL_SYSTEM },
+        { role: "user", content: imageContent }
+      ];
+    } else {
+      // Text-only mode — describe frames
+      const prompt = `Analise PROFUNDAMENTE este vídeo do YouTube baseado nos frames e transcrição.
+
+TÍTULO: ${videoTitle || "Desconhecido"}
+DURAÇÃO: ${duration ? Math.floor(duration/60) + "min " + Math.floor(duration%60) + "s" : "?"}
+FRAMES: ${frameCount || frames.length} frames uniformes extraídos
+
+TIMELINE DOS FRAMES:
+${frameTimeline}
+
+${transcription ? "TRANSCRIÇÃO:\n" + transcription.slice(0, 4000) + "\n" : ""}
+
+Baseado no título, duração, quantidade de cortes (${frames.length} frames = ~${frames.length} cenas) e transcrição, identifique o DNA completo do vídeo.
+
+Responda em JSON:
+{
+  "nicho": "Nicho principal",
+  "subnicho": "Subnicho",
+  "micronicho": "Micronicho",
+  "estilo": "Estilo visual provável",
+  "formato": "Formato do vídeo",
+  "cameras": ["Movimentos de câmera prováveis"],
+  "transicoes": ["Transições prováveis"],
+  "efeitosVisuais": ["Efeitos prováveis"],
+  "sfx": ["SFX visuais prováveis"],
+  "musicaEstilo": "Estilo musical provável",
+  "textosNaTela": "Uso de textos na tela",
+  "colorGrading": "Color grading provável",
+  "cores": ["#hex1", "#hex2", "#hex3", "#hex4", "#hex5"],
+  "paleta": "Paleta provável",
+  "iluminacao": "Iluminação",
+  "ritmoEdicao": "Ritmo de edição",
+  "estrutura": ["Partes do vídeo"],
+  "audiencia": "Público-alvo",
+  "qualidade": 7,
+  "ferramentas": ["Ferramentas prováveis"],
+  "destaques": ["Pontos fortes"],
+  "melhorias": ["Sugestões"],
+  "canaisSimilares": ["Canais similares"],
+  "dnaResumo": "DNA completo em 3-5 frases",
+  "comoReplicar": "Como replicar este estilo"
 }`;
 
-    const result = await callAIWithConfig(config, VIRAL_SYSTEM, prompt);
+      messages = [
+        { role: "system", content: VIRAL_SYSTEM },
+        { role: "user", content: prompt }
+      ];
+    }
 
-    // Try to parse JSON from response
+    // Call AI with vision or text
+    const apiUrl = config.apiUrl;
+    const headers: any = { "Content-Type": "application/json" };
+    if (config.provider === "anthropic") {
+      headers["x-api-key"] = config.apiKey;
+      headers["anthropic-version"] = "2023-06-01";
+    } else {
+      headers["Authorization"] = `Bearer ${config.apiKey}`;
+    }
+
+    const body: any = { model: config.model, messages, temperature: 0.7, max_tokens: 4000 };
+
+    const aiRes = await fetch(apiUrl, { method: "POST", headers, body: JSON.stringify(body) });
+    const aiData = await aiRes.json();
+
+    let resultText = "";
+    if (config.provider === "anthropic") {
+      resultText = aiData.content?.[0]?.text || "";
+    } else {
+      resultText = aiData.choices?.[0]?.message?.content || "";
+    }
+
+    if (!resultText && aiData.error) {
+      return res.status(400).json({ error: aiData.error.message || "Erro na API de IA" });
+    }
+
+    // Parse JSON from response
     let analysis;
     try {
-      const jsonMatch = result.match(/\{[\s\S]*\}/);
-      analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : { resumo: result };
+      const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+      analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : { dnaResumo: resultText };
     } catch {
-      analysis = { resumo: result };
+      analysis = { dnaResumo: resultText };
     }
 
     res.json({ analysis });
@@ -387,7 +512,7 @@ Responda em JSON com esta estrutura exata:
     if (err.message?.includes("API Key") || err.message?.includes("Configure") || err.message?.includes("créditos") || err.message?.includes("limite")) {
       return res.status(400).json({ error: err.message });
     }
-    res.status(500).json({ error: "Erro na análise visual" });
+    res.status(500).json({ error: "Erro na análise visual: " + (err.message || "") });
   }
 });
 

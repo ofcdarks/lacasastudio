@@ -441,9 +441,9 @@ router.get("/list-frames", (req: Request, res: Response) => {
 
 // Analyze video — extract keyframes at uniform intervals for visual analysis
 router.post("/analyze-video", (req: Request, res: Response) => {
-  const { videoPath, count = 20 } = req.body;
+  const { videoPath, count = 30 } = req.body;
   if (!videoPath || !fs.existsSync(videoPath)) return res.status(400).json({ error: "Vídeo não encontrado" });
-  if (count < 1 || count > 50) return res.status(400).json({ error: "Count deve ser entre 1 e 50" });
+  if (count < 1 || count > 100) return res.status(400).json({ error: "Count deve ser entre 1 e 100" });
 
   const id = genId();
   const dir = path.dirname(videoPath);
@@ -523,10 +523,18 @@ router.post("/analyze-video", (req: Request, res: Response) => {
 router.get("/analyze-result/:id", (req: Request, res: Response) => {
   const job = jobs[req.params.id];
   if (!job) return res.status(404).json({ error: "Job não encontrado" });
+  const includeBase64 = req.query.base64 === "true";
+  const frames = ((job as any).frames || []).map((f: any) => {
+    const result: any = { time: f.time, url: f.url };
+    if (includeBase64 && f.path && fs.existsSync(f.path)) {
+      try { result.base64 = fs.readFileSync(f.path).toString("base64"); } catch {}
+    }
+    return result;
+  });
   res.json({
     status: job.status,
     progress: job.progress || 0,
-    frames: (job as any).frames || [],
+    frames,
     duration: (job as any).duration || 0,
   });
 });

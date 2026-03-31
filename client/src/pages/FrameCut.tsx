@@ -310,49 +310,56 @@ export default function FrameCut() {
     if (!videoPath) { toast?.error("Carregue um vídeo primeiro"); return; }
     setAnalyzing(true); setAnalysisProg(0); setAnalysisResult(null); setAnalysisFrames([]);
     try {
-      // Step 1: Extract 20 keyframes via server ffmpeg
-      const r = await fetch(`${API}/analyze-video`, { method: "POST", headers: hdr(), body: JSON.stringify({ videoPath, count: 20 }) });
+      // Step 1: Extract 30 keyframes via server ffmpeg
+      toast?.success("Extraindo frames do vídeo...");
+      const r = await fetch(`${API}/analyze-video`, { method: "POST", headers: hdr(), body: JSON.stringify({ videoPath, count: 30 }) });
       const data = await safeJson(r);
       if (!data.job_id) { toast?.error(data.error || "Erro"); setAnalyzing(false); return; }
 
       // Step 2: Poll extraction job
       const jobId = data.job_id;
-      await new Promise<void>((resolve) => {
+      const jobResult: any = await new Promise((resolve) => {
         const iv = setInterval(async () => {
-          const jr = await fetch(`${API}/analyze-result/${jobId}`);
+          const jr = await fetch(`${API}/analyze-result/${jobId}?base64=true`);
           const jd = await safeJson(jr);
-          setAnalysisProg(jd.progress || 0);
+          setAnalysisProg(Math.round((jd.progress || 0) * 0.5)); // 0-50% for extraction
           if (jd.status === "done" || jd.status === "error") {
             clearInterval(iv);
-            if (jd.frames?.length) {
-              setAnalysisFrames(jd.frames);
-              toast?.success(`${jd.frames.length} frames extraídos`);
-
-              // Step 3: Build frame descriptions and send to AI
-              const descriptions = jd.frames.map((f: any, i: number) => {
-                const m = Math.floor(f.time / 60), s = Math.floor(f.time % 60);
-                return `Frame ${i + 1} [${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}]: Imagem extraída do vídeo neste ponto`;
-              }).join("\n");
-
-              try {
-                const aiR = await fetch("/api/ai/analyze-visual", {
-                  method: "POST", headers: hdr(),
-                  body: JSON.stringify({
-                    frameDescriptions: descriptions,
-                    videoTitle: fileName,
-                    duration: jd.duration,
-                    frameCount: jd.frames.length,
-                  }),
-                });
-                const aiD = await safeJson(aiR);
-                if (aiD.analysis) setAnalysisResult(aiD.analysis);
-                else if (aiD.error) toast?.error(aiD.error);
-              } catch { toast?.error("Erro na análise IA"); }
-            }
-            resolve();
+            resolve(jd);
           }
         }, 800);
       });
+
+      if (!jobResult.frames?.length) { toast?.error("Falha ao extrair frames"); setAnalyzing(false); return; }
+      setAnalysisFrames(jobResult.frames);
+      toast?.success(`${jobResult.frames.length} frames extraídos — analisando com IA...`);
+      setAnalysisProg(55);
+
+      // Step 3: Build transcription text if available
+      const transcriptText = transLines.length > 0
+        ? transLines.map(l => `[${fmtTime(l.time)}] ${l.text}`).join("\n")
+        : "";
+
+      // Step 4: Send frames + transcription to AI for deep analysis
+      const aiR = await fetch("/api/ai/analyze-visual", {
+        method: "POST", headers: hdr(),
+        body: JSON.stringify({
+          frames: jobResult.frames.map((f: any) => ({ time: f.time, base64: f.base64 })),
+          videoTitle: fileName,
+          duration: jobResult.duration,
+          frameCount: jobResult.frames.length,
+          transcription: transcriptText,
+        }),
+      });
+      setAnalysisProg(90);
+      const aiD = await safeJson(aiR);
+      if (aiD.analysis) {
+        setAnalysisResult(aiD.analysis);
+        toast?.success("Análise completa do DNA do vídeo!");
+      } else if (aiD.error) {
+        toast?.error(aiD.error);
+      }
+      setAnalysisProg(100);
     } catch (e: any) { toast?.error(e.message || "Erro"); }
     setAnalyzing(false);
   };
@@ -957,50 +964,92 @@ export default function FrameCut() {
               </div>
             )}
 
-            {/* AI Analysis result */}
+            {/* AI DNA Analysis result */}
             {analysisResult && (
               <div style={{ marginTop: 14 }}>
-                <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#2ec4b6", marginBottom: 10 }}>🤖 Análise IA</div>
+                <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#a78bfa", marginBottom: 10 }}>🧬 DNA do Vídeo</div>
 
-                {analysisResult.resumo && <p style={{ fontSize: "0.82rem", color: "#ededf0", lineHeight: 1.6, marginBottom: 12, padding: "10px 12px", background: "#0c0c10", borderRadius: 8 }}>{analysisResult.resumo}</p>}
+                {analysisResult.dnaResumo && <p style={{ fontSize: "0.82rem", color: "#ededf0", lineHeight: 1.7, marginBottom: 12, padding: "12px 14px", background: "linear-gradient(135deg, #0c0c10, #101020)", borderRadius: 10, borderLeft: "3px solid #a78bfa" }}>{analysisResult.dnaResumo}</p>}
 
+                {/* Nicho hierarchy */}
+                {(analysisResult.nicho || analysisResult.subnicho) && (
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 10 }}>
+                    {analysisResult.nicho && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#e6394615", color: "#e63946", fontSize: "0.78rem", fontWeight: 600 }}>🎯 {analysisResult.nicho}</span>}
+                    {analysisResult.subnicho && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#a78bfa15", color: "#a78bfa", fontSize: "0.78rem", fontWeight: 600 }}>📂 {analysisResult.subnicho}</span>}
+                    {analysisResult.micronicho && <span style={{ padding: "4px 10px", borderRadius: 6, background: "#2ec4b615", color: "#2ec4b6", fontSize: "0.78rem", fontWeight: 600 }}>🔬 {analysisResult.micronicho}</span>}
+                  </div>
+                )}
+
+                {/* Key metrics grid */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
                   {analysisResult.estilo && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>ESTILO</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.estilo}</div></div>}
                   {analysisResult.formato && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>FORMATO</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.formato}</div></div>}
-                  {analysisResult.ritmo && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>RITMO</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.ritmo}</div></div>}
+                  {analysisResult.ritmoEdicao && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>RITMO EDIÇÃO</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.ritmoEdicao}</div></div>}
                   {analysisResult.qualidade && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>QUALIDADE</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.qualidade}/10</div></div>}
+                  {analysisResult.colorGrading && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>COLOR GRADING</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.colorGrading}</div></div>}
+                  {analysisResult.iluminacao && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>ILUMINAÇÃO</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.iluminacao}</div></div>}
+                  {analysisResult.audiencia && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>AUDIÊNCIA</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.audiencia}</div></div>}
+                  {analysisResult.musicaEstilo && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>MÚSICA</div><div style={{ fontSize: "0.78rem", fontWeight: 600 }}>{analysisResult.musicaEstilo}</div></div>}
                 </div>
 
+                {/* Color palette */}
                 {analysisResult.cores && Array.isArray(analysisResult.cores) && (
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 4 }}>PALETA DE CORES</div>
                     <div style={{ display: "flex", gap: 3, borderRadius: 8, overflow: "hidden" }}>
-                      {analysisResult.cores.map((c: string, i: number) => (
-                        <div key={i} style={{ flex: 1, height: 28, background: c }} title={c} />
-                      ))}
+                      {analysisResult.cores.map((c: string, i: number) => <div key={i} style={{ flex: 1, height: 32, background: c }} title={c} />)}
                     </div>
                     {analysisResult.paleta && <div style={{ fontSize: "0.72rem", color: "#8a8aa0", marginTop: 4 }}>{analysisResult.paleta}</div>}
                   </div>
                 )}
 
-                {analysisResult.edicao && <div style={{ padding: "8px 10px", background: "#101016", borderRadius: 8, marginBottom: 8 }}><div style={{ fontSize: "0.68rem", color: "#505068", marginBottom: 2 }}>EDIÇÃO</div><div style={{ fontSize: "0.78rem", lineHeight: 1.5 }}>{analysisResult.edicao}</div></div>}
-
-                {analysisResult.destaques && (
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: "0.68rem", color: "#22D35E", marginBottom: 4 }}>PONTOS FORTES</div>
-                    {analysisResult.destaques.map((d: string, i: number) => <div key={i} style={{ fontSize: "0.78rem", padding: "3px 0", color: "#c0c0d0" }}>✅ {d}</div>)}
+                {/* Production details */}
+                {analysisResult.cameras && Array.isArray(analysisResult.cameras) && (
+                  <div style={{ marginBottom: 8, padding: "8px 10px", background: "#101016", borderRadius: 8 }}>
+                    <div style={{ fontSize: "0.68rem", color: "#4B8DF8", marginBottom: 4 }}>🎥 CÂMERAS / MOVIMENTOS</div>
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{analysisResult.cameras.map((c: string, i: number) => <span key={i} style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, background: "#4B8DF810", color: "#4B8DF8" }}>{c}</span>)}</div>
+                  </div>
+                )}
+                {analysisResult.transicoes && Array.isArray(analysisResult.transicoes) && (
+                  <div style={{ marginBottom: 8, padding: "8px 10px", background: "#101016", borderRadius: 8 }}>
+                    <div style={{ fontSize: "0.68rem", color: "#a78bfa", marginBottom: 4 }}>✨ TRANSIÇÕES</div>
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{analysisResult.transicoes.map((t: string, i: number) => <span key={i} style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, background: "#a78bfa10", color: "#a78bfa" }}>{t}</span>)}</div>
+                  </div>
+                )}
+                {analysisResult.efeitosVisuais && Array.isArray(analysisResult.efeitosVisuais) && (
+                  <div style={{ marginBottom: 8, padding: "8px 10px", background: "#101016", borderRadius: 8 }}>
+                    <div style={{ fontSize: "0.68rem", color: "#f4a261", marginBottom: 4 }}>💥 EFEITOS VISUAIS</div>
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{analysisResult.efeitosVisuais.map((e: string, i: number) => <span key={i} style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, background: "#f4a26110", color: "#f4a261" }}>{e}</span>)}</div>
+                  </div>
+                )}
+                {analysisResult.sfx && Array.isArray(analysisResult.sfx) && (
+                  <div style={{ marginBottom: 8, padding: "8px 10px", background: "#101016", borderRadius: 8 }}>
+                    <div style={{ fontSize: "0.68rem", color: "#EC4899", marginBottom: 4 }}>🔊 SFX VISUAIS</div>
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{analysisResult.sfx.map((s: string, i: number) => <span key={i} style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, background: "#EC489910", color: "#EC4899" }}>{s}</span>)}</div>
+                  </div>
+                )}
+                {analysisResult.ferramentas && Array.isArray(analysisResult.ferramentas) && (
+                  <div style={{ marginBottom: 8, padding: "8px 10px", background: "#101016", borderRadius: 8 }}>
+                    <div style={{ fontSize: "0.68rem", color: "#22D35E", marginBottom: 4 }}>🛠 FERRAMENTAS</div>
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{analysisResult.ferramentas.map((f: string, i: number) => <span key={i} style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4, background: "#22D35E10", color: "#22D35E" }}>{f}</span>)}</div>
                   </div>
                 )}
 
-                {analysisResult.melhorias && (
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: "0.68rem", color: "#f4a261", marginBottom: 4 }}>SUGESTÕES</div>
-                    {analysisResult.melhorias.map((m: string, i: number) => <div key={i} style={{ fontSize: "0.78rem", padding: "3px 0", color: "#c0c0d0" }}>💡 {m}</div>)}
+                {/* Highlights & suggestions */}
+                {analysisResult.destaques && <div style={{ marginBottom: 8 }}><div style={{ fontSize: "0.68rem", color: "#22D35E", marginBottom: 4 }}>✅ PONTOS FORTES</div>{analysisResult.destaques.map((d: string, i: number) => <div key={i} style={{ fontSize: "0.78rem", padding: "3px 0", color: "#c0c0d0" }}>• {d}</div>)}</div>}
+                {analysisResult.melhorias && <div style={{ marginBottom: 8 }}><div style={{ fontSize: "0.68rem", color: "#f4a261", marginBottom: 4 }}>💡 SUGESTÕES DE MELHORIA</div>{analysisResult.melhorias.map((m: string, i: number) => <div key={i} style={{ fontSize: "0.78rem", padding: "3px 0", color: "#c0c0d0" }}>• {m}</div>)}</div>}
+                {analysisResult.canaisSimilares && <div style={{ marginBottom: 8 }}><div style={{ fontSize: "0.68rem", color: "#4B8DF8", marginBottom: 4 }}>📺 CANAIS SIMILARES</div>{analysisResult.canaisSimilares.map((c: string, i: number) => <div key={i} style={{ fontSize: "0.78rem", padding: "3px 0", color: "#c0c0d0" }}>• {c}</div>)}</div>}
+
+                {/* How to replicate */}
+                {analysisResult.comoReplicar && (
+                  <div style={{ padding: "12px 14px", background: "linear-gradient(135deg, #0c0c10, #101020)", borderRadius: 10, marginBottom: 10, borderLeft: "3px solid #22D35E" }}>
+                    <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#22D35E", marginBottom: 6 }}>🎯 COMO REPLICAR ESTE ESTILO</div>
+                    <div style={{ fontSize: "0.82rem", color: "#ededf0", lineHeight: 1.7 }}>{analysisResult.comoReplicar}</div>
                   </div>
                 )}
 
-                <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(analysisResult, null, 2)); toast?.success("Análise copiada!"); }} style={{ ...s.btn2, width: "100%", justifyContent: "center", marginTop: 6 }}>
-                  📋 Copiar Análise
+                <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(analysisResult, null, 2)); toast?.success("DNA copiado!"); }} style={{ ...s.btn2, width: "100%", justifyContent: "center", marginTop: 6 }}>
+                  📋 Copiar DNA Completo
                 </button>
               </div>
             )}
