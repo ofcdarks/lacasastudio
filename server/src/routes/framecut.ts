@@ -827,4 +827,151 @@ router.delete("/dna/:id", authenticate, async (req: any, res: Response) => {
   }
 });
 
+// ─── SCRIPT AGENTS ───
+
+router.post("/agents/save", authenticate, async (req: any, res: Response) => {
+  try {
+    const { name, description, nicho, sourceVideo, prompt, icon, color } = req.body;
+    if (!prompt) return res.status(400).json({ error: "Prompt obrigatório" });
+    const agent = await prisma.scriptAgent.create({
+      data: {
+        name: (name || "Agente sem nome").slice(0, 200),
+        description: (description || "").slice(0, 500),
+        nicho: (nicho || "").slice(0, 200),
+        sourceVideo: (sourceVideo || "").slice(0, 500),
+        prompt: prompt.slice(0, 50000),
+        icon: (icon || "🤖").slice(0, 10),
+        color: (color || "#a78bfa").slice(0, 20),
+        userId: req.userId,
+      },
+    });
+    res.json({ id: agent.id, message: "Agente salvo!" });
+  } catch (err: any) {
+    res.status(500).json({ error: "Erro ao salvar agente: " + (err.message || "") });
+  }
+});
+
+router.get("/agents/list", authenticate, async (req: any, res: Response) => {
+  try {
+    const agents = await prisma.scriptAgent.findMany({
+      where: { userId: req.userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    res.json(agents);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/agents/:id", authenticate, async (req: any, res: Response) => {
+  try {
+    const agent = await prisma.scriptAgent.findFirst({
+      where: { id: Number(req.params.id), userId: req.userId },
+    });
+    if (!agent) return res.status(404).json({ error: "Agente não encontrado" });
+    res.json(agent);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/agents/:id", authenticate, async (req: any, res: Response) => {
+  try {
+    const { name, description, prompt, icon, color } = req.body;
+    const updated = await prisma.scriptAgent.updateMany({
+      where: { id: Number(req.params.id), userId: req.userId },
+      data: {
+        ...(name !== undefined && { name: name.slice(0, 200) }),
+        ...(description !== undefined && { description: description.slice(0, 500) }),
+        ...(prompt !== undefined && { prompt: prompt.slice(0, 50000) }),
+        ...(icon !== undefined && { icon: icon.slice(0, 10) }),
+        ...(color !== undefined && { color: color.slice(0, 20) }),
+      },
+    });
+    res.json({ ok: true, count: updated.count });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/agents/:id", authenticate, async (req: any, res: Response) => {
+  try {
+    await prisma.scriptAgent.deleteMany({
+      where: { id: Number(req.params.id), userId: req.userId },
+    });
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Generate script using an agent
+router.post("/agents/generate", authenticate, async (req: any, res: Response) => {
+  try {
+    const { agentId, title, duration, model } = req.body;
+    if (!title) return res.status(400).json({ error: "Título obrigatório" });
+
+    const agent = await prisma.scriptAgent.findFirst({
+      where: { id: Number(agentId), userId: req.userId },
+    });
+    if (!agent) return res.status(404).json({ error: "Agente não encontrado" });
+
+    // Resolve AI config
+    const { resolveAIConfig } = require("../services/ai-resolver");
+    const config = await resolveAIConfig(req.userId);
+    if (!config.apiKey) return res.status(400).json({ error: "Configure sua API Key nas Configurações" });
+
+    // Override model if specified
+    const useModel = model || config.model;
+
+    const userMessage = `Título: ${title} | Duração: ${duration || "10"} minutos\n\nGere o roteiro completo agora seguindo a fórmula.`;
+
+    const headers: any = { "Content-Type": "application/json" };
+    if (config.provider === "anthropic") {
+      headers["x-api-key"] = config.apiKey;
+      headers["anthropic-version"] = "2023-06-01";
+    } else {
+      headers["Authorization"] = `Bearer ${config.apiKey}`;
+    }
+
+    const body: any = {
+      model: useModel,
+      messages: [
+        { role: "system", content: agent.prompt },
+        { role: "user", content: userMessage },
+      ],
+      temperature: 0.7,
+      max_tokens: 8000,
+    };
+
+    // Anthropic format
+    if (config.provider === "anthropic") {
+      delete body.messages;
+      body.system = agent.prompt;
+      body.messages = [{ role: "user", content: userMessage }];
+    }
+
+    const aiRes = await fetch(config.apiUrl, { method: "POST", headers, body: JSON.stringify(body) });
+    if (!aiRes.ok) {
+      const errText = await aiRes.text();
+      return res.status(aiRes.status).json({ error: `Erro IA (${aiRes.status}): ${errText.slice(0, 200)}` });
+    }
+
+    const aiData = await aiRes.json();
+    let script = "";
+    if (config.provider === "anthropic") {
+      script = aiData.content?.[0]?.text || "";
+    } else {
+      script = aiData.choices?.[0]?.message?.content || "";
+    }
+
+    if (!script) return res.status(500).json({ error: "IA retornou resposta vazia" });
+
+    res.json({ script, model: useModel, title, duration });
+  } catch (err: any) {
+    res.status(500).json({ error: "Erro ao gerar roteiro: " + (err.message || "") });
+  }
+});
+
 export default router;

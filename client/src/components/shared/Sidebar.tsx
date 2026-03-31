@@ -35,6 +35,7 @@ const NAV: NavGroup[] = [
       { path: "/editor", label: "Editor", icon: "⊟" },
       { path: "/thumbs", label: "Thumbnails", icon: "▧" },
       { path: "/framecut", label: "FrameCut", icon: "🎬" },
+      { path: "/script-agents", label: "Agentes de Roteiro", icon: "🤖" },
       { path: "/checklist", label: "Checklist", icon: "☑" },
       { path: "/text-tools", label: "Ferramentas de Texto", icon: "¶" },
     ],

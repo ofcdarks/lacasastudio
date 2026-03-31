@@ -13,7 +13,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/canais-removidos": "Canais Removidos", "/daily-ideas": "Ideias Diárias",
   "/ideas": "Quadro de Ideias", "/planner": "Planner", "/roteiro": "Roteiro",
   "/storyboard": "Storyboard", "/editor": "Editor", "/thumbs": "Thumbnails",
-  "/framecut": "FrameCut", "/checklist": "Checklist", "/text-tools": "Ferramentas de Texto",
+  "/framecut": "FrameCut", "/script-agents": "Agentes de Roteiro", "/checklist": "Checklist", "/text-tools": "Ferramentas de Texto",
   "/seo": "Gerador SEO", "/keywords": "Keywords", "/tag-spy": "Tag Spy",
   "/seo-audit": "SEO Audit", "/hooks": "Hooks", "/preditor": "Viral Predict",
   "/catalog": "Catálogo", "/hype": "Hype Strategy", "/pipeline": "Pipeline",

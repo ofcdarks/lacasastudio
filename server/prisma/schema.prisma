@@ -30,6 +30,7 @@ model User {
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
   videoDnas     VideoDna[]
+  scriptAgents  ScriptAgent[]
 
   @@index([email])
 }
@@ -644,6 +645,23 @@ model VideoDna {
   userId        Int
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ScriptAgent {
+  id            Int      @id @default(autoincrement())
+  name          String   @default("")
+  description   String   @default("")
+  nicho         String   @default("")
+  sourceVideo   String   @default("")
+  prompt        String   @default("")
+  icon          String   @default("🤖")
+  color         String   @default("#a78bfa")
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([userId])
 }

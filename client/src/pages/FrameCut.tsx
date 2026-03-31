@@ -1500,14 +1500,28 @@ Quando eu enviar um TÍTULO e DURAÇÃO, escreva o roteiro completo seguindo est
                                 navigator.clipboard.writeText(agentPrompt);
                                 toast?.success("Agente de roteiro copiado! Cole em qualquer IA.");
                               }} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #22D35E, #14B8A6)", color: "#fff", cursor: "pointer", fontSize: "0.88rem", fontWeight: 700, transition: "all .2s" }}>
-                                📋 Copiar Agente Completo
+                                📋 Copiar Agente
                               </button>
-                              <button onClick={() => {
-                                const quick = `Título: [COLOQUE O TÍTULO AQUI] | Duração: [X minutos]`;
-                                navigator.clipboard.writeText(agentPrompt + "\n\n---\n\n" + quick);
-                                toast?.success("Agente + template de uso copiado!");
-                              }} style={{ ...s.btn2, padding: "12px 16px", background: "#4B8DF815", color: "#4B8DF8", borderColor: "#4B8DF840" }}>
-                                📦 Copiar com Template
+                              <button onClick={async () => {
+                                try {
+                                  const r = await fetch(`${API}/agents/save`, {
+                                    method: "POST", headers: hdr(),
+                                    body: JSON.stringify({
+                                      name: `Roteirista ${a.nicho || a.subnicho || "Video"}`,
+                                      description: `Formula extraida de: ${fileName}`,
+                                      nicho: a.nicho || "",
+                                      sourceVideo: fileName,
+                                      prompt: agentPrompt,
+                                      icon: "🎬",
+                                      color: "#a78bfa",
+                                    }),
+                                  });
+                                  const data = await safeJson(r);
+                                  if (data.id) toast?.success("Agente salvo! Acesse em Agentes de Roteiro no menu.");
+                                  else toast?.error(data.error || "Erro ao salvar");
+                                } catch (e: any) { toast?.error(e.message); }
+                              }} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #a78bfa, #7c5fd6)", color: "#fff", cursor: "pointer", fontSize: "0.88rem", fontWeight: 700, transition: "all .2s" }}>
+                                💾 Salvar como Agente
                               </button>
                             </div>
                           </div>

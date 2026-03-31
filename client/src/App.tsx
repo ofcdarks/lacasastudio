@@ -65,6 +65,7 @@ const NichosVirais = lazy(() => import("./pages/NichosVirais"));
 const CanaisRemovidos = lazy(() => import("./pages/CanaisRemovidos"));
 const InsightsCanal = lazy(() => import("./pages/InsightsCanal"));
 const FrameCut = lazy(() => import("./pages/FrameCut"));
+const ScriptAgents = lazy(() => import("./pages/ScriptAgents"));
 
 function Layout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -200,6 +201,7 @@ export default function App() {
       <Route path="/canais-removidos" element={<Layout><CanaisRemovidos /></Layout>} />
       <Route path="/insights-canal" element={<Layout><InsightsCanal /></Layout>} />
       <Route path="/framecut" element={<Layout><FrameCut /></Layout>} />
+      <Route path="/script-agents" element={<Layout><ScriptAgents /></Layout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
