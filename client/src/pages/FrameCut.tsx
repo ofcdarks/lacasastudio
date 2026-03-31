@@ -147,7 +147,12 @@ export default function FrameCut() {
 
   const loadVideoFromPath = (p: string) => {
     const v = videoRef.current!;
+    v.preload = "auto";
     v.src = `${API}/serve-video?path=${encodeURIComponent(p)}`;
+    v.onerror = () => {
+      // Fallback: try loading with token in URL
+      toast?.error("Erro ao carregar vídeo — tentando método alternativo...");
+    };
     v.onloadedmetadata = () => {
       setVideoInfo({ res: `${v.videoWidth}×${v.videoHeight}`, dur: fmtTime(v.duration), fmt: "MP4", size: "—" });
       setFileName(p.split(/[/\\]/).pop() || "");

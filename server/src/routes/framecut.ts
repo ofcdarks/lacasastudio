@@ -323,7 +323,14 @@ router.post("/download", (req: Request, res: Response) => {
       "480": "bestvideo[height<=480]+bestaudio/bestvideo*[height<=480]+bestaudio/best[height<=480]/best"
     };
     const outTpl = path.join(dlDir, "%(id)s_%(title).80B.%(ext)s");
-    formatArgs.push("-f", fmtMap[quality] || fmtMap["1080"], "--merge-output-format", "mp4", "--restrict-filenames", "-o", outTpl);
+    formatArgs.push(
+      "-f", fmtMap[quality] || fmtMap["1080"],
+      "--merge-output-format", "mp4",
+      "--restrict-filenames",
+      "--write-auto-sub", "--sub-lang", "pt,en,es",
+      "--write-thumbnail", "--convert-thumbnails", "jpg",
+      "-o", outTpl
+    );
     jobs[id].findExts = [".mp4",".webm",".mkv"];
   } else if (type === "subs") {
     const outTpl = path.join(dlDir, "%(id)s_%(title).80B.%(ext)s");
@@ -361,6 +368,76 @@ router.post("/transcribe", (req: Request, res: Response) => {
   res.json({ job_id: id });
 });
 
+// Extract frames from video using ffmpeg (server-side)
+router.post("/extract-frames", (req: Request, res: Response) => {
+  const { videoPath, times, format = "jpg", quality = 2 } = req.body;
+  if (!videoPath || !fs.existsSync(videoPath)) return res.status(400).json({ error: "Vídeo não encontrado" });
+  if (!times || !Array.isArray(times) || times.length === 0) return res.status(400).json({ error: "Timestamps obrigatórios" });
+  if (times.length > 200) return res.status(400).json({ error: "Máximo 200 frames" });
+
+  const dir = path.dirname(videoPath);
+  const base = path.basename(videoPath, path.extname(videoPath));
+  const outDir = path.join(dir, base + "_frames");
+  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+
+  const id = genId();
+  const frames: string[] = [];
+  jobs[id] = { status: "starting", output: [`[FrameCut] 🎞️ Extraindo ${times.length} frames...`], progress: 0, filepath: null, findExts: [".jpg", ".png"] };
+
+  let completed = 0;
+  const total = times.length;
+
+  const extractNext = (idx: number) => {
+    if (idx >= total) {
+      jobs[id].status = "done";
+      jobs[id].progress = 100;
+      jobs[id].output.push(`\n[FrameCut] ✅ ${frames.length} frames extraídos em ${outDir}`);
+      jobs[id].filepath = outDir;
+      return;
+    }
+    const t = times[idx];
+    const outFile = path.join(outDir, `frame_${String(idx + 1).padStart(3, "0")}_${String(Math.floor(t / 60)).padStart(2, "0")}m${String(Math.floor(t % 60)).padStart(2, "0")}s.${format}`);
+    const args = ["-ss", String(t), "-i", videoPath, "-frames:v", "1", "-q:v", String(quality), "-y", outFile];
+    const proc = spawn("ffmpeg", args, { env: process.env, shell: process.platform === "win32" });
+    proc.on("close", (code) => {
+      completed++;
+      jobs[id].progress = Math.round((completed / total) * 100);
+      if (code === 0 && fs.existsSync(outFile)) frames.push(outFile);
+      jobs[id].output.push(`[FrameCut] Frame ${completed}/${total}`);
+      extractNext(idx + 1);
+    });
+    proc.on("error", () => { completed++; extractNext(idx + 1); });
+  };
+
+  jobs[id].status = "running";
+  extractNext(0);
+  res.json({ job_id: id, outDir });
+});
+
+// Serve frame image
+router.get("/serve-frame", (req: Request, res: Response) => {
+  const filepath = req.query.path as string;
+  if (!filepath || !fs.existsSync(filepath)) return res.status(404).json({ error: "Not found" });
+  const ext = path.extname(filepath).toLowerCase();
+  const ct = ext === ".png" ? "image/png" : "image/jpeg";
+  res.setHeader("Content-Type", ct);
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  fs.createReadStream(filepath).pipe(res);
+});
+
+// List extracted frames
+router.get("/list-frames", (req: Request, res: Response) => {
+  const dir = req.query.dir as string;
+  if (!dir || !fs.existsSync(dir)) return res.json({ frames: [] });
+  try {
+    const frames = fs.readdirSync(dir)
+      .filter(f => /\.(jpg|jpeg|png)$/i.test(f))
+      .sort()
+      .map(f => ({ name: f, path: path.join(dir, f), url: `/api/framecut/serve-frame?path=${encodeURIComponent(path.join(dir, f))}` }));
+    res.json({ frames });
+  } catch { res.json({ frames: [] }); }
+});
+
 // Find subtitle files near a video
 router.get("/find-subs", (req: Request, res: Response) => {
   const videoPath = req.query.path as string;
@@ -382,18 +459,32 @@ router.get("/serve-video", (req: Request, res: Response) => {
   const ext = path.extname(filepath).toLowerCase();
   const ctMap: Record<string, string> = { ".mp4": "video/mp4", ".webm": "video/webm", ".mkv": "video/x-matroska", ".mov": "video/quicktime" };
   const ct = ctMap[ext] || "video/mp4";
+
+  // CORS headers for all responses
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "Range");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
+  res.setHeader("Accept-Ranges", "bytes");
+  res.setHeader("Cache-Control", "no-cache");
+
   const range = req.headers.range;
   if (range) {
     const m = range.match(/bytes=(\d+)-(\d*)/);
     if (m) {
       const start = parseInt(m[1]);
-      const end = m[2] ? parseInt(m[2]) : size - 1;
-      res.writeHead(206, { "Content-Range": `bytes ${start}-${end}/${size}`, "Accept-Ranges": "bytes", "Content-Length": end - start + 1, "Content-Type": ct, "Access-Control-Allow-Origin": "*" });
+      const end = m[2] ? parseInt(m[2]) : Math.min(start + 1024 * 1024 - 1, size - 1); // Max 1MB chunks
+      const chunkSize = end - start + 1;
+      res.writeHead(206, {
+        "Content-Range": `bytes ${start}-${end}/${size}`,
+        "Content-Length": chunkSize,
+        "Content-Type": ct,
+      });
       fs.createReadStream(filepath, { start, end }).pipe(res);
       return;
     }
   }
-  res.writeHead(200, { "Content-Length": size, "Content-Type": ct, "Accept-Ranges": "bytes", "Access-Control-Allow-Origin": "*" });
+  // No range — send first chunk to trigger range request from browser
+  res.writeHead(200, { "Content-Length": size, "Content-Type": ct });
   fs.createReadStream(filepath).pipe(res);
 });
 
