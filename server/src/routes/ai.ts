@@ -432,7 +432,23 @@ Responda SEMPRE em português brasileiro. JSON:
     "melhorasRoteiro": ["3-5 sugestões de melhoria do roteiro"]
   },
   "nichosRelacionados": [
-    { "nome": "Nome do nicho", "porque": "Por que é oportunidade", "comoAdaptar": "Como adaptar o estilo atual para este nicho", "dificuldade": "Fácil/Médio/Difícil", "potencial": "Alto/Médio/Baixo" }
+    {
+      "nome": "Nome do nicho/subnicho",
+      "porque": "Explicação detalhada de por que este nicho é uma oportunidade real (demanda, audiência, tendência)",
+      "comoAdaptar": "Passo a passo específico de como adaptar o estilo visual e narrativo do vídeo analisado para este nicho",
+      "dificuldade": "Fácil/Médio/Difícil",
+      "potencial": "Alto/Médio/Baixo",
+      "nomeCanal": "Sugestão de nome para o canal neste nicho (criativo e memorável)",
+      "paisAlvo": "País/região ideal para este nicho (ex: Brasil, EUA, LATAM, Global)",
+      "idioma": "Idioma do conteúdo recomendado",
+      "rpmEstimado": "$2-5 (estimativa de RPM em USD)",
+      "viewsEstimado": "50K-200K por vídeo (estimativa realista de views mensais)",
+      "frequencia": "Frequência ideal de postagem (ex: 3x por semana, 1x por dia)",
+      "titulosSugeridos": ["5 títulos de vídeo prontos para usar neste nicho, otimizados para CTR"],
+      "estrategia": "Estratégia completa: como começar, primeiros 10 vídeos, crescimento, monetização",
+      "concorrencia": "Nível de concorrência e principais concorrentes",
+      "monetizacao": "Formas de monetização além do AdSense (produtos, afiliados, patrocínios)"
+    }
   ]
 }` }
       ];

@@ -1277,25 +1277,117 @@ export default function FrameCut() {
                 <div>
                   <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#e63946", marginBottom: 16 }}>🎯 NICHOS RELACIONADOS PARA ATACAR</div>
                   {analysisResult.nichosRelacionados && Array.isArray(analysisResult.nichosRelacionados) && analysisResult.nichosRelacionados.length > 0 ? (
-                    <div style={{ display: "grid", gap: 12 }}>
+                    <div style={{ display: "grid", gap: 16 }}>
                       {analysisResult.nichosRelacionados.map((n: any, i: number) => (
-                        <div key={i} style={{ padding: "16px 18px", background: "#101016", borderRadius: 12, border: "1px solid #252538", transition: "all .2s" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                            <div style={{ fontSize: "1rem", fontWeight: 700, color: "#ededf0" }}>{n.nome}</div>
-                            <div style={{ display: "flex", gap: 6 }}>
-                              <span style={{ fontSize: "0.72rem", padding: "3px 10px", borderRadius: 6, background: n.dificuldade === "Facil" ? "#22D35E15" : n.dificuldade === "Medio" ? "#f4a26115" : "#e6394615", color: n.dificuldade === "Facil" ? "#22D35E" : n.dificuldade === "Medio" ? "#f4a261" : "#e63946", fontWeight: 600 }}>
-                                {n.dificuldade || "Medio"}
-                              </span>
-                              <span style={{ fontSize: "0.72rem", padding: "3px 10px", borderRadius: 6, background: n.potencial === "Alto" ? "#22D35E15" : "#4B8DF815", color: n.potencial === "Alto" ? "#22D35E" : "#4B8DF8", fontWeight: 600 }}>
-                                Potencial: {n.potencial || "Medio"}
-                              </span>
+                        <div key={i} style={{ background: "#101016", borderRadius: 14, border: "1px solid #252538", overflow: "hidden" }}>
+                          {/* Header */}
+                          <div style={{ padding: "16px 20px", borderBottom: "1px solid #1e1e2a", background: "linear-gradient(135deg, #12121a, #16162a)" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                              <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#ededf0" }}>{n.nome}</div>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <span style={{ fontSize: "0.75rem", padding: "4px 12px", borderRadius: 6, background: n.dificuldade === "Facil" || n.dificuldade === "Fácil" ? "#22D35E15" : n.dificuldade === "Medio" || n.dificuldade === "Médio" ? "#f4a26115" : "#e6394615", color: n.dificuldade === "Facil" || n.dificuldade === "Fácil" ? "#22D35E" : n.dificuldade === "Medio" || n.dificuldade === "Médio" ? "#f4a261" : "#e63946", fontWeight: 600 }}>
+                                  {n.dificuldade || "Medio"}
+                                </span>
+                                <span style={{ fontSize: "0.75rem", padding: "4px 12px", borderRadius: 6, background: n.potencial === "Alto" ? "#22D35E15" : "#4B8DF815", color: n.potencial === "Alto" ? "#22D35E" : "#4B8DF8", fontWeight: 600 }}>
+                                  Potencial: {n.potencial || "Medio"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Quick stats row */}
+                            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                              {n.paisAlvo && (
+                                <span style={{ fontSize: "0.78rem", color: "#8a8aa0", display: "flex", alignItems: "center", gap: 4 }}>
+                                  🌍 <strong style={{ color: "#ededf0" }}>{n.paisAlvo}</strong>
+                                </span>
+                              )}
+                              {n.idioma && (
+                                <span style={{ fontSize: "0.78rem", color: "#8a8aa0", display: "flex", alignItems: "center", gap: 4 }}>
+                                  🗣 <strong style={{ color: "#ededf0" }}>{n.idioma}</strong>
+                                </span>
+                              )}
+                              {n.rpmEstimado && (
+                                <span style={{ fontSize: "0.78rem", color: "#8a8aa0", display: "flex", alignItems: "center", gap: 4 }}>
+                                  💰 RPM: <strong style={{ color: "#22D35E" }}>{n.rpmEstimado}</strong>
+                                </span>
+                              )}
+                              {n.viewsEstimado && (
+                                <span style={{ fontSize: "0.78rem", color: "#8a8aa0", display: "flex", alignItems: "center", gap: 4 }}>
+                                  👁 Views: <strong style={{ color: "#4B8DF8" }}>{n.viewsEstimado}</strong>
+                                </span>
+                              )}
+                              {n.frequencia && (
+                                <span style={{ fontSize: "0.78rem", color: "#8a8aa0", display: "flex", alignItems: "center", gap: 4 }}>
+                                  📅 <strong style={{ color: "#ededf0" }}>{n.frequencia}</strong>
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <div style={{ fontSize: "0.88rem", color: "#c0c0d0", lineHeight: 1.7, marginBottom: 8 }}>
-                            <strong style={{ color: "#a78bfa" }}>Por que:</strong> {n.porque}
-                          </div>
-                          <div style={{ fontSize: "0.88rem", color: "#c0c0d0", lineHeight: 1.7 }}>
-                            <strong style={{ color: "#2ec4b6" }}>Como adaptar:</strong> {n.comoAdaptar}
+
+                          {/* Body */}
+                          <div style={{ padding: "16px 20px" }}>
+                            {/* Channel name suggestion */}
+                            {n.nomeCanal && (
+                              <div style={{ marginBottom: 14, padding: "10px 14px", background: "#0c0c10", borderRadius: 10, borderLeft: "3px solid #a78bfa", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <div>
+                                  <div style={{ fontSize: "0.7rem", color: "#505068", marginBottom: 2 }}>NOME DO CANAL SUGERIDO</div>
+                                  <div style={{ fontSize: "1rem", fontWeight: 700, color: "#a78bfa" }}>{n.nomeCanal}</div>
+                                </div>
+                                <button onClick={() => { navigator.clipboard.writeText(n.nomeCanal); toast?.success("Nome copiado!"); }}
+                                  style={{ background: "none", border: "1px solid #252538", borderRadius: 6, color: "#8a8aa0", padding: "4px 10px", cursor: "pointer", fontSize: "0.72rem" }}>📋</button>
+                              </div>
+                            )}
+
+                            {/* Why & How */}
+                            <div style={{ fontSize: "0.88rem", color: "#c0c0d0", lineHeight: 1.8, marginBottom: 10 }}>
+                              <strong style={{ color: "#a78bfa" }}>Por que atacar:</strong> {n.porque}
+                            </div>
+                            <div style={{ fontSize: "0.88rem", color: "#c0c0d0", lineHeight: 1.8, marginBottom: 10 }}>
+                              <strong style={{ color: "#2ec4b6" }}>Como adaptar:</strong> {n.comoAdaptar}
+                            </div>
+
+                            {/* Competition & Monetization */}
+                            {(n.concorrencia || n.monetizacao) && (
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                                {n.concorrencia && (
+                                  <div style={{ padding: "10px 12px", background: "#0c0c10", borderRadius: 8 }}>
+                                    <div style={{ fontSize: "0.7rem", color: "#f4a261", marginBottom: 4, fontWeight: 600 }}>⚔️ CONCORRENCIA</div>
+                                    <div style={{ fontSize: "0.82rem", color: "#c0c0d0", lineHeight: 1.6 }}>{n.concorrencia}</div>
+                                  </div>
+                                )}
+                                {n.monetizacao && (
+                                  <div style={{ padding: "10px 12px", background: "#0c0c10", borderRadius: 8 }}>
+                                    <div style={{ fontSize: "0.7rem", color: "#22D35E", marginBottom: 4, fontWeight: 600 }}>💵 MONETIZACAO</div>
+                                    <div style={{ fontSize: "0.82rem", color: "#c0c0d0", lineHeight: 1.6 }}>{n.monetizacao}</div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Strategy */}
+                            {n.estrategia && (
+                              <div style={{ padding: "12px 14px", background: "linear-gradient(135deg, #0c0c10, #10101a)", borderRadius: 10, marginBottom: 14, borderLeft: "3px solid #4B8DF8" }}>
+                                <div style={{ fontSize: "0.72rem", color: "#4B8DF8", marginBottom: 6, fontWeight: 700 }}>🚀 ESTRATEGIA DE CRESCIMENTO</div>
+                                <div style={{ fontSize: "0.85rem", color: "#ededf0", lineHeight: 1.8 }}>{n.estrategia}</div>
+                              </div>
+                            )}
+
+                            {/* Suggested titles */}
+                            {n.titulosSugeridos && Array.isArray(n.titulosSugeridos) && n.titulosSugeridos.length > 0 && (
+                              <div>
+                                <div style={{ fontSize: "0.72rem", color: "#e63946", marginBottom: 8, fontWeight: 700 }}>🎬 TITULOS SUGERIDOS (prontos para usar)</div>
+                                <div style={{ display: "grid", gap: 6 }}>
+                                  {n.titulosSugeridos.map((t: string, j: number) => (
+                                    <div key={j} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "#0c0c10", borderRadius: 8, border: "1px solid #1e1e2a" }}>
+                                      <span style={{ fontSize: "0.72rem", color: "#505068", fontWeight: 700, flexShrink: 0 }}>{j + 1}.</span>
+                                      <span style={{ fontSize: "0.88rem", color: "#ededf0", flex: 1 }}>{t}</span>
+                                      <button onClick={() => { navigator.clipboard.writeText(t); toast?.success("Titulo copiado!"); }}
+                                        style={{ background: "none", border: "1px solid #252538", borderRadius: 6, color: "#8a8aa0", padding: "3px 8px", cursor: "pointer", fontSize: "0.68rem", flexShrink: 0 }}>📋</button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
